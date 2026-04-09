@@ -198,20 +198,31 @@ def test_l0_per_layer_nonnegative(clt, activations):
 # Cross-layer transcoding test
 # ---------------------------------------------------------------------------
 
-def test_cross_layer_contribution(clt, activations):
+def test_cross_layer_contribution(clt_cfg, activations):
     """
     Zeroing layer-0 features must change reconstructions at ALL layers (l=0 and l=1),
     confirming cross-layer decoding paths are wired correctly.
+
+    Uses a fresh model with randomly-initialized (non-zero) decoders so that
+    zeroing features has a measurable effect regardless of training state.
     """
+    import torch.nn as nn
     resid_streams, _ = activations
-    feature_acts, _ = clt(resid_streams)
+
+    # Fresh model; replace zero-init decoders with small random weights
+    model = CrossLayerTranscoder(clt_cfg).to(_default_device())
+    for l_source in range(N_LAYERS):
+        for decoder in model.decoders[l_source]:
+            nn.init.normal_(decoder.weight, std=0.01)
+
+    feature_acts, _ = model(resid_streams)
 
     zeroed = [a.clone() for a in feature_acts]
     # (BATCH, SEQ, N_FEATURES) — zero out layer-0 contributions
     zeroed[0] = torch.zeros_like(zeroed[0])
 
-    recons_full = clt.decode(feature_acts)
-    recons_zeroed = clt.decode(zeroed)
+    recons_full = model.decode(feature_acts)
+    recons_zeroed = model.decode(zeroed)
 
     for l in range(N_LAYERS):
         assert not torch.allclose(recons_full[l], recons_zeroed[l]), \

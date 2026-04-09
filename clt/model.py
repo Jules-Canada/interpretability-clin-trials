@@ -36,7 +36,7 @@ class JumpReLU(nn.Module):
     Shape: (*, n_features) → (*, n_features)
     """
 
-    def __init__(self, n_features: int, init_threshold: float = 0.03, bandwidth: float = 0.001):
+    def __init__(self, n_features: int, init_threshold: float = 0.03, bandwidth: float = 0.1):
         super().__init__()
         # log-parameterize threshold to keep it positive
         self.log_threshold = nn.Parameter(
@@ -108,7 +108,7 @@ class CrossLayerTranscoder(nn.Module):
 
         # JumpReLU activations: one per layer (separate learned thresholds)
         self.jump_relus = nn.ModuleList([
-            JumpReLU(F, init_threshold=cfg.jumprelu_threshold)
+            JumpReLU(F, init_threshold=cfg.jumprelu_threshold, bandwidth=cfg.jumprelu_bandwidth)
             for _ in range(L)
         ])
 
