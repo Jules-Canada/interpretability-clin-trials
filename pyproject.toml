@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ignis"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "torch>=2.2",
+    "transformer_lens>=2.0",
+    "einops>=0.7",
+    "wandb>=0.17",
+    "jaxtyping>=0.2.28",
+    "beartype>=0.14.1,<0.15.0",
+    "matplotlib>=3.8",
+    "pandas>=2.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["clt*", "graphs*", "interventions*", "prompts*", "viz*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
