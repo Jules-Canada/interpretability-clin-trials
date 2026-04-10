@@ -46,8 +46,9 @@ Python 3.11. All deps managed via `pyproject.toml`.
 ├── clt/
 │   ├── __init__.py
 │   ├── model.py               # CrossLayerTranscoder class
-│   ├── train.py               # Training loop + loss functions
-│   └── config.py              # CLTConfig dataclass
+│   ├── train.py               # train_step() and train() — model-agnostic training loop
+│   ├── loader.py              # ActivationLoader protocol, LiveActivationLoader, HDF5ActivationLoader
+│   └── config.py              # CLTConfig (architecture) and TrainConfig (training) dataclasses
 │
 ├── graphs/
 │   ├── __init__.py
@@ -182,12 +183,21 @@ When labeling features found in attribution graphs, record labels in
 
 ## Current Status
 
-- [ ] Repo scaffolded
-- [ ] Toy model test passing
-- [ ] CLT training loop implemented
-- [ ] Activations extracted from Pythia-410m
+- [x] Repo scaffolded
+- [x] Toy model test passing
+- [x] CLT training loop implemented
+- [ ] Activations extracted from Pythia-410m  ← extracted pythia-70m for dev; 410m needs GPU
 - [ ] CLT trained (reconstruction MSE < threshold)
 - [ ] Attribution graph construction implemented
 - [ ] Frontend rendering a graph
 - [ ] Clinical trial prompts loaded
 - [ ] Feature labeling begun
+
+## Findings So Far
+
+- `sparsity_coeff=2e-4` is too weak — reconstruction dominates and L0 saturates near n_features.
+  Updated default to `1e-2`. L0 still high at 500 steps on 50k tokens; expect improvement at scale.
+- Activation extraction uses `monology/pile-uncopyrighted` streamed from HuggingFace.
+  Requires `zstandard` for decompression. Default slice: 50k tokens for dev.
+- Training loop is model-agnostic via `ActivationLoader` protocol — switching models
+  only requires a new loader, not changes to `clt/train.py`.

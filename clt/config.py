@@ -17,7 +17,7 @@ class CLTConfig:
     n_features: int        # CLT features per layer
     jumprelu_threshold: float = 0.03    # Initial JumpReLU threshold θ (learned)
     jumprelu_bandwidth: float = 0.1    # STE bandwidth; must be ~same order as pre-activation scale
-    sparsity_coeff: float = 2e-4       # λ: weight on sparsity loss
+    sparsity_coeff: float = 1e-2       # λ: weight on sparsity loss (2e-4 too weak — see training diagnostics)
     sparsity_c: float = 1.0            # c: hyperparameter in sparsity penalty
 
 
