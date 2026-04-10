@@ -15,6 +15,7 @@ dependencies = [
     "beartype>=0.14.1,<0.15.0",
     "matplotlib>=3.8",
     "pandas>=2.2",
+    "h5py>=3.10",
 ]
 
 [project.optional-dependencies]
