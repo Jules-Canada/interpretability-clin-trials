@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from typing import Iterator, Protocol
 
+import numpy as np
 import torch
 from jaxtyping import Float
 from torch import Tensor
@@ -166,15 +167,16 @@ class HDF5ActivationLoader:
             n_tokens = f[f"resid_pre_0"].shape[0]
 
             for _ in range(self.train_cfg.n_steps):
-                # Sample random token positions from the full corpus
+                # Sample unique random token positions from the full corpus.
+                # h5py fancy indexing requires sorted, unique indices.
                 # (batch_size,)
-                idx = torch.randint(0, n_tokens, (batch_size,)).numpy()
+                idx = np.random.choice(n_tokens, size=batch_size, replace=False)
+                idx.sort()
 
                 resid_streams = []
                 mlp_outputs = []
                 for l in range(cfg.n_layers):
-                    # h5py fancy indexing requires sorted indices
-                    sorted_idx = idx[idx.argsort()]
+                    sorted_idx = idx
 
                     # (batch_size, d_model)
                     resid = torch.from_numpy(
