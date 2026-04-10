@@ -116,7 +116,7 @@ def token_batches(
     Concatenates all text into one long token stream, then slices into fixed-length
     sequences. Stops after max_tokens total tokens have been yielded.
     """
-    ds = load_dataset(dataset_name, split=split, streaming=True, trust_remote_code=True)
+    ds = load_dataset(dataset_name, split=split, streaming=True)
 
     token_buffer: list[int] = []
     tokens_yielded = 0
