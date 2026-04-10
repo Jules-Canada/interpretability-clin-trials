@@ -3,24 +3,25 @@
 scripts/extract_activations.py
 
 Extract and cache residual streams and MLP hidden states from a Pythia model.
-Reads text from a HuggingFace dataset, tokenises it, runs the model in batches,
-and writes one .pt file per layer per activation type:
+Streams text from a HuggingFace dataset, tokenises it, runs the model in batches,
+and writes activations to a single HDF5 file:
 
-    {output_dir}/resid_stream_l{l}.pt   — shape (n_tokens, d_model)
-    {output_dir}/mlp_output_l{l}.pt     — shape (n_tokens, d_mlp)
+    {output_path}
+        resid_pre_{l}  — dataset, shape (n_tokens, d_model), float32
+        mlp_post_{l}   — dataset, shape (n_tokens, d_mlp),   float32
 
-These files are the direct input to scripts/train_clt.py.
+The HDF5 file is the direct input to HDF5ActivationLoader and scripts/train_clt.py.
 
-Usage — fast dev run on pythia-70m (~2 min on CPU):
+Usage — dev run on pythia-70m (~2 min on CPU, ~50k tokens):
     python scripts/extract_activations.py \\
         --model_name EleutherAI/pythia-70m \\
-        --output_dir data/activations/pythia-70m \\
-        --max_tokens 200000
+        --output_path data/activations/pythia-70m.h5 \\
+        --max_tokens 50000
 
 Usage — full run on pythia-410m (needs GPU):
     python scripts/extract_activations.py \\
         --model_name EleutherAI/pythia-410m \\
-        --output_dir data/activations/pythia-410m \\
+        --output_path data/activations/pythia-410m.h5 \\
         --max_tokens 5000000 \\
         --batch_size 8
 """
@@ -31,10 +32,12 @@ import argparse
 import time
 from pathlib import Path
 
+import h5py
+import numpy as np
 import torch
 from datasets import load_dataset
-from transformer_lens import HookedTransformer
 from tqdm import tqdm
+from transformer_lens import HookedTransformer
 
 
 # ---------------------------------------------------------------------------
@@ -46,15 +49,15 @@ def parse_args() -> argparse.Namespace:
 
     p.add_argument(
         "--model_name", type=str, default="EleutherAI/pythia-70m",
-        help="HuggingFace model ID. Any Pythia size works: pythia-70m, pythia-160m, pythia-410m, pythia-1b.",
+        help="HuggingFace model ID. pythia-70m for dev; pythia-410m for full runs.",
     )
     p.add_argument(
-        "--output_dir", type=str, default="data/activations/pythia-70m",
-        help="Directory to write .pt files into. Created if it doesn't exist.",
+        "--output_path", type=str, default="data/activations/pythia-70m.h5",
+        help="Path to write the HDF5 output file. Parent directory is created if needed.",
     )
     p.add_argument(
-        "--max_tokens", type=int, default=200_000,
-        help="Total number of tokens to extract. 200k is enough for dev; use 5M+ for a real training run.",
+        "--max_tokens", type=int, default=50_000,
+        help="Total tokens to extract. 50k for dev; 5M+ for a real training run.",
     )
     p.add_argument(
         "--batch_size", type=int, default=4,
@@ -62,27 +65,23 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument(
         "--seq_len", type=int, default=128,
-        help="Tokens per sequence. Longer = more context per sample but more memory.",
+        help="Tokens per sequence.",
     )
     p.add_argument(
-        "--dataset", type=str, default="wikitext",
-        help="HuggingFace dataset name. 'wikitext' for dev; 'monology/pile-uncopyrighted' for full runs.",
+        "--dataset", type=str, default="monology/pile-uncopyrighted",
+        help="HuggingFace dataset name.",
     )
     p.add_argument(
         "--dataset_split", type=str, default="train",
         help="Dataset split to use.",
     )
     p.add_argument(
-        "--dataset_config", type=str, default="wikitext-103-raw-v1",
-        help="Dataset config name, if required (e.g. 'wikitext-103-raw-v1').",
-    )
-    p.add_argument(
         "--model_cache_dir", type=str, default=None,
         help="Optional local directory to cache downloaded model weights.",
     )
     p.add_argument(
-        "--chunk_size", type=int, default=50_000,
-        help="Accumulate this many tokens in memory before flushing to disk. Keeps RAM usage bounded.",
+        "--flush_every", type=int, default=500,
+        help="Flush accumulated activations to HDF5 every N batches.",
     )
     return p.parse_args()
 
@@ -100,145 +99,149 @@ def get_device() -> torch.device:
 
 
 # ---------------------------------------------------------------------------
-# Dataset loading and tokenisation
+# Token stream
 # ---------------------------------------------------------------------------
 
 def token_batches(
     model: HookedTransformer,
     dataset_name: str,
-    dataset_config: str,
     split: str,
     seq_len: int,
     batch_size: int,
     max_tokens: int,
 ):
     """
-    Generator that yields batches of token sequences from a HuggingFace text dataset.
+    Generator that yields (batch_size, seq_len) token tensors from a streaming dataset.
 
-    Concatenates all text into one long stream, then slices into fixed-length
-    sequences of `seq_len` tokens. Yields (batch_size, seq_len) integer tensors.
-
-    Args:
-        model:          loaded HookedTransformer (used for its tokeniser)
-        dataset_name:   HuggingFace dataset identifier
-        dataset_config: dataset config name (can be None)
-        split:          dataset split ('train', 'validation', etc.)
-        seq_len:        tokens per sequence
-        batch_size:     sequences per batch
-        max_tokens:     stop after yielding this many tokens total
+    Concatenates all text into one long token stream, then slices into fixed-length
+    sequences. Stops after max_tokens total tokens have been yielded.
     """
-    ds = load_dataset(dataset_name, dataset_config, split=split, streaming=True)
+    ds = load_dataset(dataset_name, split=split, streaming=True, trust_remote_code=True)
 
     token_buffer: list[int] = []
     tokens_yielded = 0
+    tokens_per_batch = seq_len * batch_size
 
     for example in ds:
         text = example.get("text", "")
         if not text or not text.strip():
             continue
 
-        # Tokenise the text and append to the buffer
+        # (1, n) → list[int]
         ids = model.to_tokens(text, prepend_bos=False).squeeze(0).tolist()
         token_buffer.extend(ids)
 
-        # Slice complete sequences out of the buffer
-        while len(token_buffer) >= seq_len * batch_size:
+        while len(token_buffer) >= tokens_per_batch:
             # (batch_size, seq_len)
-            batch_ids = token_buffer[: seq_len * batch_size]
-            token_buffer = token_buffer[seq_len * batch_size :]
+            batch_ids = token_buffer[:tokens_per_batch]
+            token_buffer = token_buffer[tokens_per_batch:]
 
-            batch_tensor = torch.tensor(batch_ids, dtype=torch.long).view(batch_size, seq_len)
-            yield batch_tensor
+            yield torch.tensor(batch_ids, dtype=torch.long).view(batch_size, seq_len)
 
-            tokens_yielded += seq_len * batch_size
+            tokens_yielded += tokens_per_batch
             if tokens_yielded >= max_tokens:
                 return
 
 
 # ---------------------------------------------------------------------------
-# Activation accumulator
+# HDF5 writer
 # ---------------------------------------------------------------------------
 
-class ActivationAccumulator:
+class HDF5Writer:
     """
-    Collects per-layer residual streams and MLP hidden states in memory,
-    then flushes to disk in chunks to keep RAM usage bounded.
+    Opens an HDF5 file and provides append() to incrementally write activations.
 
-    Files are appended to, so multiple flush() calls build up the final tensors.
+    Uses resizable datasets so we can stream-append without re-loading existing data.
+    Buffers batches in memory and flushes to disk periodically to amortise I/O cost.
+
+    Dataset keys match HDF5ActivationLoader expectations:
+        resid_pre_{l}  — shape (n_tokens, d_model)
+        mlp_post_{l}   — shape (n_tokens, d_mlp)
     """
 
-    def __init__(self, output_dir: Path, n_layers: int):
-        self.output_dir = output_dir
+    def __init__(self, path: str, n_layers: int, d_model: int, d_mlp: int):
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+
         self.n_layers = n_layers
-        output_dir.mkdir(parents=True, exist_ok=True)
+        self.f = h5py.File(path, "w")
 
-        # In-memory buffers: list of tensors to concatenate before flushing
-        # resid_buffers[l]: list of (batch*seq, d_model) tensors
-        self.resid_buffers:  list[list[torch.Tensor]] = [[] for _ in range(n_layers)]
-        # mlp_buffers[l]: list of (batch*seq, d_mlp) tensors
-        self.mlp_buffers:    list[list[torch.Tensor]] = [[] for _ in range(n_layers)]
-        self.tokens_in_buffer = 0
+        # Create resizable datasets — initial size 0, unlimited on axis 0
+        for l in range(n_layers):
+            self.f.create_dataset(
+                f"resid_pre_{l}",
+                shape=(0, d_model),
+                maxshape=(None, d_model),
+                dtype="float32",
+                chunks=(1024, d_model),   # chunk along token axis for efficient random reads
+            )
+            self.f.create_dataset(
+                f"mlp_post_{l}",
+                shape=(0, d_mlp),
+                maxshape=(None, d_mlp),
+                dtype="float32",
+                chunks=(1024, d_mlp),
+            )
 
-    def add(
+        # In-memory buffers — list of numpy arrays per layer, flushed periodically
+        # resid_buffers[l]: list of (batch*seq, d_model) arrays
+        self.resid_buffers: list[list[np.ndarray]] = [[] for _ in range(n_layers)]
+        # mlp_buffers[l]: list of (batch*seq, d_mlp) arrays
+        self.mlp_buffers:   list[list[np.ndarray]] = [[] for _ in range(n_layers)]
+        self.tokens_buffered = 0
+
+    def append(
         self,
         resid_streams: list[torch.Tensor],
         mlp_outputs: list[torch.Tensor],
     ) -> None:
         """
-        Add one batch of activations to the in-memory buffers.
+        Buffer one batch of activations.
 
         Args:
-            resid_streams: list of length n_layers, each (batch, seq, d_model)
-            mlp_outputs:   list of length n_layers, each (batch, seq, d_mlp)
+            resid_streams: list[n_layers] of (batch, seq, d_model)
+            mlp_outputs:   list[n_layers] of (batch, seq, d_mlp)
         """
         batch, seq, _ = resid_streams[0].shape
         for l in range(self.n_layers):
-            # Flatten batch and seq into a single token dimension: (batch*seq, d)
-            # (batch, seq, d_model) → (batch*seq, d_model)
-            self.resid_buffers[l].append(resid_streams[l].reshape(batch * seq, -1).cpu())
-            # (batch, seq, d_mlp) → (batch*seq, d_mlp)
-            self.mlp_buffers[l].append(mlp_outputs[l].reshape(batch * seq, -1).cpu())
-        self.tokens_in_buffer += batch * seq
+            # (batch, seq, d_model) → (batch*seq, d_model), moved to CPU
+            self.resid_buffers[l].append(
+                resid_streams[l].reshape(batch * seq, -1).cpu().float().numpy()
+            )
+            self.mlp_buffers[l].append(
+                mlp_outputs[l].reshape(batch * seq, -1).cpu().float().numpy()
+            )
+        self.tokens_buffered += batch * seq
 
     def flush(self) -> None:
-        """
-        Concatenate buffers and append to on-disk .pt files, then clear the buffers.
-        Uses torch.cat + torch.save each flush, building up the full tensors incrementally.
-        """
-        if self.tokens_in_buffer == 0:
+        """Append buffered activations to HDF5 datasets, then clear buffers."""
+        if self.tokens_buffered == 0:
             return
 
         for l in range(self.n_layers):
-            resid_path = self.output_dir / f"resid_stream_l{l}.pt"
-            mlp_path   = self.output_dir / f"mlp_output_l{l}.pt"
-
-            # (chunk_tokens, d_model)
-            new_resid = torch.cat(self.resid_buffers[l], dim=0)
-            # (chunk_tokens, d_mlp)
-            new_mlp   = torch.cat(self.mlp_buffers[l],   dim=0)
-
-            # Append to existing file if it exists, else create
-            if resid_path.exists():
-                existing_resid = torch.load(resid_path, weights_only=True)
-                new_resid = torch.cat([existing_resid, new_resid], dim=0)
-            if mlp_path.exists():
-                existing_mlp = torch.load(mlp_path, weights_only=True)
-                new_mlp = torch.cat([existing_mlp, new_mlp], dim=0)
-
-            torch.save(new_resid, resid_path)
-            torch.save(new_mlp,   mlp_path)
+            for key, buffers in [
+                (f"resid_pre_{l}", self.resid_buffers[l]),
+                (f"mlp_post_{l}",  self.mlp_buffers[l]),
+            ]:
+                # (tokens_buffered, d)
+                chunk = np.concatenate(buffers, axis=0)
+                ds = self.f[key]
+                n_existing = ds.shape[0]
+                ds.resize(n_existing + chunk.shape[0], axis=0)
+                ds[n_existing:] = chunk
 
             self.resid_buffers[l].clear()
             self.mlp_buffers[l].clear()
 
-        self.tokens_in_buffer = 0
+        self.f.flush()
+        self.tokens_buffered = 0
 
-    def total_tokens_on_disk(self) -> int:
-        """Return how many tokens have been flushed to disk so far."""
-        path = self.output_dir / "resid_stream_l0.pt"
-        if not path.exists():
-            return 0
-        return torch.load(path, weights_only=True).shape[0]
+    def total_tokens(self) -> int:
+        """Return how many tokens have been written to disk so far."""
+        return self.f["resid_pre_0"].shape[0]
+
+    def close(self) -> None:
+        self.flush()
+        self.f.close()
 
 
 # ---------------------------------------------------------------------------
@@ -248,14 +251,8 @@ class ActivationAccumulator:
 def extract(args: argparse.Namespace) -> None:
     device = get_device()
     print(f"Device: {device}")
-
-    # Load model
-    # Consume the dataset generator once to trigger the "Loading dataset" print
-    # before the progress bar starts — purely cosmetic ordering fix.
-    print(f"Loading dataset: {args.dataset} ...")
-    # (actual load happens inside token_batches on first iteration)
-
     print(f"Loading model: {args.model_name} ...")
+
     model = HookedTransformer.from_pretrained(
         args.model_name,
         cache_dir=args.model_cache_dir,
@@ -267,26 +264,20 @@ def extract(args: argparse.Namespace) -> None:
     d_model  = model.cfg.d_model
     d_mlp    = model.cfg.d_mlp
     print(f"Model: {n_layers} layers, d_model={d_model}, d_mlp={d_mlp}")
+    print(f"Dataset: {args.dataset} (streaming)")
+    print(f"Target: {args.max_tokens:,} tokens → {args.output_path}")
+    print()
 
-    # Hook names to extract
+    # Hook names to extract — only cache what we need to save memory
     resid_hooks = [f"blocks.{l}.hook_resid_pre" for l in range(n_layers)]
     mlp_hooks   = [f"blocks.{l}.mlp.hook_post"  for l in range(n_layers)]
-    all_hooks   = resid_hooks + mlp_hooks
+    all_hooks   = set(resid_hooks + mlp_hooks)
 
-    output_dir = Path(args.output_dir)
-    accumulator = ActivationAccumulator(output_dir, n_layers)
-
-    # Remove any existing output files so we start fresh
-    for l in range(n_layers):
-        for path in [output_dir / f"resid_stream_l{l}.pt", output_dir / f"mlp_output_l{l}.pt"]:
-            if path.exists():
-                path.unlink()
-                print(f"Removed existing file: {path}")
+    writer = HDF5Writer(args.output_path, n_layers, d_model, d_mlp)
 
     batches = token_batches(
         model=model,
         dataset_name=args.dataset,
-        dataset_config=args.dataset_config if args.dataset_config else None,
         split=args.dataset_split,
         seq_len=args.seq_len,
         batch_size=args.batch_size,
@@ -295,11 +286,10 @@ def extract(args: argparse.Namespace) -> None:
 
     tokens_processed = 0
     t_start = time.time()
-    n_batches = args.max_tokens // (args.batch_size * args.seq_len)
 
     with tqdm(total=args.max_tokens, unit="tok", desc="Extracting") as pbar:
-        for batch_tokens in batches:
-            # (batch_size, seq_len) → move to device
+        for batch_idx, batch_tokens in enumerate(batches):
+            # (batch_size, seq_len) → device
             batch_tokens = batch_tokens.to(device)
 
             with torch.no_grad():
@@ -308,41 +298,27 @@ def extract(args: argparse.Namespace) -> None:
                     names_filter=lambda name: name in all_hooks,
                 )
 
-            # Pull activations out of cache
             # resid_streams[l]: (batch, seq, d_model)
             resid_streams = [cache[h] for h in resid_hooks]
             # mlp_outputs[l]: (batch, seq, d_mlp)
             mlp_outputs   = [cache[h] for h in mlp_hooks]
 
-            accumulator.add(resid_streams, mlp_outputs)
+            writer.append(resid_streams, mlp_outputs)
 
             n_new = batch_tokens.numel()
             tokens_processed += n_new
             pbar.update(n_new)
 
-            # Flush to disk periodically to keep RAM bounded
-            if accumulator.tokens_in_buffer >= args.chunk_size:
-                accumulator.flush()
-                pbar.set_postfix({"flushed": f"{accumulator.total_tokens_on_disk():,}"})
+            if (batch_idx + 1) % args.flush_every == 0:
+                writer.flush()
+                pbar.set_postfix({"on_disk": f"{writer.total_tokens():,}"})
 
-    # Final flush
-    accumulator.flush()
+    writer.close()
 
     elapsed = time.time() - t_start
-    total_on_disk = accumulator.total_tokens_on_disk()
-
     print(f"\nDone in {elapsed:.1f}s  ({tokens_processed / elapsed:,.0f} tok/s)")
-    print(f"Tokens on disk: {total_on_disk:,}")
-    print(f"Output directory: {output_dir.resolve()}")
-    print()
-
-    # Print a summary of saved files
-    for l in range(n_layers):
-        r = output_dir / f"resid_stream_l{l}.pt"
-        m = output_dir / f"mlp_output_l{l}.pt"
-        r_shape = tuple(torch.load(r, weights_only=True).shape)
-        m_shape = tuple(torch.load(m, weights_only=True).shape)
-        print(f"  Layer {l}:  resid_stream {r_shape}  |  mlp_output {m_shape}")
+    print(f"Tokens written: {tokens_processed:,}")
+    print(f"Output: {Path(args.output_path).resolve()}")
 
 
 # ---------------------------------------------------------------------------
