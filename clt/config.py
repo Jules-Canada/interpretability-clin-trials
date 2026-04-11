@@ -22,6 +22,15 @@ class CLTConfig:
 
 
 @dataclass
+class AttributionConfig:
+    target_position: int = -1        # Sequence position to trace (default: last token)
+    min_activation: float = 1e-4     # Minimum feature activation to include as a node
+    top_k_nodes: int = 20            # K for node pruning (keep top-K by indirect influence)
+    top_k_edges: int = 50            # K for edge pruning
+    max_path_length: int = 3         # ℓ in B_ℓ = Σ A^i — limits indirect influence depth
+
+
+@dataclass
 class TrainConfig:
     n_steps: int = 50_000          # Total number of gradient steps
     lr: float = 2e-4               # Adam learning rate
