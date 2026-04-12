@@ -35,7 +35,7 @@ import wandb
 from clt.config import CLTConfig, TrainConfig
 from clt.loader import HDF5ActivationLoader
 from clt.model import CrossLayerTranscoder
-from clt.train import train
+from clt.train import find_latest_checkpoint, train
 
 
 def _device() -> torch.device:
@@ -79,6 +79,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--wandb_group",   type=str, default="",               help="W&B run group (e.g. 'pythia-410m')")
     p.add_argument("--log_every",     type=int, default=50,               help="Log metrics every N steps")
 
+    # Resume
+    p.add_argument("--resume",      action="store_true",  help="Resume from latest checkpoint in checkpoint_dir")
+    p.add_argument("--resume_from", type=str, default=None, help="Resume from a specific checkpoint file path")
+
     return p.parse_args()
 
 
@@ -117,6 +121,15 @@ def main() -> None:
     clt = CrossLayerTranscoder(clt_cfg).to(device)
     loader = HDF5ActivationLoader(args.activation_path, clt_cfg, train_cfg, device)
 
+    # Resolve checkpoint to resume from
+    resume_from = args.resume_from
+    if args.resume and resume_from is None:
+        resume_from = find_latest_checkpoint(args.checkpoint_dir)
+        if resume_from:
+            print(f"Auto-detected checkpoint: {resume_from}")
+        else:
+            print("No checkpoint found — starting fresh")
+
     wandb_run = None
     if train_cfg.use_wandb:
         wandb_run = wandb.init(
@@ -125,7 +138,7 @@ def main() -> None:
             config={**vars(clt_cfg), **vars(train_cfg)},
         )
 
-    train(train_cfg, clt_cfg, clt, loader, wandb_run=wandb_run)
+    train(train_cfg, clt_cfg, clt, loader, wandb_run=wandb_run, resume_from=resume_from)
 
     if wandb_run is not None:
         wandb_run.finish()

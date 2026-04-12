@@ -96,27 +96,63 @@ def train_step(
 # Full training loop
 # ---------------------------------------------------------------------------
 
+def find_latest_checkpoint(checkpoint_dir: str) -> str | None:
+    """
+    Return the path of the most recent step checkpoint in checkpoint_dir, or None.
+
+    Scans for files matching `clt_step{N}.pt` and returns the one with the
+    highest step number. Ignores `clt_final.pt` — that marks a completed run.
+    """
+    import glob
+    import re
+
+    pattern = os.path.join(checkpoint_dir, "clt_step*.pt")
+    candidates = glob.glob(pattern)
+    if not candidates:
+        return None
+
+    def step_number(path: str) -> int:
+        m = re.search(r"clt_step(\d+)\.pt$", path)
+        return int(m.group(1)) if m else -1
+
+    return max(candidates, key=step_number)
+
+
 def train(
     train_cfg: TrainConfig,
     clt_cfg: CLTConfig,
     clt: CrossLayerTranscoder,
     loader: ActivationLoader,
     wandb_run=None,
+    resume_from: str | None = None,
 ) -> None:
     """
-    Train the CLT for train_cfg.n_steps steps.
+    Train the CLT for train_cfg.n_steps steps, optionally resuming from a checkpoint.
 
     Args:
-        train_cfg:  TrainConfig (lr, n_steps, log_every, save_every, etc.)
-        clt_cfg:    CLTConfig (used for checkpoint metadata only).
-        clt:        CrossLayerTranscoder to train (modified in place).
-        loader:     Any ActivationLoader — yields (resid_streams, mlp_outputs).
-        wandb_run:  Optional active wandb run. If None, metrics are printed only.
+        train_cfg:    TrainConfig (lr, n_steps, log_every, save_every, etc.)
+        clt_cfg:      CLTConfig (used for checkpoint metadata only).
+        clt:          CrossLayerTranscoder to train (modified in place).
+        loader:       Any ActivationLoader — yields (resid_streams, mlp_outputs).
+        wandb_run:    Optional active wandb run. If None, metrics are printed only.
+        resume_from:  Path to a checkpoint file to resume from. If None, starts fresh.
+                      Use find_latest_checkpoint() to auto-detect the latest checkpoint.
     """
     optimizer = torch.optim.Adam(clt.parameters(), lr=train_cfg.lr)
     os.makedirs(train_cfg.checkpoint_dir, exist_ok=True)
 
-    for step, (resid_batch, mlp_batch) in enumerate(loader):
+    start_step = 0
+    if resume_from is not None:
+        ckpt = torch.load(resume_from, map_location=next(clt.parameters()).device, weights_only=True)
+        clt.load_state_dict(ckpt["model_state_dict"])
+        optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+        start_step = ckpt["step"] + 1
+        print(f"Resumed from {resume_from} (step {ckpt['step']})")
+
+    for step, (resid_batch, mlp_batch) in enumerate(loader, start=start_step):
+        if step >= train_cfg.n_steps:
+            break
+
         metrics = train_step(clt, optimizer, resid_batch, mlp_batch)
 
         if step % train_cfg.log_every == 0:
