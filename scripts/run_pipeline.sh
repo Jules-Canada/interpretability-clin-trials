@@ -73,7 +73,7 @@ python scripts/train_clt.py \
     --n_layers 24 \
     --d_model 1024 \
     --d_mlp 4096 \
-    --n_features 4096 \
+    --n_features 512 \
     --sparsity_coeff 1e-2 \
     --lr 2e-4 \
     --batch_size 512 \
