@@ -20,6 +20,7 @@ Usage:
 
 from __future__ import annotations
 
+import itertools
 import os
 from typing import TYPE_CHECKING
 
@@ -149,10 +150,19 @@ def train(
         start_step = ckpt["step"] + 1
         print(f"Resumed from {resume_from} (step {ckpt['step']})")
 
-    for step, (resid_batch, mlp_batch) in enumerate(loader, start=start_step):
-        if step >= train_cfg.n_steps:
-            break
+    if start_step >= train_cfg.n_steps:
+        print(f"Already trained to {start_step} steps — nothing to do")
+        return
 
+    # islice limits consumption to exactly (n_steps - start_step) batches from the
+    # loader, regardless of how many items the loader would otherwise yield.
+    # This means the loop always ends with step = n_steps - 1, and the final
+    # checkpoint is always labeled with the last actually-trained step.
+    remaining = train_cfg.n_steps - start_step
+    step = start_step - 1  # guard: defined even if remaining == 0
+    for step, (resid_batch, mlp_batch) in enumerate(
+        itertools.islice(loader, remaining), start=start_step
+    ):
         metrics = train_step(clt, optimizer, resid_batch, mlp_batch)
 
         if step % train_cfg.log_every == 0:
@@ -161,7 +171,7 @@ def train(
         if step % train_cfg.save_every == 0 and step > 0:
             _save_checkpoint(clt, optimizer, step, train_cfg)
 
-    # Always save final checkpoint
+    # step is always the last actually-trained step
     _save_checkpoint(clt, optimizer, step, train_cfg, tag="final")
 
 

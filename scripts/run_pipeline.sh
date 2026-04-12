@@ -62,9 +62,9 @@ echo
 echo "--- Step 2: Training CLT on Pythia-410m activations ---"
 echo "    Steps: 50,000 | Log every: 100 | Save every: 5,000 | ETA: ~6hrs"
 
-RESUME_FLAG=""
+RESUME_ARGS=()
 if [ "$RESUME" = "--resume" ]; then
-    RESUME_FLAG="--resume"
+    RESUME_ARGS=(--resume)
     echo "    Resuming from latest checkpoint in $CHECKPOINT_DIR"
 fi
 
@@ -82,7 +82,7 @@ python scripts/train_clt.py \
     --save_every 5000 \
     --log_every 100 \
     --wandb_group pythia-410m \
-    $RESUME_FLAG
+    "${RESUME_ARGS[@]}"
 
 echo
 echo "=== Pipeline complete: $(date) ==="
