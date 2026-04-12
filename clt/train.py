@@ -44,20 +44,26 @@ def train_step(
     optimizer: torch.optim.Optimizer,
     resid_batch: list[Float[Tensor, "batch d_model"]],
     mlp_batch: list[Float[Tensor, "batch d_mlp"]],
+    sparsity_ramp: float = 1.0,
 ) -> dict[str, float | list[float]]:
     """
     One forward + backward + optimizer step.
 
     Args:
-        clt:         The CrossLayerTranscoder being trained.
-        optimizer:   Optimizer holding clt.parameters().
-        resid_batch: list[L] of (batch, d_model) — residual stream inputs.
-        mlp_batch:   list[L] of (batch, d_mlp)   — MLP output targets.
+        clt:            The CrossLayerTranscoder being trained.
+        optimizer:      Optimizer holding clt.parameters().
+        resid_batch:    list[L] of (batch, d_model) — residual stream inputs.
+        mlp_batch:      list[L] of (batch, d_mlp)   — MLP output targets.
+        sparsity_ramp:  Multiplicative scale on the sparsity loss in [0, 1].
+                        Use 1.0 (default) for no schedule (e.g. tests).
+                        The training loop passes step / (n_steps - 1) to linearly
+                        ramp λ from 0 to its final value over training (paper §3.2).
 
     Returns dict with keys:
         total           float      — combined loss value
         reconstruction  float      — MSE summed over layers
-        sparsity        float      — sparsity penalty
+        sparsity        float      — sparsity penalty (after ramp scaling)
+        sparsity_ramp   float      — the ramp factor used this step
         per_layer_mse   list[L]    — per-layer reconstruction MSE
         per_layer_l0    list[L]    — per-layer average active features per token
     """
@@ -76,7 +82,7 @@ def train_step(
     ]
 
     rec_loss = sum(per_layer_mse)
-    spar_loss = clt.sparsity_loss(feature_acts)
+    spar_loss = clt.sparsity_loss(feature_acts) * sparsity_ramp
     total = rec_loss + spar_loss
 
     total.backward()
@@ -87,6 +93,7 @@ def train_step(
         "total": total.item(),
         "reconstruction": rec_loss.item(),
         "sparsity": spar_loss.item(),
+        "sparsity_ramp": sparsity_ramp,
         # list[float] — one value per layer
         "per_layer_mse": [m.item() for m in per_layer_mse],
         "per_layer_l0": clt.l0_per_layer(feature_acts),
@@ -163,7 +170,10 @@ def train(
     for step, (resid_batch, mlp_batch) in enumerate(
         itertools.islice(loader, remaining), start=start_step
     ):
-        metrics = train_step(clt, optimizer, resid_batch, mlp_batch)
+        # Linear ramp: λ_eff = λ * (step / (n_steps - 1)), clamped to [0, 1].
+        # Matches paper §3.2: sparsity coefficient grows from 0 to λ over training.
+        ramp = min(1.0, step / max(train_cfg.n_steps - 1, 1))
+        metrics = train_step(clt, optimizer, resid_batch, mlp_batch, sparsity_ramp=ramp)
 
         if step % train_cfg.log_every == 0:
             _log(step, metrics, wandb_run)
@@ -185,6 +195,7 @@ def _log(step: int, metrics: dict, wandb_run) -> None:
         "loss/total": metrics["total"],
         "loss/reconstruction": metrics["reconstruction"],
         "loss/sparsity": metrics["sparsity"],
+        "train/sparsity_ramp": metrics["sparsity_ramp"],
     }
     for l, mse in enumerate(metrics["per_layer_mse"]):
         flat[f"layer/{l}/mse"] = mse

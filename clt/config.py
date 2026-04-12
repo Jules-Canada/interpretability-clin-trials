@@ -16,9 +16,10 @@ class CLTConfig:
     d_mlp: int             # MLP output dimension (often 4 * d_model)
     n_features: int        # CLT features per layer
     jumprelu_threshold: float = 0.03    # Initial JumpReLU threshold θ (learned)
-    jumprelu_bandwidth: float = 0.1    # STE bandwidth; must be ~same order as pre-activation scale
+    jumprelu_bandwidth: float = 1.0    # STE bandwidth; paper uses 1.0 (§ Building an Interpretable Replacement Model)
     sparsity_coeff: float = 1e-2       # λ: weight on sparsity loss (2e-4 too weak — see training diagnostics)
     sparsity_c: float = 1.0            # c: hyperparameter in sparsity penalty
+    normalize_activations: bool = True  # Divide residual/MLP by per-layer RMS before CLT (paper §3.2)
 
 
 @dataclass

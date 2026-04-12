@@ -85,12 +85,15 @@ class CrossLayerTranscoder(nn.Module):
     """
 
     @staticmethod
-    def _zero_decoder(in_features: int, out_features: int) -> nn.Linear:
-        """Linear layer with zero-initialized weights. Reconstruction starts at
-        zero so gradient descent builds features up from a stable baseline rather
-        than first having to cancel random decoder noise."""
+    def _init_decoder(in_features: int, out_features: int, n_layers: int, d_model: int) -> nn.Linear:
+        """
+        Linear layer initialized to U(-bound, bound) where
+          bound = 1 / sqrt(n_layers * d_model)
+        following the paper (§ Building an Interpretable Replacement Model).
+        """
+        bound = 1.0 / math.sqrt(n_layers * d_model)
         layer = nn.Linear(in_features, out_features, bias=False)
-        nn.init.zeros_(layer.weight)
+        nn.init.uniform_(layer.weight, -bound, bound)
         return layer
 
     def __init__(self, cfg: CLTConfig):
@@ -101,8 +104,10 @@ class CrossLayerTranscoder(nn.Module):
 
         # Encoders: one per layer
         # W_enc[l]: (d_model,) → (n_features,)
+        # Initialized to U(-1/sqrt(n_features), 1/sqrt(n_features)) per paper.
+        enc_bound = 1.0 / math.sqrt(F)
         self.encoders = nn.ModuleList([
-            nn.Linear(cfg.d_model, F, bias=True)
+            self._make_encoder(cfg.d_model, F, enc_bound)
             for _ in range(L)
         ])
 
@@ -115,15 +120,22 @@ class CrossLayerTranscoder(nn.Module):
         # Decoders: W_dec[l'][l] maps features at l' to MLP output at l
         # Only defined for l >= l', so we use a nested ModuleList
         # self.decoders[l_source][l_target - l_source]: Linear(n_features -> d_mlp)
-        # Zero-init: reconstruction starts at zero so gradient descent isn't
-        # fighting random decoder noise, which would be worse than null prediction.
+        # Initialized to U(-1/sqrt(n_layers*d_model), 1/sqrt(n_layers*d_model)) per paper.
         self.decoders = nn.ModuleList([
             nn.ModuleList([
-                self._zero_decoder(F, cfg.d_mlp)
+                self._init_decoder(F, cfg.d_mlp, L, cfg.d_model)
                 for _ in range(L - l_source)   # targets: l_source, l_source+1, ..., L-1
             ])
             for l_source in range(L)
         ])
+
+    @staticmethod
+    def _make_encoder(d_model: int, n_features: int, bound: float) -> nn.Linear:
+        """Linear encoder with bias, initialized to U(-bound, bound)."""
+        layer = nn.Linear(d_model, n_features, bias=True)
+        nn.init.uniform_(layer.weight, -bound, bound)
+        nn.init.zeros_(layer.bias)
+        return layer
 
     def encode(
         self,
@@ -218,14 +230,42 @@ class CrossLayerTranscoder(nn.Module):
         feature_acts: list[Float[Tensor, "batch seq n_features"]],
     ) -> Float[Tensor, ""]:
         """
-        Smooth L1 sparsity penalty across all layers and features.
+        Sparsity penalty following the paper exactly (§ Building an Interpretable
+        Replacement Model):
 
-        L_sparsity = λ * sum_{l,i} a_{l,i} / (|a_{l,i}| + c)
+            L_sparsity = λ Σ_ℓ Σ_i tanh(c · ‖W_dec_i^ℓ‖ · a_i^ℓ)
+
+        where ‖W_dec_i^ℓ‖ is the L2 norm of the concatenation of all decoder
+        vectors for feature i at source layer ℓ (one vector per target layer).
+
+        Weighting by decoder norm means features with larger downstream influence
+        are penalised more heavily, not just features that happen to be active.
+        With zero-init decoders the norm starts at zero so there is no sparsity
+        pressure at step 0; it grows naturally as decoders are learned.
         """
         cfg = self.cfg
         loss = torch.tensor(0.0, device=feature_acts[0].device)
-        for a in feature_acts:
-            loss = loss + (a.abs() / (a.abs() + cfg.sparsity_c)).mean()
+
+        for l_source in range(cfg.n_layers):
+            # Concatenate decoder weight matrices for all target layers into one
+            # tall matrix: (n_targets * d_mlp, n_features).
+            # Column i of this matrix is the concatenated decoder vector for
+            # feature i at source layer l_source.
+            # (n_targets * d_mlp, n_features)
+            all_dec_weights = torch.cat(
+                [dec.weight for dec in self.decoders[l_source]], dim=0
+            )
+            # (n_features,) — L2 norm of each feature's concatenated decoder
+            dec_norm = all_dec_weights.norm(dim=0)
+
+            # a: (batch, seq, n_features) — broadcasts with (n_features,)
+            a = feature_acts[l_source]
+            scaled = cfg.sparsity_c * dec_norm * a
+            # Sum over features (Σ_i), mean over batch/seq (minibatch normalization)
+            # This keeps the sparsity coefficient scale-invariant w.r.t. batch size,
+            # consistent with reconstruction loss which also uses .mean() over batch/seq.
+            loss = loss + torch.tanh(scaled).sum(dim=-1).mean()
+
         return cfg.sparsity_coeff * loss
 
     def loss(
