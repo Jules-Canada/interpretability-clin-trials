@@ -188,7 +188,7 @@ When labeling features found in attribution graphs, record labels in
 - [x] CLT training loop implemented
 - [ ] Activations extracted from Pythia-410m  ← extracted pythia-70m for dev; 410m needs GPU
 - [ ] CLT trained (reconstruction MSE < threshold)
-- [ ] Attribution graph construction implemented
+- [x] Attribution graph construction implemented
 - [ ] Frontend rendering a graph
 - [ ] Clinical trial prompts loaded
 - [ ] Feature labeling begun
@@ -201,3 +201,10 @@ When labeling features found in attribution graphs, record labels in
   Requires `zstandard` for decompression. Default slice: 50k tokens for dev.
 - Training loop is model-agnostic via `ActivationLoader` protocol — switching models
   only requires a new loader, not changes to `clt/train.py`.
+- CLT must always be moved to the same device as the model it's paired with.
+  Call `clt.to(next(model.parameters()).device)` at entry points (`build_attribution_graph`,
+  test fixtures). Never scatter `.to(device)` calls on individual tensors inside helpers.
+- Attribution graph completeness (sum of edges to logit / logit value) is ~0.5–0.8 with an
+  untrained CLT (large reconstruction errors dominate). Expect 0.85–0.99 after training.
+- `frontend/` is tracked as a gitlink (embedded repo), not a proper submodule. Contents won't
+  clone with the outer repo. Convert with `git submodule add` if needed.
