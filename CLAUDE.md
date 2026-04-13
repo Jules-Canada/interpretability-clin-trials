@@ -186,8 +186,8 @@ When labeling features found in attribution graphs, record labels in
 - [x] Repo scaffolded
 - [x] Toy model test passing
 - [x] CLT training loop implemented
-- [ ] Activations extracted from Pythia-410m  ← extracted pythia-70m for dev; 410m needs GPU
-- [ ] CLT trained (reconstruction MSE < threshold)
+- [x] Activations extracted from Pythia-410m (5M tokens, Lambda Labs V100)
+- [ ] CLT trained (reconstruction MSE < threshold)  ← in progress on V100, 20k steps
 - [x] Attribution graph construction implemented
 - [ ] Frontend rendering a graph
 - [ ] Clinical trial prompts loaded
@@ -206,5 +206,9 @@ When labeling features found in attribution graphs, record labels in
   test fixtures). Never scatter `.to(device)` calls on individual tensors inside helpers.
 - Attribution graph completeness (sum of edges to logit / logit value) is ~0.5–0.8 with an
   untrained CLT (large reconstruction errors dominate). Expect 0.85–0.99 after training.
+- V100 training speed: ~0.91s/step with batch_size=512, n_features=512, 24 layers. 20k steps ≈ 5hrs.
+  Use A100 for future runs (~3x faster). TODO: add steps/sec timing to `_log()` in `clt/train.py`.
+- HDF5 random sampling caused 0% GPU utilization (512 random seeks per step). Fixed by sampling
+  contiguous blocks instead — critical when chunk size is 1024 tokens.
 - `frontend/` is tracked as a gitlink (embedded repo), not a proper submodule. Contents won't
   clone with the outer repo. Convert with `git submodule add` if needed.
