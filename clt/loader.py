@@ -234,8 +234,9 @@ class HDF5ActivationLoader:
         with h5py.File(self.path, "r") as f:
             n_tokens = f["resid_pre_0"].shape[0]
             sample_size = min(self._SCALE_SAMPLE, n_tokens)
-            idx = np.random.choice(n_tokens, size=sample_size, replace=False)
-            idx.sort()
+            # Contiguous read for speed (avoids random seeks during init)
+            start = np.random.randint(0, n_tokens - sample_size)
+            idx = slice(start, start + sample_size)
 
             resid_list = [
                 torch.from_numpy(f[f"resid_pre_{l}"][idx].astype("float32"))
@@ -264,11 +265,11 @@ class HDF5ActivationLoader:
             n_tokens = f[f"resid_pre_0"].shape[0]
 
             for _ in range(self.train_cfg.n_steps):
-                # Sample unique random token positions from the full corpus.
-                # h5py fancy indexing requires sorted, unique indices.
-                # (batch_size,)
-                idx = np.random.choice(n_tokens, size=batch_size, replace=False)
-                idx.sort()
+                # Sample a random contiguous block of batch_size tokens.
+                # One sequential read per layer vs. batch_size random seeks —
+                # critical for performance when HDF5 chunks are ~1024 tokens.
+                start = np.random.randint(0, n_tokens - batch_size)
+                idx = slice(start, start + batch_size)
 
                 resid_streams = []
                 mlp_outputs = []
