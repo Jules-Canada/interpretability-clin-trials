@@ -286,10 +286,13 @@ def build_attribution_graph(
     # -----------------------------------------------------------------------
     # (1, seq, d_model)
     token_embed = cache["hook_embed"]
-    # (1, seq, d_model)
-    pos_embed = cache["hook_pos_embed"]
-    # (1, seq, d_model)
-    x_embed = (token_embed + pos_embed).to(model_device)
+    # Pythia uses RoPE (no absolute position embedding in the residual stream).
+    # For models with learned position embeddings, add hook_pos_embed.
+    if "hook_pos_embed" in cache.cache_dict:
+        pos_embed = cache["hook_pos_embed"]
+        x_embed = (token_embed + pos_embed).to(model_device)
+    else:
+        x_embed = token_embed.to(model_device)
 
     seq_len = tokens.shape[1]
     if target_position < 0:
@@ -341,23 +344,31 @@ def build_attribution_graph(
 
     # -----------------------------------------------------------------------
     # Feature nodes + edges
+    # Vectorized: for each (l_s, pos, l_t), compute all active→active edge
+    # weights in one batch matmul rather than looping over feature pairs.
+    # Math is identical to the paper formula; this is a performance optimization.
     # -----------------------------------------------------------------------
+    # Pre-move tensors to CPU for vectorized ops (avoids repeated MPS↔CPU transfers)
+    transfer_cpu = {k: v.cpu() for k, v in transfer.items()}
+    W_enc_cpu = [w.cpu() for w in W_enc]
+    v_cpu = v.cpu()
+
     for l_s in range(L):
-        # feature_acts[l_s]: (1, seq, F) — activations at source layer
-        # We trace from every position, but focus on target_position for the logit node
         for pos in range(seq_len):
             # (F,)
-            a = feature_acts[l_s][0, pos].detach()
-
-            # Active features at this (layer, position)
+            a = feature_acts[l_s][0, pos].detach().cpu()
             active_mask = a.abs() > cfg.min_activation
             active_indices = active_mask.nonzero(as_tuple=False).squeeze(-1)
+            if active_indices.numel() == 0:
+                continue
+            active_idx_list = active_indices.tolist()
+            # (n_active_s,)
+            a_vals = a[active_indices]
 
-            for f_s in active_indices.tolist():
+            # -- Feature nodes --
+            for f_s in active_idx_list:
                 a_sf = a[f_s].item()
                 node_id = f"feat_l{l_s}_p{pos}_f{f_s}"
-
-                # -- Feature node --
                 graph.nodes.append({
                     "id": node_id,
                     "type": "feature",
@@ -370,10 +381,8 @@ def build_attribution_graph(
 
                 # -- Feature → logit edge (only from target position) --
                 if pos == target_position:
-                    # transfer[(l_s, L)][f_s, :]: (d_model,)
-                    T_vec = transfer[(l_s, L)][f_s]
-                    # scalar: a_sf × T_vec · v
-                    weight = a_sf * (T_vec @ v).item()
+                    T_vec = transfer_cpu[(l_s, L)][f_s]
+                    weight = a_sf * (T_vec @ v_cpu).item()
                     graph.edges.append({
                         "source": node_id,
                         "target": logit_node_id,
@@ -381,34 +390,39 @@ def build_attribution_graph(
                     })
                     total_incoming_to_logit += weight
 
-                # -- Feature → feature edges --
-                # Source feature (l_s, pos, f_s) → target features at later layers
-                for l_t in range(l_s + 1, L):
-                    if (l_s, l_t) not in transfer:
-                        continue
+            # -- Feature → feature edges (vectorized over source × target features) --
+            for l_t in range(l_s + 1, L):
+                if (l_s, l_t) not in transfer_cpu:
+                    continue
 
-                    # transfer[(l_s, l_t)][f_s, :]: (d_model,)
-                    T_vec = transfer[(l_s, l_t)][f_s]
+                a_t = feature_acts[l_t][0, pos].detach().cpu()
+                active_t_mask = a_t.abs() > cfg.min_activation
+                active_t_indices = active_t_mask.nonzero(as_tuple=False).squeeze(-1)
+                if active_t_indices.numel() == 0:
+                    continue
 
-                    # W_enc[l_t]: (F, d_model) — project transfer into encoder space
-                    # (F,) = (F, d_model) @ (d_model,)
-                    enc_projections = W_enc[l_t] @ T_vec
+                # (n_active_s, d_model)
+                T_rows = transfer_cpu[(l_s, l_t)][active_indices]
+                # (n_active_t, d_model)
+                W_rows = W_enc_cpu[l_t][active_t_indices]
 
-                    # For each active target feature at the same position
-                    a_t = feature_acts[l_t][0, pos].detach()
-                    active_t = (a_t.abs() > cfg.min_activation).nonzero(as_tuple=False).squeeze(-1)
+                # weights[i,j] = a_vals[i] * (T_rows[i] · W_rows[j])
+                # (n_active_s, n_active_t)
+                enc_proj = T_rows @ W_rows.T
+                weights_mat = a_vals.unsqueeze(1) * enc_proj
 
-                    for f_t in active_t.tolist():
-                        # scalar: a_sf × enc_projection[f_t]
-                        weight = a_sf * enc_projections[f_t].item()
-                        if abs(weight) < 1e-8:
-                            continue
-                        target_node_id = f"feat_l{l_t}_p{pos}_f{f_t}"
-                        graph.edges.append({
-                            "source": node_id,
-                            "target": target_node_id,
-                            "weight": weight,
-                        })
+                src_ii, tgt_jj = (weights_mat.abs() > 1e-8).nonzero(as_tuple=True)
+                for ii, jj in zip(src_ii.tolist(), tgt_jj.tolist()):
+                    f_s_actual = active_idx_list[ii]
+                    f_t_actual = active_t_indices[jj].item()
+                    weight = weights_mat[ii, jj].item()
+                    src_node_id = f"feat_l{l_s}_p{pos}_f{f_s_actual}"
+                    target_node_id = f"feat_l{l_t}_p{pos}_f{f_t_actual}"
+                    graph.edges.append({
+                        "source": src_node_id,
+                        "target": target_node_id,
+                        "weight": weight,
+                    })
 
     # -----------------------------------------------------------------------
     # Embedding nodes + edges
@@ -428,13 +442,13 @@ def build_attribution_graph(
             "label": f'embed("{graph.tokens[pos]}"@{pos})',
         })
 
-        # Embedding → feature edges at every layer
+        # Embedding → feature edges at every layer (vectorized)
+        embed_vec_cpu = embed_vec.cpu()
         for l in range(L):
-            # W_enc[l]: (F, d_model)
             # (F,) = (F, d_model) @ (d_model,)
-            contributions = W_enc[l] @ embed_vec
+            contributions = W_enc_cpu[l] @ embed_vec_cpu
 
-            a_l = feature_acts[l][0, pos].detach()
+            a_l = feature_acts[l][0, pos].detach().cpu()
             active = (a_l.abs() > cfg.min_activation).nonzero(as_tuple=False).squeeze(-1)
 
             for f in active.tolist():
