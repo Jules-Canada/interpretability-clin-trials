@@ -249,9 +249,22 @@ def build_attribution_graph(
         for l in range(L)
     ]
 
+    # Normalize residual streams if CLT was trained with normalization.
+    # Scales are estimated from the prompt's own activations (per-layer RMS).
+    # This is an approximation of the dataset-level normalization used during
+    # training; good enough for inference on reasonable-length prompts.
+    if clt.cfg.normalize_activations:
+        resid_streams_enc = []
+        for r in resid_streams:
+            # r: (1, seq, d_model)
+            rms = r.float().pow(2).mean().sqrt().clamp(min=1e-8)
+            resid_streams_enc.append(r / rms)
+    else:
+        resid_streams_enc = resid_streams
+
     with torch.no_grad():
         # feature_acts[l]: (1, seq, n_features)
-        feature_acts = clt.encode(resid_streams)
+        feature_acts = clt.encode(resid_streams_enc)
 
         # mlp_recons[l]: (1, seq, d_mlp)
         mlp_recons = clt.decode(feature_acts)
