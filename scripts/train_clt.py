@@ -57,8 +57,8 @@ def parse_args() -> argparse.Namespace:
 
     # CLT hyperparameters
     p.add_argument("--jumprelu_threshold", type=float, default=0.03,  help="Initial JumpReLU threshold θ")
-    p.add_argument("--jumprelu_bandwidth", type=float, default=0.1,   help="STE bandwidth for JumpReLU gradient")
-    p.add_argument("--sparsity_coeff",     type=float, default=2e-4,  help="λ: weight on sparsity loss")
+    p.add_argument("--jumprelu_bandwidth", type=float, default=1.0,   help="STE bandwidth for JumpReLU gradient")
+    p.add_argument("--sparsity_coeff",     type=float, default=1e-2,  help="λ: weight on sparsity loss")
     p.add_argument("--sparsity_c",         type=float, default=1.0,   help="c: denominator offset in sparsity penalty")
 
     # Data
