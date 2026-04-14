@@ -142,6 +142,7 @@ def to_frontend_json(
         },
         "nodes": nodes_out,
         "links": links_out,
+        "qParams": {},
     }
 
     return data
