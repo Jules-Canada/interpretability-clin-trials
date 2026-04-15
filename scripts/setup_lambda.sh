@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # scripts/setup_lambda.sh
 #
-# One-time environment setup on a fresh Lambda Labs instance.
+# One-time environment setup on a fresh Lambda Labs A100 instance.
 # Run this once after SSH-ing in and cloning the repo.
 #
 # Usage:
-#   git clone https://github.com/Jules-Canada/ignis.git
+#   git clone https://github.com/Jules-Canada/interpretability-clin-trials.git ignis
 #   cd ignis
 #   bash scripts/setup_lambda.sh
 
@@ -27,7 +27,7 @@ source .venv/bin/activate
 # ---------------------------------------------------------------------------
 # 2. Install PyTorch with CUDA support
 # ---------------------------------------------------------------------------
-# Lambda Labs instances run CUDA 12.x; install the matching torch build.
+# A100 supports CUDA 12.x natively — use cu121 build.
 echo "--- Installing PyTorch (CUDA 12.1) ---"
 pip install --quiet --upgrade pip
 pip install --quiet torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
@@ -36,14 +36,15 @@ pip install --quiet torch torchvision torchaudio --index-url https://download.py
 # 3. Install project dependencies
 # ---------------------------------------------------------------------------
 echo "--- Installing ignis and dependencies ---"
-pip install --quiet -e ".[dev]"
+pip install --quiet -e ".[train]"
 
 # ---------------------------------------------------------------------------
 # 4. Create data directories
 # ---------------------------------------------------------------------------
 echo "--- Creating data directories ---"
 mkdir -p data/activations
-mkdir -p checkpoints
+mkdir -p checkpoints/pythia-410m-4096
+mkdir -p frontend/graph_data
 
 # ---------------------------------------------------------------------------
 # 5. Verify GPU is visible to PyTorch
