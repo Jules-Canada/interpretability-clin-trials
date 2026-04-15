@@ -1,0 +1,14 @@
+[
+  {
+    "id": "france_capital",
+    "prompt": "The capital of France is the city of",
+    "target_token": " Paris",
+    "domain_tags": ["validation", "geography"]
+  },
+  {
+    "id": "water_boil",
+    "prompt": "At one hundred degrees, water begins to",
+    "target_token": " boil",
+    "domain_tags": ["validation", "science"]
+  }
+]

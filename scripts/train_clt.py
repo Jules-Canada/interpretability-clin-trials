@@ -28,6 +28,11 @@ Usage — full run on pythia-410m with W&B:
 from __future__ import annotations
 
 import argparse
+import sys
+from pathlib import Path
+
+# Ensure repo root is on sys.path when running as a script
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import torch
 import wandb
