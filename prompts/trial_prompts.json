@@ -1,14 +1,101 @@
 [
   {
+    "id": "eligible_inclusion",
+    "prompt": "The patient meets all inclusion criteria and is therefore",
+    "target_token": " eligible",
+    "target_token_idx": 13410,
+    "domain_tags": ["eligibility"]
+  },
+  {
+    "id": "ineligible_ecog",
+    "prompt": "With an ECOG performance status of 3, the patient is",
+    "target_token": " excluded",
+    "target_token_idx": 10432,
+    "domain_tags": ["eligibility", "performance_status"],
+    "notes": "ineligible is multi-token ([' in', 'eligible']); using excluded"
+  },
+  {
+    "id": "eligible_age",
+    "prompt": "The patient is 45 years old and meets the age requirement, making them",
+    "target_token": " eligible",
+    "target_token_idx": 13410,
+    "domain_tags": ["eligibility"]
+  },
+  {
+    "id": "ineligible_prior_therapy",
+    "prompt": "The patient has received more than two prior lines of therapy and is therefore",
+    "target_token": " excluded",
+    "target_token_idx": 10432,
+    "domain_tags": ["eligibility", "prior_therapy"]
+  },
+  {
+    "id": "dose_reduction_neutropenia",
+    "prompt": "Grade 3 neutropenia was observed, so the dose was",
+    "target_token": " reduced",
+    "target_token_idx": 3777,
+    "domain_tags": ["adverse_events", "hematologic"]
+  },
+  {
+    "id": "hepatotoxicity_toxic",
+    "prompt": "Liver enzyme levels were three times the upper limit of normal, suggesting the drug is",
+    "target_token": " toxic",
+    "target_token_idx": 12825,
+    "domain_tags": ["adverse_events", "hepatotoxicity"]
+  },
+  {
+    "id": "treatment_discontinued",
+    "prompt": "Due to severe adverse events, treatment was",
+    "target_token": " discontinued",
+    "target_token_idx": 35985,
+    "domain_tags": ["adverse_events"]
+  },
+  {
+    "id": "ae_grade_severe",
+    "prompt": "The patient developed shortness of breath and chest pain, which was graded as",
+    "target_token": " severe",
+    "target_token_idx": 5460,
+    "domain_tags": ["adverse_events", "cardiotoxicity"]
+  },
+  {
+    "id": "partial_response",
+    "prompt": "The tumor decreased in size by 35%, indicating a partial",
+    "target_token": " response",
+    "target_token_idx": 2380,
+    "domain_tags": ["endpoints", "response"]
+  },
+  {
+    "id": "progressive_disease",
+    "prompt": "New lesions were detected on imaging, consistent with progressive",
+    "target_token": " disease",
+    "target_token_idx": 2728,
+    "domain_tags": ["endpoints", "progression"]
+  },
+  {
+    "id": "endpoint_survival",
+    "prompt": "Patients in the treatment arm showed improved overall",
+    "target_token": " survival",
+    "target_token_idx": 5788,
+    "domain_tags": ["endpoints", "OS"]
+  },
+  {
+    "id": "trial_met_endpoint",
+    "prompt": "The primary endpoint of progression-free survival was",
+    "target_token": " met",
+    "target_token_idx": 1313,
+    "domain_tags": ["endpoints", "PFS"]
+  },
+  {
     "id": "france_capital",
     "prompt": "The capital of France is the city of",
     "target_token": " Paris",
+    "target_token_idx": 7785,
     "domain_tags": ["validation", "geography"]
   },
   {
     "id": "water_boil",
     "prompt": "At one hundred degrees, water begins to",
     "target_token": " boil",
+    "target_token_idx": 22149,
     "domain_tags": ["validation", "science"]
   }
 ]
