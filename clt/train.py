@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import itertools
 import os
+import time
 from typing import TYPE_CHECKING
 
 import torch
@@ -167,6 +168,8 @@ def train(
     # checkpoint is always labeled with the last actually-trained step.
     remaining = train_cfg.n_steps - start_step
     step = start_step - 1  # guard: defined even if remaining == 0
+    t_start = time.time()
+    t_last_log = t_start
     for step, (resid_batch, mlp_batch) in enumerate(
         itertools.islice(loader, remaining), start=start_step
     ):
@@ -176,7 +179,17 @@ def train(
         metrics = train_step(clt, optimizer, resid_batch, mlp_batch, sparsity_ramp=ramp)
 
         if step % train_cfg.log_every == 0:
-            _log(step, metrics, wandb_run)
+            t_now = time.time()
+            steps_since_log = train_cfg.log_every if step > start_step else 1
+            secs_per_step = (t_now - t_last_log) / steps_since_log
+            steps_remaining = train_cfg.n_steps - step
+            eta_hrs = (steps_remaining * secs_per_step) / 3600
+            elapsed_hrs = (t_now - t_start) / 3600
+            metrics["steps_per_sec"] = 1.0 / secs_per_step if secs_per_step > 0 else 0
+            metrics["eta_hrs"] = eta_hrs
+            metrics["elapsed_hrs"] = elapsed_hrs
+            t_last_log = t_now
+            _log(step, train_cfg.n_steps, metrics, wandb_run)
 
         if step % train_cfg.save_every == 0 and step > 0:
             _save_checkpoint(clt, optimizer, step, train_cfg)
@@ -189,13 +202,16 @@ def train(
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _log(step: int, metrics: dict, wandb_run) -> None:
+def _log(step: int, n_steps: int, metrics: dict, wandb_run) -> None:
     """Log metrics to wandb if available, otherwise print to stdout."""
     flat: dict[str, float] = {
         "loss/total": metrics["total"],
         "loss/reconstruction": metrics["reconstruction"],
         "loss/sparsity": metrics["sparsity"],
         "train/sparsity_ramp": metrics["sparsity_ramp"],
+        "perf/steps_per_sec": metrics.get("steps_per_sec", 0),
+        "perf/eta_hrs": metrics.get("eta_hrs", 0),
+        "perf/elapsed_hrs": metrics.get("elapsed_hrs", 0),
     }
     for l, mse in enumerate(metrics["per_layer_mse"]):
         flat[f"layer/{l}/mse"] = mse
@@ -205,15 +221,24 @@ def _log(step: int, metrics: dict, wandb_run) -> None:
     if wandb_run is not None:
         wandb_run.log(flat, step=step)
 
-    mse_str = ", ".join(f"L{l}={v:.4f}" for l, v in enumerate(metrics["per_layer_mse"]))
-    l0_str  = ", ".join(f"L{l}={v:.1f}"  for l, v in enumerate(metrics["per_layer_l0"]))
+    mse_vals = metrics["per_layer_mse"]
+    l0_vals  = metrics["per_layer_l0"]
+    # Summarise per-layer stats compactly: show mean and range
+    mse_mean = sum(mse_vals) / len(mse_vals)
+    l0_mean  = sum(l0_vals)  / len(l0_vals)
+    eta_hrs  = metrics.get("eta_hrs", 0)
+    sps      = metrics.get("steps_per_sec", 0)
+    elapsed  = metrics.get("elapsed_hrs", 0)
     print(
-        f"step {step:>6d} | "
+        f"step {step:>6d}/{n_steps} | "
         f"total={metrics['total']:.4f} | "
         f"recon={metrics['reconstruction']:.4f} | "
         f"sparsity={metrics['sparsity']:.6f} | "
-        f"mse=[{mse_str}] | "
-        f"l0=[{l0_str}]"
+        f"mse_mean={mse_mean:.4f} | "
+        f"l0_mean={l0_mean:.1f} | "
+        f"{sps:.2f} steps/s | "
+        f"elapsed={elapsed:.2f}h | "
+        f"eta={eta_hrs:.2f}h"
     )
 
 
