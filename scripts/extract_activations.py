@@ -161,6 +161,9 @@ class HDF5Writer:
     Dataset keys match HDF5ActivationLoader expectations:
         resid_pre_{l}  — shape (n_tokens, d_model)
         mlp_post_{l}   — shape (n_tokens, d_mlp)
+        token_ids      — shape (n_tokens,), int32 — vocabulary token IDs
+                         Used by find_top_activations.py to reconstruct token
+                         strings for feature labeling.
     """
 
     def __init__(self, path: str, n_layers: int, d_model: int, d_mlp: int):
@@ -186,17 +189,28 @@ class HDF5Writer:
                 chunks=(1024, d_mlp),
             )
 
+        # Token IDs — needed for feature labeling (reconstruct token strings)
+        self.f.create_dataset(
+            "token_ids",
+            shape=(0,),
+            maxshape=(None,),
+            dtype="int32",
+            chunks=(4096,),
+        )
+
         # In-memory buffers — list of numpy arrays per layer, flushed periodically
         # resid_buffers[l]: list of (batch*seq, d_model) arrays
         self.resid_buffers: list[list[np.ndarray]] = [[] for _ in range(n_layers)]
         # mlp_buffers[l]: list of (batch*seq, d_mlp) arrays
         self.mlp_buffers:   list[list[np.ndarray]] = [[] for _ in range(n_layers)]
+        self.token_id_buffer: list[np.ndarray] = []
         self.tokens_buffered = 0
 
     def append(
         self,
         resid_streams: list[torch.Tensor],
         mlp_outputs: list[torch.Tensor],
+        token_ids: torch.Tensor | None = None,
     ) -> None:
         """
         Buffer one batch of activations.
@@ -204,6 +218,7 @@ class HDF5Writer:
         Args:
             resid_streams: list[n_layers] of (batch, seq, d_model)
             mlp_outputs:   list[n_layers] of (batch, seq, d_mlp)
+            token_ids:     (batch, seq) int tensor of vocabulary token IDs (optional)
         """
         batch, seq, _ = resid_streams[0].shape
         for l in range(self.n_layers):
@@ -213,6 +228,11 @@ class HDF5Writer:
             )
             self.mlp_buffers[l].append(
                 mlp_outputs[l].reshape(batch * seq, -1).cpu().float().numpy()
+            )
+        if token_ids is not None:
+            # (batch, seq) → (batch*seq,)
+            self.token_id_buffer.append(
+                token_ids.reshape(-1).cpu().numpy().astype("int32")
             )
         self.tokens_buffered += batch * seq
 
@@ -235,6 +255,14 @@ class HDF5Writer:
 
             self.resid_buffers[l].clear()
             self.mlp_buffers[l].clear()
+
+        if self.token_id_buffer:
+            chunk = np.concatenate(self.token_id_buffer, axis=0)
+            ds = self.f["token_ids"]
+            n_existing = ds.shape[0]
+            ds.resize(n_existing + chunk.shape[0], axis=0)
+            ds[n_existing:] = chunk
+            self.token_id_buffer.clear()
 
         self.f.flush()
         self.tokens_buffered = 0
@@ -307,7 +335,7 @@ def extract(args: argparse.Namespace) -> None:
             # mlp_outputs[l]: (batch, seq, d_mlp)
             mlp_outputs   = [cache[h] for h in mlp_hooks]
 
-            writer.append(resid_streams, mlp_outputs)
+            writer.append(resid_streams, mlp_outputs, token_ids=batch_tokens)
 
             n_new = batch_tokens.numel()
             tokens_processed += n_new
