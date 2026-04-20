@@ -84,8 +84,8 @@ def parse_args() -> argparse.Namespace:
         help="Optional local directory to cache downloaded model weights.",
     )
     p.add_argument(
-        "--flush_every", type=int, default=500,
-        help="Flush accumulated activations to HDF5 every N batches.",
+        "--flush_every", type=int, default=5,
+        help="Flush accumulated activations to HDF5 every N batches. Keep low (5-10) to avoid OOM.",
     )
     return p.parse_args()
 
@@ -315,7 +315,15 @@ def extract(args: argparse.Namespace) -> None:
 
             if (batch_idx + 1) % args.flush_every == 0:
                 writer.flush()
-                pbar.set_postfix({"on_disk": f"{writer.total_tokens():,}"})
+                on_disk = writer.total_tokens()
+                elapsed = time.time() - t_start
+                tok_per_sec = tokens_processed / elapsed if elapsed > 0 else 0
+                eta_hrs = ((args.max_tokens - tokens_processed) / tok_per_sec) / 3600 if tok_per_sec > 0 else 0
+                pbar.set_postfix({
+                    "on_disk": f"{on_disk:,}",
+                    "tok/s": f"{tok_per_sec:,.0f}",
+                    "eta": f"{eta_hrs:.2f}h",
+                })
 
     writer.close()
 
