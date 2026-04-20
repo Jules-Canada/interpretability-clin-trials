@@ -30,7 +30,9 @@ source .venv/bin/activate
 # A100 supports CUDA 12.x natively — use cu121 build.
 echo "--- Installing PyTorch (CUDA 12.1) ---"
 pip install --quiet --upgrade pip
-pip install --quiet torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+pip install --quiet torch --index-url https://download.pytorch.org/whl/cu121
+# Note: torchvision and torchaudio are NOT installed — they pin an older torch version
+# and conflict with the torch version pulled in by project dependencies.
 
 # ---------------------------------------------------------------------------
 # 3. Install project dependencies
