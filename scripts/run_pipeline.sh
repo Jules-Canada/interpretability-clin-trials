@@ -52,7 +52,8 @@ if [ ! -f "$ACTIVATION_PATH" ]; then
         --output_path "$ACTIVATION_PATH" \
         --max_tokens 5000000 \
         --batch_size 16 \
-        --seq_len 128
+        --seq_len 128 \
+        --flush_every 5
     echo "--- Extraction complete: $(date) ---"
 fi
 
