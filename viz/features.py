@@ -273,6 +273,61 @@ def plot_training_dynamics(
     return fig
 
 
+def plot_run_comparison(
+    steps: list[int],
+    run1_losses: dict[str, list[float]],
+    run1_l0: dict[int, list[float]],
+    run2_losses: dict[str, list[float]],
+    run2_l0: dict[int, list[float]],
+    run1_label: str = "λ = 2e-4 (original default)",
+    run2_label: str = "λ = 1e-2 (new default)",
+    n_features: int = 512,
+    suptitle: str = "Training run comparison",
+) -> plt.Figure:
+    """
+    2×2 grid: loss curves and L0 sparsity for two training runs side-by-side.
+
+    Args:
+        steps:       list of step indices (same for both runs)
+        run1_losses: dict with keys 'total', 'reconstruction', 'sparsity'
+        run1_l0:     dict mapping layer index → list of L0 values
+        run2_losses: same for run 2
+        run2_l0:     same for run 2
+        run1_label:  title for left column
+        run2_label:  title for right column
+        n_features:  used to draw the L0 saturation line
+        suptitle:    figure suptitle
+    """
+    fig, axes = plt.subplots(2, 2, figsize=(13, 8))
+
+    for col, (losses, l0, label) in enumerate([
+        (run1_losses, run1_l0, run1_label),
+        (run2_losses, run2_l0, run2_label),
+    ]):
+        ax = axes[0, col]
+        ax.plot(steps, losses["reconstruction"], label="Reconstruction", color="#4C72B0")
+        ax.plot(steps, losses["sparsity"],       label="Sparsity",       color="#C44E52", linestyle="--")
+        ax.plot(steps, losses["total"],          label="Total",          color="#333333", linewidth=1.5)
+        ax.set_title(label, fontsize=10, fontweight="bold")
+        ax.set_ylabel("Loss")
+        ax.legend(fontsize=8)
+
+        ax = axes[1, col]
+        colors = ["#4C72B0", "#55A868", "#C44E52", "#8172B2"]
+        for i, (layer, values) in enumerate(sorted(l0.items())):
+            ax.plot(steps, values, label=f"Layer {layer}", color=colors[i % len(colors)])
+        ax.axhline(n_features, color="red", linestyle=":", linewidth=0.8,
+                   label=f"Max ({n_features} features)")
+        ax.set_ylabel("Avg active features (L0)")
+        ax.set_xlabel("Step")
+        ax.set_ylim(0, n_features * 1.1)
+        ax.legend(fontsize=8)
+
+    fig.suptitle(suptitle, fontsize=12, fontweight="bold")
+    fig.tight_layout()
+    return fig
+
+
 def plot_l0_over_training(
     steps: list[int],
     l0_by_layer: dict[int, list[float]],
