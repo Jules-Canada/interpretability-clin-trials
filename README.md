@@ -175,6 +175,31 @@ bash scripts/run_pipeline.sh
 
 ---
 
+## Long-term goals
+
+### 1. Complete Pythia-410m proof-of-concept
+Finish the current training run, generate attribution graphs for all 14 clinical prompts,
+label features, and produce a notebook-based readout showing which internal concepts drive
+eligibility, adverse event, and endpoint predictions.
+
+### 2. Scale to MedGemma-27B + MIMIC-IV
+Apply the same CLT methodology to a medically-trained model using real clinical notes.
+MedGemma features are expected to be more clinically meaningful — tracking conditions,
+lab values, and eligibility criteria rather than generic linguistic patterns.
+Requires PhysioNet credentialing for MIMIC-IV access.
+
+### 3. Find cross-trial generalisable features
+Identify which features fire consistently across trial types (e.g. a general "adverse event
+severity" feature) vs. which are condition-specific (e.g. NSCLC-specific eligibility
+features). This is the core scientific question.
+
+### 4. Publish and communicate
+- Submit findings to a clinical ML venue (ML4H, CHIL, or similar workshop)
+- Write at least one public technical post explaining the methodology accessibly
+- Maintain the GitHub repo as a public reference implementation
+
+---
+
 ## References
 
 - [Circuit Tracing: Revealing Computational Graphs in Language Models](https://transformer-circuits.pub/2025/attribution-graphs/methods.html) — Anthropic, 2025

@@ -9,6 +9,24 @@ Replicate the Cross-Layer Transcoder (CLT) methodology from:
 Then apply attribution graphs to clinical trial prompts to identify features involved
 in reasoning about eligibility criteria, adverse events, and endpoint inference.
 
+## Long-Term Goals
+
+1. **Complete Pythia-410m proof-of-concept** — finish current training run, generate
+   graphs for all 14 clinical prompts, label features, produce notebook readout.
+
+2. **Scale to MedGemma-27B + MIMIC-IV** — apply CLT to a medically-trained model on
+   real clinical notes. Requires PhysioNet credentialing (long-lead item — start early).
+   Check Gemma Scope 2 for pre-trained transcoder availability before training from scratch.
+
+3. **Find cross-trial generalisable features** — which features fire consistently across
+   trial types vs. which are condition-specific? This is the core scientific question.
+
+4. **Publish and communicate** — target ML4H or CHIL workshop; write at least one public
+   technical post. Keep the GitHub repo as a clean public reference implementation.
+
+These goals serve two purposes: contributing to mechanistic interpretability in the
+clinical domain, and building a public portfolio for a career pivot into clinical AI.
+
 ---
 
 ## Model
