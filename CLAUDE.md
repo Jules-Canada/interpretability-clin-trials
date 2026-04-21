@@ -186,12 +186,13 @@ When labeling features found in attribution graphs, record labels in
 - [x] Repo scaffolded
 - [x] Toy model test passing
 - [x] CLT training loop implemented
-- [x] Activations extracted from Pythia-410m (5M tokens, Lambda Labs V100)
-- [ ] CLT trained (reconstruction MSE < threshold)  ← in progress on V100, 20k steps
+- [x] Activations extracted from Pythia-410m (5M tokens, Lambda Labs H100)
+- [ ] CLT trained (reconstruction MSE < threshold)  ← in progress on H100, ~12k/50k steps, n_features=2048
 - [x] Attribution graph construction implemented
-- [ ] Frontend rendering a graph
-- [ ] Clinical trial prompts loaded
-- [ ] Feature labeling begun
+- [x] Frontend rendering a graph (france_capital, water_boil working locally)
+- [x] Clinical trial prompts loaded (14 prompts in prompts/trial_prompts.json)
+- [ ] Batch graphs generated for trial prompts (blocked on training completion)
+- [ ] Feature labeling begun (pipeline built: collect → find_top → label → export)
 
 ## Findings So Far
 
@@ -206,9 +207,17 @@ When labeling features found in attribution graphs, record labels in
   test fixtures). Never scatter `.to(device)` calls on individual tensors inside helpers.
 - Attribution graph completeness (sum of edges to logit / logit value) is ~0.5–0.8 with an
   untrained CLT (large reconstruction errors dominate). Expect 0.85–0.99 after training.
-- V100 training speed: ~0.91s/step with batch_size=512, n_features=512, 24 layers. 20k steps ≈ 5hrs.
-  Use A100 for future runs (~3x faster). TODO: add steps/sec timing to `_log()` in `clt/train.py`.
+- H100 training speed: ~1.37 steps/s with batch_size=512, n_features=2048, 24 layers. 50k steps ≈ 10hrs.
+  n_features=4096 exceeded H100 VRAM (81GB needed vs 79GB available) — settled on 2048.
+- steps/sec timing added to `_log()` in `clt/train.py` (elapsed, eta, steps/s).
 - HDF5 random sampling caused 0% GPU utilization (512 random seeks per step). Fixed by sampling
   contiguous blocks instead — critical when chunk size is 1024 tokens.
+- HDF5 now stores `token_ids` dataset (int32) for feature labeling context reconstruction.
+  Old HDF5 files without this field need to be re-extracted before running label_features.py.
+- flush_every default changed 500→5 to prevent ~200GB RAM accumulation before first disk write.
+- torchvision/torchaudio conflict on Lambda: pins torch==2.5.1, incompatible with torch 2.11.0.
+  Removed from setup_lambda.sh; uninstall manually on existing instances.
 - `frontend/` is tracked as a gitlink (embedded repo), not a proper submodule. Contents won't
   clone with the outer repo. Convert with `git submodule add` if needed.
+- Frontend util.js rewrites all absolute paths to transformer-circuits.pub — added localhost
+  check to skip rewrite for local development.
