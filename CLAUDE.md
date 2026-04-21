@@ -199,13 +199,14 @@ When labeling features found in attribution graphs, record labels in
 
 ### Pre-termination checklist (run before killing any Lambda instance)
 
-- [ ] Graph JSONs downloaded: `scp 'ubuntu@<ip>:ignis/frontend/graph_data/*.json' frontend/graph_data/`
-- [ ] Inference checkpoint saved and downloaded: strip optimizer state first (`clt_inference.pt`), then scp
-- [ ] **Feature labeling run on instance** OR HDF5 downloaded before terminating
-  - The HDF5 is ~20GB and expensive to re-extract — either run the full labeling pipeline
-    on the instance before terminating, or keep the instance alive until labeling is complete
-  - Pipeline: `collect_graph_features.py` → `find_top_activations.py` → `label_features.py`
-  - Download output: `scp ubuntu@<ip>:ignis/data/feature_activations.jsonl data/` and `feature_labels.jsonl`
+- [ ] Graph JSONs: `scp 'ubuntu@<ip>:ignis/frontend/graph_data/*.json' frontend/graph_data/`
+- [ ] Inference checkpoint: strip optimizer state first, then `scp ubuntu@<ip>:ignis/checkpoints/.../clt_inference.pt checkpoints/.../`
+- [ ] Feature activations: `scp ubuntu@<ip>:ignis/data/feature_activations.jsonl data/`
+- [ ] Feature labels: `scp ubuntu@<ip>:ignis/data/feature_labels.jsonl data/`
+- [ ] graph_features.json: `scp ubuntu@<ip>:ignis/data/graph_features.json data/`
+
+**Rule: run all 5 scp commands before terminating. The HDF5 (~20GB) stays on the instance
+and is re-extracted cheaply (~$0.10, ~1 min on A10). Everything else must come home.**
 
 ---
 
