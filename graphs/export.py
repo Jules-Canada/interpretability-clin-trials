@@ -52,6 +52,34 @@ from graphs.build import AttributionGraph
 
 
 # ---------------------------------------------------------------------------
+# Feature label loading
+# ---------------------------------------------------------------------------
+
+def load_feature_labels(labels_path: str | Path) -> dict[tuple[int, int], str]:
+    """
+    Load feature labels from a JSONL file produced by label_features.py.
+
+    Returns: {(layer, feature): label_string}
+    """
+    labels: dict[tuple[int, int], str] = {}
+    path = Path(labels_path)
+    if not path.exists():
+        return labels
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+                key = (int(obj["layer"]), int(obj["feature"]))
+                labels[key] = obj["label"]
+            except (json.JSONDecodeError, KeyError, ValueError):
+                pass
+    return labels
+
+
+# ---------------------------------------------------------------------------
 # Internal type mapping
 # ---------------------------------------------------------------------------
 
@@ -71,6 +99,7 @@ def to_frontend_json(
     graph: AttributionGraph,
     model_name: str = "pythia-410m",
     logit_probability: float | None = None,
+    feature_labels: dict[tuple[int, int], str] | None = None,
 ) -> dict:
     """
     Convert an AttributionGraph to the frontend JSON dict.
@@ -80,6 +109,9 @@ def to_frontend_json(
         model_name:        Model identifier written to metadata.scan.
         logit_probability: Softmax probability of the target token (optional).
                            If provided, included in the logit node's clerp string.
+        feature_labels:    Optional dict from load_feature_labels(). When provided,
+                           cross layer transcoder nodes get their natural-language
+                           label as clerp instead of the default "L{l}F{f}@{pos}" form.
 
     Returns:
         dict ready to be written as JSON.
@@ -109,6 +141,11 @@ def to_frontend_json(
                 clerp = f'"{graph.target_token}" k(p={logit_probability:.4f})'
             else:
                 clerp = f'"{graph.target_token}" k(p=?)'
+        elif node_type == "feature" and feature_labels:
+            key = (int(node["layer"]), int(node["feature"]))
+            label = feature_labels.get(key)
+            # Fall back to positional ID if no label found
+            clerp = label if label else node.get("label", "")
         else:
             clerp = node.get("label", "")
 
@@ -153,6 +190,7 @@ def save_graph(
     output_path: str | Path,
     model_name: str = "pythia-410m",
     logit_probability: float | None = None,
+    feature_labels: dict[tuple[int, int], str] | None = None,
 ) -> Path:
     """
     Write an AttributionGraph to a JSON file readable by the frontend.
@@ -166,6 +204,7 @@ def save_graph(
         output_path:       Destination file path (e.g. "frontend/graph_data/trial_001.json").
         model_name:        Written to metadata.scan.
         logit_probability: Softmax probability of target token (optional).
+        feature_labels:    Optional dict from load_feature_labels() to populate clerp.
 
     Returns:
         Resolved Path of the written file.
@@ -173,7 +212,12 @@ def save_graph(
     out = Path(output_path)
     out.parent.mkdir(parents=True, exist_ok=True)
 
-    data = to_frontend_json(graph, model_name=model_name, logit_probability=logit_probability)
+    data = to_frontend_json(
+        graph,
+        model_name=model_name,
+        logit_probability=logit_probability,
+        feature_labels=feature_labels,
+    )
 
     with open(out, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)

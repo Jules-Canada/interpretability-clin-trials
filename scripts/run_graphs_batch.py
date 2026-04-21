@@ -43,7 +43,7 @@ from transformer_lens import HookedTransformer
 from clt.config import AttributionConfig, CLTConfig
 from clt.model import CrossLayerTranscoder
 from graphs.build import build_attribution_graph
-from graphs.export import save_graph
+from graphs.export import load_feature_labels, save_graph
 from graphs.prune import prune_graph, node_influence_scores
 
 
@@ -74,6 +74,9 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--min_activation",  type=float, default=1e-4)
 
     p.add_argument("--output_dir", type=str, default="frontend/graph_data")
+    p.add_argument("--feature_labels", type=str, default=None,
+                   help="Optional path to feature_labels.jsonl (from label_features.py). "
+                        "When provided, clerp fields in exported graphs will use natural-language labels.")
 
     return p.parse_args()
 
@@ -88,6 +91,14 @@ def main() -> None:
     # -----------------------------------------------------------------------
     prompts = json.loads(Path(args.prompts_file).read_text())
     print(f"Loaded {len(prompts)} prompts from {args.prompts_file}\n")
+
+    # -----------------------------------------------------------------------
+    # Load feature labels (optional)
+    # -----------------------------------------------------------------------
+    feature_labels = None
+    if args.feature_labels:
+        feature_labels = load_feature_labels(args.feature_labels)
+        print(f"Loaded {len(feature_labels)} feature labels from {args.feature_labels}\n")
 
     # -----------------------------------------------------------------------
     # Load model (once)
@@ -163,6 +174,7 @@ def main() -> None:
                 output_path,
                 model_name=args.model_name,
                 logit_probability=logit_prob,
+                feature_labels=feature_labels,
             )
 
             print(f"  Completeness: {graph.completeness:.4f}  |  p({target_tok})={logit_prob:.4f}")
