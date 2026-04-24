@@ -265,15 +265,20 @@ class HDF5Writer:
         """
         batch, seq, _ = resid_streams[0].shape
         np_dtype = np.float16 if self.dtype == "float16" else np.float32
+        # float16 max is ~65504; clip before cast to avoid inf from overflow
+        fp16_max = np.finfo(np.float16).max if np_dtype == np.float16 else None
+
+        def to_np(t: torch.Tensor) -> np.ndarray:
+            arr = t.reshape(t.shape[0] * t.shape[1], -1).cpu().to(torch.float32).numpy()
+            if fp16_max is not None:
+                arr = arr.clip(-fp16_max, fp16_max)
+            return arr.astype(np_dtype)
+
         for l in range(self.n_layers):
             # (batch, seq, d_model) → (batch*seq, d_model), moved to CPU
-            self.resid_buffers[l].append(
-                resid_streams[l].reshape(batch * seq, -1).cpu().to(torch.float32).numpy().astype(np_dtype)
-            )
+            self.resid_buffers[l].append(to_np(resid_streams[l]))
             if not self.resid_only:
-                self.mlp_buffers[l].append(
-                    mlp_outputs[l].reshape(batch * seq, -1).cpu().to(torch.float32).numpy().astype(np_dtype)
-                )
+                self.mlp_buffers[l].append(to_np(mlp_outputs[l]))
         if token_ids is not None:
             # (batch, seq) → (batch*seq,)
             self.token_id_buffer.append(
@@ -342,7 +347,7 @@ def extract(args: argparse.Namespace) -> None:
     d_model  = model.cfg.d_model
     d_mlp    = model.cfg.d_mlp
     print(f"Model: {n_layers} layers, d_model={d_model}, d_mlp={d_mlp}")
-    print(f"Dataset: {args.dataset} (streaming)")
+    print(f"Dataset: {args.local_dataset or args.dataset}")
     print(f"Target: {args.max_tokens:,} tokens → {args.output_path}")
     print()
 
