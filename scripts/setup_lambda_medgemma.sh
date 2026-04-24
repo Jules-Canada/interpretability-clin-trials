@@ -51,7 +51,7 @@ echo "You must accept MedGemma terms at:"
 echo "  https://huggingface.co/google/medgemma-4b-pt"
 echo "before this will work."
 echo
-huggingface-cli login --token "${HF_TOKEN:?Set HF_TOKEN env var to your HuggingFace read token}"
+huggingface-cli login --token "${HF_TOKEN}" 2>/dev/null || hf auth login --token "${HF_TOKEN:?Set HF_TOKEN env var to your HuggingFace read token}"
 
 # ---------------------------------------------------------------------------
 # 5. Create data directories
