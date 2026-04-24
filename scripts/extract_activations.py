@@ -87,6 +87,27 @@ def parse_args() -> argparse.Namespace:
         "--flush_every", type=int, default=5,
         help="Flush accumulated activations to HDF5 every N batches. Keep low (5-10) to avoid OOM.",
     )
+    p.add_argument(
+        "--resid_only", action="store_true",
+        help="Store only resid_pre (skip mlp_post). Use when HDF5 is for find_top_activations "
+             "only (not CLT training). Reduces storage from ~2.5TB to ~491GB for 5M tokens.",
+    )
+    p.add_argument(
+        "--local_dataset", type=str, default=None,
+        help="Path to a local JSONL file to use instead of a HuggingFace dataset. "
+             "Each line must be a JSON object with a text field (see --text_field).",
+    )
+    p.add_argument(
+        "--text_field", type=str, default="text",
+        help="JSON field containing the document text. Default 'text' (Pile). "
+             "Use 'full_text' for clinical trial protocol JSONL files.",
+    )
+    p.add_argument(
+        "--dtype", type=str, default="float32", choices=["float32", "float16"],
+        help="HDF5 storage dtype. float16 halves disk usage — use for large models "
+             "(e.g. Gemma 3 4B) where float32 exceeds available disk. "
+             "CLT training reads and upcasts to float32 automatically.",
+    )
     return p.parse_args()
 
 
@@ -106,31 +127,49 @@ def get_device() -> torch.device:
 # Token stream
 # ---------------------------------------------------------------------------
 
+def _text_source(args):
+    """Yield raw text strings from either a local JSONL file or a HuggingFace dataset."""
+    if args.local_dataset:
+        import json as _json
+        with open(args.local_dataset) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    obj = _json.loads(line)
+                    text = obj.get(args.text_field, "")
+                    if text and text.strip():
+                        yield text
+                except _json.JSONDecodeError:
+                    continue
+    else:
+        ds = load_dataset(args.dataset, split=args.dataset_split, streaming=True)
+        for example in ds:
+            text = example.get(args.text_field, "")
+            if text and text.strip():
+                yield text
+
+
 def token_batches(
     model: HookedTransformer,
-    dataset_name: str,
-    split: str,
+    args,
     seq_len: int,
     batch_size: int,
     max_tokens: int,
 ):
     """
-    Generator that yields (batch_size, seq_len) token tensors from a streaming dataset.
+    Generator that yields (batch_size, seq_len) token tensors.
 
-    Concatenates all text into one long token stream, then slices into fixed-length
-    sequences. Stops after max_tokens total tokens have been yielded.
+    Reads from a local JSONL file (--local_dataset) or a HuggingFace streaming
+    dataset. Concatenates all text into one long token stream, then slices into
+    fixed-length sequences. Stops after max_tokens total tokens have been yielded.
     """
-    ds = load_dataset(dataset_name, split=split, streaming=True)
-
     token_buffer: list[int] = []
     tokens_yielded = 0
     tokens_per_batch = seq_len * batch_size
 
-    for example in ds:
-        text = example.get("text", "")
-        if not text or not text.strip():
-            continue
-
+    for text in _text_source(args):
         # (1, n) → list[int]
         ids = model.to_tokens(text, prepend_bos=False).squeeze(0).tolist()
         token_buffer.extend(ids)
@@ -166,10 +205,13 @@ class HDF5Writer:
                          strings for feature labeling.
     """
 
-    def __init__(self, path: str, n_layers: int, d_model: int, d_mlp: int):
+    def __init__(self, path: str, n_layers: int, d_model: int, d_mlp: int,
+                 resid_only: bool = False, dtype: str = "float32"):
         Path(path).parent.mkdir(parents=True, exist_ok=True)
 
-        self.n_layers = n_layers
+        self.n_layers   = n_layers
+        self.resid_only = resid_only
+        self.dtype      = dtype
         self.f = h5py.File(path, "w")
 
         # Create resizable datasets — initial size 0, unlimited on axis 0
@@ -178,16 +220,17 @@ class HDF5Writer:
                 f"resid_pre_{l}",
                 shape=(0, d_model),
                 maxshape=(None, d_model),
-                dtype="float32",
+                dtype=dtype,
                 chunks=(1024, d_model),   # chunk along token axis for efficient random reads
             )
-            self.f.create_dataset(
-                f"mlp_post_{l}",
-                shape=(0, d_mlp),
-                maxshape=(None, d_mlp),
-                dtype="float32",
-                chunks=(1024, d_mlp),
-            )
+            if not resid_only:
+                self.f.create_dataset(
+                    f"mlp_post_{l}",
+                    shape=(0, d_mlp),
+                    maxshape=(None, d_mlp),
+                    dtype=dtype,
+                    chunks=(1024, d_mlp),
+                )
 
         # Token IDs — needed for feature labeling (reconstruct token strings)
         self.f.create_dataset(
@@ -201,7 +244,7 @@ class HDF5Writer:
         # In-memory buffers — list of numpy arrays per layer, flushed periodically
         # resid_buffers[l]: list of (batch*seq, d_model) arrays
         self.resid_buffers: list[list[np.ndarray]] = [[] for _ in range(n_layers)]
-        # mlp_buffers[l]: list of (batch*seq, d_mlp) arrays
+        # mlp_buffers[l]: list of (batch*seq, d_mlp) arrays — empty when resid_only
         self.mlp_buffers:   list[list[np.ndarray]] = [[] for _ in range(n_layers)]
         self.token_id_buffer: list[np.ndarray] = []
         self.tokens_buffered = 0
@@ -221,14 +264,16 @@ class HDF5Writer:
             token_ids:     (batch, seq) int tensor of vocabulary token IDs (optional)
         """
         batch, seq, _ = resid_streams[0].shape
+        np_dtype = np.float16 if self.dtype == "float16" else np.float32
         for l in range(self.n_layers):
             # (batch, seq, d_model) → (batch*seq, d_model), moved to CPU
             self.resid_buffers[l].append(
-                resid_streams[l].reshape(batch * seq, -1).cpu().float().numpy()
+                resid_streams[l].reshape(batch * seq, -1).cpu().to(torch.float32).numpy().astype(np_dtype)
             )
-            self.mlp_buffers[l].append(
-                mlp_outputs[l].reshape(batch * seq, -1).cpu().float().numpy()
-            )
+            if not self.resid_only:
+                self.mlp_buffers[l].append(
+                    mlp_outputs[l].reshape(batch * seq, -1).cpu().to(torch.float32).numpy().astype(np_dtype)
+                )
         if token_ids is not None:
             # (batch, seq) → (batch*seq,)
             self.token_id_buffer.append(
@@ -242,10 +287,11 @@ class HDF5Writer:
             return
 
         for l in range(self.n_layers):
-            for key, buffers in [
-                (f"resid_pre_{l}", self.resid_buffers[l]),
-                (f"mlp_post_{l}",  self.mlp_buffers[l]),
-            ]:
+            datasets = [(f"resid_pre_{l}", self.resid_buffers[l])]
+            if not self.resid_only:
+                datasets.append((f"mlp_post_{l}", self.mlp_buffers[l]))
+
+            for key, buffers in datasets:
                 # (tokens_buffered, d)
                 chunk = np.concatenate(buffers, axis=0)
                 ds = self.f[key]
@@ -303,14 +349,17 @@ def extract(args: argparse.Namespace) -> None:
     # Hook names to extract — only cache what we need to save memory
     resid_hooks = [f"blocks.{l}.hook_resid_pre" for l in range(n_layers)]
     mlp_hooks   = [f"blocks.{l}.mlp.hook_post"  for l in range(n_layers)]
-    all_hooks   = set(resid_hooks + mlp_hooks)
+    all_hooks   = set(resid_hooks + ([] if args.resid_only else mlp_hooks))
 
-    writer = HDF5Writer(args.output_path, n_layers, d_model, d_mlp)
+    if args.resid_only:
+        print("Mode: resid_only — skipping mlp_post (for find_top_activations, not CLT training)")
+
+    writer = HDF5Writer(args.output_path, n_layers, d_model, d_mlp,
+                        resid_only=args.resid_only, dtype=args.dtype)
 
     batches = token_batches(
         model=model,
-        dataset_name=args.dataset,
-        split=args.dataset_split,
+        args=args,
         seq_len=args.seq_len,
         batch_size=args.batch_size,
         max_tokens=args.max_tokens,
@@ -332,8 +381,8 @@ def extract(args: argparse.Namespace) -> None:
 
             # resid_streams[l]: (batch, seq, d_model)
             resid_streams = [cache[h] for h in resid_hooks]
-            # mlp_outputs[l]: (batch, seq, d_mlp)
-            mlp_outputs   = [cache[h] for h in mlp_hooks]
+            # mlp_outputs[l]: (batch, seq, d_mlp) — empty list when resid_only
+            mlp_outputs   = [] if args.resid_only else [cache[h] for h in mlp_hooks]
 
             writer.append(resid_streams, mlp_outputs, token_ids=batch_tokens)
 

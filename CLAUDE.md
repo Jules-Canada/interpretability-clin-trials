@@ -16,7 +16,9 @@ in reasoning about eligibility criteria, adverse events, and endpoint inference.
 
 2. **Scale to MedGemma-27B + MIMIC-IV** — apply CLT to a medically-trained model on
    real clinical notes. Requires PhysioNet credentialing (long-lead item — start early).
-   Check Gemma Scope 2 for pre-trained transcoder availability before training from scratch.
+   **Gemma Scope 2 (Dec 2025) confirmed to include cross-layer transcoders for all Gemma 3
+   sizes up to 27B — load these instead of training from scratch if MedGemma is Gemma 3 based.
+   Verify MedGemma base model version before spinning up a training instance.**
 
 3. **Find cross-trial generalisable features** — which features fire consistently across
    trial types vs. which are condition-specific? This is the core scientific question.
@@ -29,9 +31,21 @@ clinical domain, and building a public portfolio for a career pivot into clinica
 
 ---
 
-## Model
+## Models
 
-**EleutherAI/pythia-410m** (24 layers, d_model=1024)
+### Phase 1 — Proof of concept (complete)
+**EleutherAI/pythia-410m** (24 layers, d_model=1024, d_mlp=4096)
+- Corpus: The Pile (monology/pile-uncopyrighted), 5M tokens
+- CLT: n_features=2048, 50k steps, H100
+- Key finding: syntactic features, not clinical — expected for a general model
+
+### Phase 2 — Medical domain (in progress)
+**google/medgemma-4b-pt** (Gemma 3 4B, 34 layers, d_model=2560, d_mlp=10240 GeGLU)
+- Gated model — requires HuggingFace terms acceptance before downloading
+- Corpus: clinical trial protocols JSONL (49,002 docs, ~2M tokens target), field `full_text`
+- CLT: n_features=1024, float16 storage (~400GB HDF5), H100 with 1TB disk
+- Scripts: `scripts/setup_lambda_medgemma.sh`, `scripts/run_pipeline_medgemma.sh`
+- Checkpoint dir: `checkpoints/medgemma-4b-1024/`
 
 Use TransformerLens for hooking into residual streams and MLP outputs.
 Do NOT switch models mid-project without updating this file.
@@ -199,29 +213,55 @@ When labeling features found in attribution graphs, record labels in
 
 ### Pre-termination checklist (run before killing any Lambda instance)
 
-- [ ] Graph JSONs: `scp 'ubuntu@<ip>:ignis/frontend/graph_data/*.json' frontend/graph_data/`
-- [ ] Inference checkpoint: strip optimizer state first, then `scp ubuntu@<ip>:ignis/checkpoints/.../clt_inference.pt checkpoints/.../`
-- [ ] Feature activations: `scp ubuntu@<ip>:ignis/data/feature_activations.jsonl data/`
-- [ ] Feature labels: `scp ubuntu@<ip>:ignis/data/feature_labels.jsonl data/`
-- [ ] graph_features.json: `scp ubuntu@<ip>:ignis/data/graph_features.json data/`
+**If `run_pipeline.sh` completed fully, Step 4 already ran — skip to scp.**
+**If the pipeline was interrupted, run `bash scripts/pre_terminate.sh` first.** It handles
+checkpoint stripping, `collect_graph_features`, and `find_top_activations` in one shot,
+then prints the exact scp commands to run. See `docs/pipeline_lessons.md` for why.
 
-**Rule: run all 5 scp commands before terminating. The HDF5 (~20GB) stays on the instance
-and is re-extracted cheaply (~$0.10, ~1 min on A10). Everything else must come home.**
+scp commands (run from your Mac):
+```
+INSTANCE=ubuntu@<ip>
+scp "$INSTANCE:ignis/frontend/graph_data/*.json" frontend/graph_data/
+scp "$INSTANCE:ignis/checkpoints/pythia-410m-2048/clt_inference.pt" checkpoints/pythia-410m-2048/
+scp "$INSTANCE:ignis/data/feature_activations.jsonl" data/
+scp "$INSTANCE:ignis/data/graph_features.json" data/
+```
+
+**Rule: run all 4 scp commands before terminating. The HDF5 stays on the instance and is
+re-extracted next time. Use `--resid_only` for find_top_activations runs (~491GB on disk);
+use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a larger disk.
+`feature_labels.jsonl` is generated locally after scp (run `python scripts/label_features.py --resume`).**
 
 ---
 
 ## Current Status
 
+### Phase 1 — Pythia-410m (complete)
 - [x] Repo scaffolded
 - [x] Toy model test passing
 - [x] CLT training loop implemented
 - [x] Activations extracted from Pythia-410m (5M tokens, Lambda Labs H100)
-- [ ] CLT trained (reconstruction MSE < threshold)  ← in progress on H100, ~12k/50k steps, n_features=2048
+- [x] CLT trained (50k steps, n_features=2048, H100)
 - [x] Attribution graph construction implemented
 - [x] Frontend rendering a graph (france_capital, water_boil working locally)
 - [x] Clinical trial prompts loaded (14 prompts in prompts/trial_prompts.json)
-- [ ] Batch graphs generated for trial prompts (blocked on training completion)
-- [ ] Feature labeling begun (pipeline built: collect → find_top → label → export)
+- [x] Batch graphs generated for all 14 trial prompts
+- [x] Feature labeling complete (feature_labels.jsonl, apply_labels.py patched graph JSONs)
+- [x] Notebook 02 written — data-driven readout, no model loading required
+
+### Phase 2 — MedGemma-4B-pt (in progress)
+- [x] extract_activations.py updated: --local_dataset, --text_field, --dtype flags added
+- [x] run_pipeline_medgemma.sh created (n_features=1024, float16, clinical corpus)
+- [x] setup_lambda_medgemma.sh created (HuggingFace login, gated model)
+- [ ] Corpus generation complete (protocols_backup.jsonl building — ~2.5hrs)
+- [ ] Spin up H100 instance with 1TB disk
+- [ ] Accept MedGemma terms on HuggingFace
+- [ ] Run extraction + CLT training
+- [ ] Generate attribution graphs for clinical prompts
+- [ ] Feature labeling and notebook 03
+
+### Long-lead items
+- [ ] PhysioNet credentialing for MIMIC-IV (apply early — takes weeks)
 
 ## Findings So Far
 
@@ -246,7 +286,20 @@ and is re-extracted cheaply (~$0.10, ~1 min on A10). Everything else must come h
 - flush_every default changed 500→5 to prevent ~200GB RAM accumulation before first disk write.
 - torchvision/torchaudio conflict on Lambda: pins torch==2.5.1, incompatible with torch 2.11.0.
   Removed from setup_lambda.sh; uninstall manually on existing instances.
+- HDF5 size for 5M tokens, 24 layers: ~2.5TB (resid + mlp_post, float32) or ~491GB (resid only).
+  The "~20GB" estimate was wrong. A10 instances have 1.4TB disk — only fits resid_only. Use
+  `--resid_only` flag for find_top_activations runs; full extraction needs H100 or dedicated storage.
+- Gemma Scope 2 (released Dec 2025) includes cross-layer transcoders for all Gemma 3 sizes
+  (270M–27B), SAEs for every layer, and chatbot-tuned model variants. Available on HuggingFace
+  and Neuronpedia. Verify MedGemma base model version (likely Gemma 3) before training CLT
+  from scratch — may be able to skip the training step entirely.
 - `frontend/` is tracked as a gitlink (embedded repo), not a proper submodule. Contents won't
   clone with the outer repo. Convert with `git submodule add` if needed.
 - Frontend util.js rewrites all absolute paths to transformer-circuits.pub — added localhost
   check to skip rewrite for local development.
+- MedGemma-4B-pt CLT config: n_features=1024 chosen to fit H100 VRAM (34 layers, d_mlp=10240
+  GeGLU, decoder matrix is O(L*(L+1)/2 × n_features × d_mlp)). float16 storage reduces HDF5
+  to ~400GB for 2M tokens (resid + mlp_post, 34 layers). Use 1TB Lambda disk.
+- Clinical trial protocol corpus: 49,002 docs from ClinicalTrials.gov, avg ~26k tokens/doc,
+  JSONL with `full_text` field. Use --text_field full_text with extract_activations.py.
+  2M tokens covers ~77 documents — sufficient for a proof-of-concept CLT run.
