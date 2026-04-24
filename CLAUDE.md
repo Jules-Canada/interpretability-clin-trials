@@ -43,7 +43,8 @@ clinical domain, and building a public portfolio for a career pivot into clinica
 **google/medgemma-4b-pt** (Gemma 3 4B, 34 layers, d_model=2560, d_mlp=10240 GeGLU)
 - Gated model — requires HuggingFace terms acceptance before downloading
 - Corpus: clinical trial protocols JSONL (49,002 docs, ~2M tokens target), field `full_text`
-- CLT: n_features=1024, float16 storage (~400GB HDF5), H100 with 1TB disk
+- CLT: n_features=1024, float16 storage (~435GB HDF5 for 500k tokens), H100 with 520GB+ disk
+- HDF5 size: 870KB/token (34 layers × 12800 dims × 2 bytes). 2M tokens = ~1.74TB — needs dedicated storage.
 - Scripts: `scripts/setup_lambda_medgemma.sh`, `scripts/run_pipeline_medgemma.sh`
 - Checkpoint dir: `checkpoints/medgemma-4b-1024/`
 

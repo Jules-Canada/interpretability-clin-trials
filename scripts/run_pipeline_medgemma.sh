@@ -31,7 +31,7 @@ SEQ_LEN=128
 CORPUS="data/protocols.jsonl"
 TEXT_FIELD="full_text"
 CHECKPOINT_DIR="checkpoints/medgemma-4b-1024"
-HDF5_PATH="data/activations/medgemma-4b.h5"
+HDF5_PATH="/workspace/medgemma-4b.h5"
 GRAPH_DIR="frontend/graph_data"
 PROMPT_FILE="prompts/trial_prompts.json"
 
