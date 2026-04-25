@@ -123,7 +123,7 @@ def main() -> None:
     print(f"Train config: {train_cfg}")
     print()
 
-    clt = CrossLayerTranscoder(clt_cfg).to(device)
+    clt = CrossLayerTranscoder(clt_cfg).to(device).to(torch.bfloat16)
     loader = HDF5ActivationLoader(args.activation_path, clt_cfg, train_cfg, device)
 
     # Resolve checkpoint to resume from
