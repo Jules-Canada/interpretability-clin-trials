@@ -255,17 +255,24 @@ class HDF5ActivationLoader:
     _RAM_BUFFER_TOKENS = 20_000
 
     def _fill_buffer(self, f, n_tokens: int) -> tuple[list[Tensor], list[Tensor]]:
-        """Load a contiguous chunk of tokens from HDF5 into CPU RAM tensors."""
+        """
+        Load a contiguous chunk of tokens from HDF5, shuffle in-place, and
+        pin to page-locked memory for fast CPU→GPU transfer.
+        Shuffling once lets __iter__ serve sequential slices instead of
+        random gathers — sequential slice is ~50x faster on CPU.
+        """
         cfg = self.clt_cfg
         buf_size = min(self._RAM_BUFFER_TOKENS, n_tokens)
         start = np.random.randint(0, n_tokens - buf_size)
         idx = slice(start, start + buf_size)
+
+        perm = torch.randperm(buf_size)
         resid_buf = [
-            torch.from_numpy(f[f"resid_pre_{l}"][idx])
+            torch.from_numpy(f[f"resid_pre_{l}"][idx])[perm].pin_memory()
             for l in range(cfg.n_layers)
         ]
         mlp_buf = [
-            torch.from_numpy(f[f"mlp_post_{l}"][idx])
+            torch.from_numpy(f[f"mlp_post_{l}"][idx])[perm].pin_memory()
             for l in range(cfg.n_layers)
         ]
         return resid_buf, mlp_buf
@@ -288,23 +295,27 @@ class HDF5ActivationLoader:
 
             print(f"Loading {buf_size:,} token buffer into CPU RAM...", flush=True)
             resid_buf, mlp_buf = self._fill_buffer(f, n_tokens)
+            buf_pos = 0
 
             for step in range(n_steps):
-                # Refresh buffer every buf_size // batch_size steps
-                if step > 0 and step % (buf_size // batch_size) == 0:
+                # Refill when buffer exhausted
+                if buf_pos + batch_size > buf_size:
                     resid_buf, mlp_buf = self._fill_buffer(f, n_tokens)
+                    buf_pos = 0
 
-                # Sample a random batch from the in-RAM buffer
-                idx = torch.randint(0, buf_size, (batch_size,))
+                s = slice(buf_pos, buf_pos + batch_size)
+                buf_pos += batch_size
+
                 resid_streams = []
                 mlp_outputs = []
                 for l in range(cfg.n_layers):
-                    resid = resid_buf[l][idx].to(self.device)
+                    # Contiguous slice + non_blocking transfer overlaps H2D with compute
+                    resid = resid_buf[l][s].to(self.device, non_blocking=True)
                     if cfg.normalize_activations:
                         resid = resid / self._resid_scales[l]
                     resid_streams.append(resid)
 
-                    mlp = mlp_buf[l][idx].to(self.device)
+                    mlp = mlp_buf[l][s].to(self.device, non_blocking=True)
                     if cfg.normalize_activations:
                         mlp = mlp / self._mlp_scales[l]
                     mlp_outputs.append(mlp)
