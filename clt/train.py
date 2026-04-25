@@ -176,6 +176,8 @@ def train(
         # Linear ramp: λ_eff = λ * (step / (n_steps - 1)), clamped to [0, 1].
         # Matches paper §3.2: sparsity coefficient grows from 0 to λ over training.
         ramp = min(1.0, step / max(train_cfg.n_steps - 1, 1))
+        resid_batch = [x.float() for x in resid_batch]
+        mlp_batch   = [x.float() for x in mlp_batch]
         metrics = train_step(clt, optimizer, resid_batch, mlp_batch, sparsity_ramp=ramp)
 
         if step % train_cfg.log_every == 0:
