@@ -54,7 +54,7 @@ class JumpReLU(nn.Module):
     ) -> Float[Tensor, "... n_features"]:
         theta = self.threshold
         # Hard gate — used in the forward pass
-        gate_hard = (x > theta).float()
+        gate_hard = (x > theta).to(x.dtype)
         # Soft gate — used only for its gradient w.r.t. theta
         # gate_soft.grad flows to theta; its forward value is discarded
         gate_soft = torch.sigmoid((x - theta) / self.bandwidth)
