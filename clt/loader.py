@@ -18,7 +18,6 @@ sampled randomly across the full dataset on each step.
 
 from __future__ import annotations
 
-import queue
 import threading
 from typing import Iterator, Protocol
 
@@ -252,26 +251,24 @@ class HDF5ActivationLoader:
         self._resid_scales = _rms_scale(resid_list, dim=cfg.d_model).to(self.device)
         self._mlp_scales = _rms_scale(mlp_list, dim=cfg.d_mlp).to(self.device)
 
-    def _read_batch(
-        self,
-        f,
-        idx: slice,
-    ) -> tuple[list[Tensor], list[Tensor]]:
-        """Read one contiguous batch from an open HDF5 file and move to device."""
-        cfg = self.clt_cfg
-        resid_streams = []
-        mlp_outputs = []
-        for l in range(cfg.n_layers):
-            resid = torch.from_numpy(f[f"resid_pre_{l}"][idx]).to(self.device)
-            if cfg.normalize_activations:
-                resid = resid / self._resid_scales[l]
-            resid_streams.append(resid)
+    # Tokens to load into CPU RAM per buffer fill (~17 GB at float16, 34 layers)
+    _RAM_BUFFER_TOKENS = 20_000
 
-            mlp = torch.from_numpy(f[f"mlp_post_{l}"][idx]).to(self.device)
-            if cfg.normalize_activations:
-                mlp = mlp / self._mlp_scales[l]
-            mlp_outputs.append(mlp)
-        return resid_streams, mlp_outputs
+    def _fill_buffer(self, f, n_tokens: int) -> tuple[list[Tensor], list[Tensor]]:
+        """Load a contiguous chunk of tokens from HDF5 into CPU RAM tensors."""
+        cfg = self.clt_cfg
+        buf_size = min(self._RAM_BUFFER_TOKENS, n_tokens)
+        start = np.random.randint(0, n_tokens - buf_size)
+        idx = slice(start, start + buf_size)
+        resid_buf = [
+            torch.from_numpy(f[f"resid_pre_{l}"][idx])
+            for l in range(cfg.n_layers)
+        ]
+        mlp_buf = [
+            torch.from_numpy(f[f"mlp_post_{l}"][idx])
+            for l in range(cfg.n_layers)
+        ]
+        return resid_buf, mlp_buf
 
     def __iter__(self) -> Iterator[
         tuple[
@@ -284,24 +281,32 @@ class HDF5ActivationLoader:
         cfg = self.clt_cfg
         batch_size = self.train_cfg.batch_size
         n_steps = self.train_cfg.n_steps
-        prefetch = 2  # batches to read ahead in background thread
 
-        buf: queue.Queue = queue.Queue(maxsize=prefetch)
-        sentinel = object()
+        with h5py.File(self.path, "r") as f:
+            n_tokens = f["resid_pre_0"].shape[0]
+            buf_size = min(self._RAM_BUFFER_TOKENS, n_tokens)
 
-        def _producer():
-            with h5py.File(self.path, "r") as f:
-                n_tokens = f["resid_pre_0"].shape[0]
-                for _ in range(n_steps):
-                    start = np.random.randint(0, n_tokens - batch_size)
-                    buf.put(self._read_batch(f, slice(start, start + batch_size)))
-            buf.put(sentinel)
+            print(f"Loading {buf_size:,} token buffer into CPU RAM...", flush=True)
+            resid_buf, mlp_buf = self._fill_buffer(f, n_tokens)
 
-        t = threading.Thread(target=_producer, daemon=True)
-        t.start()
+            for step in range(n_steps):
+                # Refresh buffer every buf_size // batch_size steps
+                if step > 0 and step % (buf_size // batch_size) == 0:
+                    resid_buf, mlp_buf = self._fill_buffer(f, n_tokens)
 
-        while True:
-            item = buf.get()
-            if item is sentinel:
-                break
-            yield item
+                # Sample a random batch from the in-RAM buffer
+                idx = torch.randint(0, buf_size, (batch_size,))
+                resid_streams = []
+                mlp_outputs = []
+                for l in range(cfg.n_layers):
+                    resid = resid_buf[l][idx].to(self.device)
+                    if cfg.normalize_activations:
+                        resid = resid / self._resid_scales[l]
+                    resid_streams.append(resid)
+
+                    mlp = mlp_buf[l][idx].to(self.device)
+                    if cfg.normalize_activations:
+                        mlp = mlp / self._mlp_scales[l]
+                    mlp_outputs.append(mlp)
+
+                yield resid_streams, mlp_outputs
