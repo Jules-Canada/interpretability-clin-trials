@@ -1,29 +1,34 @@
 #!/usr/bin/env bash
 # scripts/pre_terminate.sh
 #
-# Run this on the Lambda instance BEFORE terminating, if the pipeline was
+# Run this on the compute instance BEFORE terminating, if the pipeline was
 # interrupted or run in parts. Handles everything needed before scp home.
 #
 # If you ran run_pipeline.sh to completion, this is already done — skip it.
 #
-# Usage:
-#   bash scripts/pre_terminate.sh
+# Usage (Pythia-410m):
 #   bash scripts/pre_terminate.sh checkpoints/pythia-410m-2048 2048
+#
+# Usage (MedGemma-4B-pt):
+#   bash scripts/pre_terminate.sh checkpoints/medgemma-4b-1024 1024 \
+#       /medgemma-4b.h5 34 2560 10240
 
 set -euo pipefail
 
 CHECKPOINT_DIR=${1:-"checkpoints/pythia-410m-2048"}
 N_FEATURES=${2:-2048}
-N_LAYERS=24
-D_MODEL=1024
-D_MLP=4096
-
-ACTIVATION_PATH="data/activations/pythia-410m.h5"
+ACTIVATION_PATH=${3:-"data/activations/pythia-410m.h5"}
+N_LAYERS=${4:-24}
+D_MODEL=${5:-1024}
+D_MLP=${6:-4096}
 
 echo "=== pre_terminate.sh ==="
 echo "  CHECKPOINT_DIR : $CHECKPOINT_DIR"
 echo "  N_FEATURES     : $N_FEATURES"
 echo "  ACTIVATION_PATH: $ACTIVATION_PATH"
+echo "  N_LAYERS       : $N_LAYERS"
+echo "  D_MODEL        : $D_MODEL"
+echo "  D_MLP          : $D_MLP"
 echo
 
 # Resolve checkpoint: prefer clt_final.pt, fall back to latest step checkpoint
@@ -63,11 +68,7 @@ python scripts/collect_graph_features.py \
 if [ ! -f "$ACTIVATION_PATH" ]; then
     echo
     echo "ERROR: HDF5 not found at $ACTIVATION_PATH"
-    echo "Re-extract activations first:"
-    echo "  python scripts/extract_activations.py \\"
-    echo "      --model_name EleutherAI/pythia-410m \\"
-    echo "      --output_path $ACTIVATION_PATH \\"
-    echo "      --max_tokens 5000000 --batch_size 16 --seq_len 128 --flush_every 5"
+    echo "Re-extract activations first, or pass the correct path as argument 3."
     exit 1
 fi
 
@@ -93,10 +94,10 @@ fi
 echo
 echo "=== Ready to terminate. Run these FROM YOUR MAC: ==="
 echo
-echo "  INSTANCE=ubuntu@<instance-ip>"
+echo "  INSTANCE=root@<instance-ip>"
 echo "  scp \"\$INSTANCE:ignis/frontend/graph_data/*.json\" frontend/graph_data/"
 echo "  scp \"\$INSTANCE:ignis/${INFERENCE_CKPT}\" ${CHECKPOINT_DIR}/"
 echo "  scp \"\$INSTANCE:ignis/data/feature_activations.jsonl\" data/"
 echo "  scp \"\$INSTANCE:ignis/data/graph_features.json\" data/"
 echo
-echo "HDF5 (${ACTIVATION_PATH}) stays on instance — re-extract cheaply next time (~\$0.10, ~1 min)."
+echo "HDF5 (${ACTIVATION_PATH}) stays on instance — re-extract next time."
