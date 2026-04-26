@@ -34,6 +34,7 @@ All edge weights satisfy: pre-activation of t = sum of incoming edge weights.
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -245,12 +246,15 @@ def build_attribution_graph(
     model.eval()
     clt.eval()
 
+    t0 = time.time()
     with torch.no_grad():
         _, cache = model.run_with_cache(tokens)
+    print(f"  [t] forward pass:       {time.time()-t0:.2f}s", flush=True)
 
     # -----------------------------------------------------------------------
     # Step 2: Get CLT feature activations from cached residual streams
     # -----------------------------------------------------------------------
+    t0 = time.time()
     # resid_streams[l]: (1, seq, d_model)
     resid_streams = [
         cache[f"blocks.{l}.hook_resid_pre"].to(model_device)
@@ -276,6 +280,7 @@ def build_attribution_graph(
 
         # mlp_recons[l]: (1, seq, d_mlp)
         mlp_recons = clt.decode(feature_acts)
+    print(f"  [t] CLT encode/decode:  {time.time()-t0:.2f}s", flush=True)
 
     # Per-layer RMS of raw mlp_post — used to un-normalize the CLT decoder outputs.
     # The CLT was trained to reconstruct mlp_post / rms, so decoder output is in
@@ -293,14 +298,18 @@ def build_attribution_graph(
     # -----------------------------------------------------------------------
     # Step 3: Compute readout vector v = ∂T/∂resid_L
     # -----------------------------------------------------------------------
+    t0 = time.time()
     # (d_model,)
     v = _compute_readout_vector(model, cache, target_position, target_token_idx, L)
+    print(f"  [t] readout vector:     {time.time()-t0:.2f}s", flush=True)
 
     # -----------------------------------------------------------------------
     # Step 4: Precompute transfer matrices
     # -----------------------------------------------------------------------
+    t0 = time.time()
     # transfer[(l_s, l_t)]: (n_features, d_model)
     transfer = _compute_transfer_matrices(clt, model, L, mlp_rms_per_layer)
+    print(f"  [t] transfer matrices:  {time.time()-t0:.2f}s", flush=True)
 
     # -----------------------------------------------------------------------
     # Step 5: Compute token embedding at each position
@@ -338,6 +347,12 @@ def build_attribution_graph(
         str_tokens = [str(t) for t in tokens[0].tolist()]
         target_token_str = str(target_token_idx)
 
+    n_active_at_target = sum(
+        (feature_acts[l][0, target_position].abs() > cfg.min_activation).sum().item()
+        for l in range(L)
+    )
+    print(f"  [debug] seq_len={seq_len}  n_active_at_target={n_active_at_target}  logit={logit_value:.4f}", flush=True)
+
     graph = AttributionGraph(
         tokens=str_tokens,
         target_token=target_token_str,
@@ -372,9 +387,12 @@ def build_attribution_graph(
     # Math is identical to the paper formula; this is a performance optimization.
     # -----------------------------------------------------------------------
     # Pre-move tensors to CPU for vectorized ops (avoids repeated MPS↔CPU transfers)
+    t0 = time.time()
     transfer_cpu = {k: v.cpu() for k, v in transfer.items()}
     W_enc_cpu = [w.cpu() for w in W_enc]
     v_cpu = v.cpu()
+    print(f"  [t] GPU→CPU transfer:   {time.time()-t0:.2f}s  ({len(transfer_cpu)} matrices)", flush=True)
+    t0 = time.time()
 
     for l_s in range(L):
         for pos in range(seq_len):
@@ -460,9 +478,12 @@ def build_attribution_graph(
                     for ii, jj, w in zip(ii_list, jj_list, w_vals)
                 ])
 
+    print(f"  [t] feature nodes+edges:{time.time()-t0:.2f}s", flush=True)
+
     # -----------------------------------------------------------------------
     # Embedding nodes + edges
     # -----------------------------------------------------------------------
+    t0 = time.time()
     for pos in range(seq_len):
         # (d_model,)
         embed_vec = x_embed[0, pos].detach()
@@ -497,9 +518,12 @@ def build_attribution_graph(
                     "weight": weight,
                 })
 
+    print(f"  [t] embedding edges:    {time.time()-t0:.2f}s", flush=True)
+
     # -----------------------------------------------------------------------
     # Error nodes + edges (reconstruction error → logit)
     # -----------------------------------------------------------------------
+    t0 = time.time()
     for l in range(L):
         # true_post[l]: (1, seq, d_mlp)
         true_post = cache[f"blocks.{l}.mlp.hook_post"].to(model_device)
@@ -545,6 +569,8 @@ def build_attribution_graph(
         })
         total_incoming_to_logit += weight
         _debug_error_logit_sum += weight
+
+    print(f"  [t] error edges:        {time.time()-t0:.2f}s", flush=True)
 
     # -----------------------------------------------------------------------
     # Completeness check
