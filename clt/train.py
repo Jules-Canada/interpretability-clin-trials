@@ -22,6 +22,8 @@ from __future__ import annotations
 
 import itertools
 import os
+import shutil
+import tempfile
 import time
 from typing import TYPE_CHECKING
 
@@ -251,12 +253,31 @@ def _save_checkpoint(
     train_cfg: TrainConfig,
     tag: str | None = None,
 ) -> None:
-    """Save model and optimizer state to disk."""
+    """Save model and optimizer state to disk.
+
+    Writes to a local temp file first, then moves to the final path.
+    This avoids partial-write corruption on NFS-backed checkpoint dirs.
+    """
     name = f"clt_{tag}.pt" if tag else f"clt_step{step:07d}.pt"
-    path = os.path.join(train_cfg.checkpoint_dir, name)
-    torch.save({
-        "step": step,
-        "model_state_dict": clt.state_dict(),
-        "optimizer_state_dict": optimizer.state_dict(),
-    }, path)
-    print(f"Checkpoint saved: {path}")
+    final_path = os.path.join(train_cfg.checkpoint_dir, name)
+    os.makedirs(train_cfg.checkpoint_dir, exist_ok=True)
+
+    # Write to /tmp (local NVMe) first, then move atomically.
+    # On NFS-backed checkpoint dirs a 36GB write can fail mid-stream;
+    # writing locally avoids that and keeps the final copy intact.
+    with tempfile.NamedTemporaryFile(dir="/tmp", suffix=".pt.tmp", delete=False) as tmp:
+        tmp_path = tmp.name
+
+    try:
+        torch.save({
+            "step": step,
+            "model_state_dict": clt.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+        }, tmp_path)
+        shutil.move(tmp_path, final_path)
+    except Exception:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        raise
+
+    print(f"Checkpoint saved: {final_path}")
