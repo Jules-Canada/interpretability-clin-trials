@@ -85,20 +85,24 @@ def _compute_transfer_matrices(
     clt: CrossLayerTranscoder,
     model: HookedTransformer,
     L: int,
+    mlp_rms_per_layer: dict[int, float] | None = None,
 ) -> dict[tuple[int, int], Float[Tensor, "n_features d_model"]]:
     """
     Precompute transfer matrices T[l_s → l_t] for all valid (l_s, l_t) pairs.
 
     T[l_s → l_t] ∈ ℝ^{F × d_model}:
-        T[l_s → l_t][f, :] = Σ_{l''=l_s}^{l_t-1} W_dec[l_s→l''].weight.T[f,:] @ W_out_{l''}
+        T[l_s → l_t][f, :] = Σ_{l''=l_s}^{l_t-1} mlp_rms[l''] * W_dec[l_s→l''].weight.T[f,:] @ W_out_{l''}
 
-    This is the "contribution of feature f at layer l_s to the residual stream at l_t",
-    accumulated via the CLT decoders and MLP output projections.
+    The mlp_rms factor corrects for activation normalization: the CLT decoder was trained to
+    reconstruct mlp_post / mlp_rms, so its output is in normalized space. Multiplying by
+    mlp_rms converts back to the raw-space contribution to the residual stream.
 
     Args:
-        clt:   trained CrossLayerTranscoder
-        model: HookedTransformer (used for W_out matrices)
-        L:     number of layers
+        clt:               trained CrossLayerTranscoder
+        model:             HookedTransformer (used for W_out matrices)
+        L:                 number of layers
+        mlp_rms_per_layer: per-layer RMS of raw mlp_post activations (from prompt cache).
+                           Required when clt.cfg.normalize_activations is True.
 
     Returns:
         dict mapping (l_source, l_target) → tensor of shape (F, d_model)
@@ -128,8 +132,12 @@ def _compute_transfer_matrices(
                 # (d_mlp, d_model)
                 W_out = model.blocks[l_intermediate].mlp.W_out
 
+                # Scale by mlp_rms to convert decoder output (normalized space) back to
+                # the raw-space MLP contribution to the residual stream.
+                rms = mlp_rms_per_layer[l_intermediate] if mlp_rms_per_layer else 1.0
+
                 # (F, d_mlp) @ (d_mlp, d_model) = (F, d_model)
-                cumulative = cumulative + W_dec_T @ W_out
+                cumulative = cumulative + rms * (W_dec_T @ W_out)
 
                 # T[l_source → l_intermediate+1] = cumulative after processing l_intermediate
                 l_target = l_intermediate + 1
@@ -269,6 +277,18 @@ def build_attribution_graph(
         # mlp_recons[l]: (1, seq, d_mlp)
         mlp_recons = clt.decode(feature_acts)
 
+    # Per-layer RMS of raw mlp_post — used to un-normalize the CLT decoder outputs.
+    # The CLT was trained to reconstruct mlp_post / rms, so decoder output is in
+    # normalized space; multiplying by rms converts back to raw space for error and
+    # transfer matrix computations.
+    mlp_rms_per_layer: dict[int, float] | None = None
+    if clt.cfg.normalize_activations:
+        mlp_rms_per_layer = {}
+        with torch.no_grad():
+            for l in range(L):
+                raw = cache[f"blocks.{l}.mlp.hook_post"]
+                mlp_rms_per_layer[l] = raw.float().pow(2).mean().sqrt().clamp(min=1e-8).item()
+
     # -----------------------------------------------------------------------
     # Step 3: Compute readout vector v = ∂T/∂resid_L
     # -----------------------------------------------------------------------
@@ -279,7 +299,7 @@ def build_attribution_graph(
     # Step 4: Precompute transfer matrices
     # -----------------------------------------------------------------------
     # transfer[(l_s, l_t)]: (n_features, d_model)
-    transfer = _compute_transfer_matrices(clt, model, L)
+    transfer = _compute_transfer_matrices(clt, model, L, mlp_rms_per_layer)
 
     # -----------------------------------------------------------------------
     # Step 5: Compute token embedding at each position
@@ -411,18 +431,25 @@ def build_attribution_graph(
                 enc_proj = T_rows @ W_rows.T
                 weights_mat = a_vals.unsqueeze(1) * enc_proj
 
-                src_ii, tgt_jj = (weights_mat.abs() > 1e-8).nonzero(as_tuple=True)
-                for ii, jj in zip(src_ii.tolist(), tgt_jj.tolist()):
-                    f_s_actual = active_idx_list[ii]
-                    f_t_actual = active_t_indices[jj].item()
-                    weight = weights_mat[ii, jj].item()
-                    src_node_id = f"feat_l{l_s}_p{pos}_f{f_s_actual}"
-                    target_node_id = f"feat_l{l_t}_p{pos}_f{f_t_actual}"
-                    graph.edges.append({
-                        "source": src_node_id,
-                        "target": target_node_id,
-                        "weight": weight,
-                    })
+                # Use list comprehensions (10-20x faster than explicit for-loop over pairs).
+                # Threshold at 1e-4 rather than 1e-8 to prune near-zero edges that
+                # contribute nothing to completeness but dominate memory and runtime.
+                nonzero_mask = weights_mat.abs() > 1e-4
+                if not nonzero_mask.any():
+                    continue
+                ii_arr, jj_arr = nonzero_mask.nonzero(as_tuple=True)
+                w_vals = weights_mat[nonzero_mask].tolist()
+                ii_list = ii_arr.tolist()
+                jj_list = jj_arr.tolist()
+                t_idx_list = active_t_indices.tolist()
+                graph.edges.extend([
+                    {
+                        "source": f"feat_l{l_s}_p{pos}_f{active_idx_list[ii]}",
+                        "target": f"feat_l{l_t}_p{pos}_f{t_idx_list[jj]}",
+                        "weight": w,
+                    }
+                    for ii, jj, w in zip(ii_list, jj_list, w_vals)
+                ])
 
     # -----------------------------------------------------------------------
     # Embedding nodes + edges
@@ -467,11 +494,15 @@ def build_attribution_graph(
     for l in range(L):
         # true_post[l]: (1, seq, d_mlp)
         true_post = cache[f"blocks.{l}.mlp.hook_post"].to(model_device)
-        # clt_recon[l]: (1, seq, d_mlp)
+        # clt_recon[l]: (1, seq, d_mlp) — in normalized space if normalize_activations=True
         clt_recon = mlp_recons[l]
 
-        # error[l]: (1, seq, d_mlp)
-        error = (true_post - clt_recon).detach()
+        # Un-normalize: clt_recon is mlp_post/rms so multiply by rms to get raw space,
+        # then subtract from raw true_post to get the true reconstruction error.
+        if mlp_rms_per_layer is not None:
+            error = (true_post - clt_recon * mlp_rms_per_layer[l]).detach()
+        else:
+            error = (true_post - clt_recon).detach()
 
         # Error at target position: (d_mlp,)
         error_vec = error[0, target_position]
