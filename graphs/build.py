@@ -411,6 +411,11 @@ def build_attribution_graph(
                     total_incoming_to_logit += weight
 
             # -- Feature → feature edges (vectorized over source × target features) --
+            # Only compute at target_position: features at other positions have no
+            # path to the logit node (cross-position paths go through frozen attention,
+            # not through the linear MLP→residual→MLP chain we trace here).
+            if pos != target_position:
+                continue
             for l_t in range(l_s + 1, L):
                 if (l_s, l_t) not in transfer_cpu:
                     continue
