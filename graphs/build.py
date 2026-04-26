@@ -288,6 +288,7 @@ def build_attribution_graph(
             for l in range(L):
                 raw = cache[f"blocks.{l}.mlp.hook_post"]
                 mlp_rms_per_layer[l] = raw.float().pow(2).mean().sqrt().clamp(min=1e-8).item()
+        print(f"  [debug] mlp_rms L0={mlp_rms_per_layer[0]:.3f}  L16={mlp_rms_per_layer[16]:.3f}  L33={mlp_rms_per_layer[33]:.3f}", flush=True)
 
     # -----------------------------------------------------------------------
     # Step 3: Compute readout vector v = ∂T/∂resid_L
@@ -361,6 +362,8 @@ def build_attribution_graph(
     W_enc = [clt.encoders[l].weight for l in range(L)]
 
     total_incoming_to_logit = 0.0
+    _debug_feat_logit_sum = 0.0
+    _debug_error_logit_sum = 0.0
 
     # -----------------------------------------------------------------------
     # Feature nodes + edges
@@ -409,6 +412,7 @@ def build_attribution_graph(
                         "weight": weight,
                     })
                     total_incoming_to_logit += weight
+                    _debug_feat_logit_sum += weight
 
             # -- Feature → feature edges (vectorized over source × target features) --
             # Only compute at target_position: features at other positions have no
@@ -540,10 +544,13 @@ def build_attribution_graph(
             "weight": weight,
         })
         total_incoming_to_logit += weight
+        _debug_error_logit_sum += weight
 
     # -----------------------------------------------------------------------
     # Completeness check
     # -----------------------------------------------------------------------
+    print(f"  [debug] logit_value={logit_value:.4f}  feat_sum={_debug_feat_logit_sum:.4f}  error_sum={_debug_error_logit_sum:.4f}  total={total_incoming_to_logit:.4f}", flush=True)
+
     # completeness = (sum of incoming edges to logit node) / logit_value
     # Should be close to 1.0 for a faithful attribution
     if abs(logit_value) > 1e-8:
