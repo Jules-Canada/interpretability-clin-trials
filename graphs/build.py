@@ -388,9 +388,11 @@ def build_attribution_graph(
     # -----------------------------------------------------------------------
     # Pre-move tensors to CPU for vectorized ops (avoids repeated MPS↔CPU transfers)
     t0 = time.time()
-    transfer_cpu = {k: v.cpu() for k, v in transfer.items()}
-    W_enc_cpu = [w.cpu() for w in W_enc]
-    v_cpu = v.cpu()
+    # Cast to float32 on CPU: bfloat16/float16 dot products are not reliably
+    # supported by PyTorch on CPU, and we need float32 precision for edge weights.
+    transfer_cpu = {k: v.cpu().float() for k, v in transfer.items()}
+    W_enc_cpu = [w.cpu().float() for w in W_enc]
+    v_cpu = v.cpu().float()
     print(f"  [t] GPU→CPU transfer:   {time.time()-t0:.2f}s  ({len(transfer_cpu)} matrices)", flush=True)
     t0 = time.time()
 

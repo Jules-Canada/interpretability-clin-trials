@@ -104,7 +104,7 @@ def main() -> None:
     # Load model (once)
     # -----------------------------------------------------------------------
     print(f"Loading {args.model_name}...")
-    model = HookedTransformer.from_pretrained(args.model_name, dtype=torch.float16)
+    model = HookedTransformer.from_pretrained(args.model_name, dtype=torch.bfloat16)
     model.eval()
     model = model.to(device)
     print(f"  Loaded: {args.n_layers} layers, d_model={args.d_model}\n")
@@ -124,7 +124,7 @@ def main() -> None:
     ckpt = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
     clt.load_state_dict(ckpt["model_state_dict"])
     del ckpt  # free optimizer tensors from CPU RAM before moving CLT to GPU
-    clt = clt.to(device=device, dtype=torch.float16)
+    clt = clt.to(device=device, dtype=torch.bfloat16)
     clt.eval()
     print(f"  CLT loaded\n")
 
