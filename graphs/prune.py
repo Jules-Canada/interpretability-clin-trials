@@ -120,6 +120,15 @@ def prune_graph(
     # Always keep the logit node itself; score it maximally so it's never pruned
     node_scores[logit_idx] = float("inf")
 
+    # If logit-influence scores are degenerate (near-zero completeness), fall back
+    # to activation magnitude for feature nodes. This happens when attention paths
+    # dominate the logit and the T-matrix captures <1% of the signal.
+    if node_scores.max().item() < 1e-6:
+        for i, n in enumerate(graph.nodes):
+            if n.get("type") == "feature":
+                node_scores[i] = abs(n.get("activation", 0.0))
+        node_scores[logit_idx] = float("inf")
+
     # top_k_nodes includes the logit node
     k_nodes = min(cfg.top_k_nodes, N)
     # (k_nodes,) — indices of top-scoring nodes
