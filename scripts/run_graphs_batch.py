@@ -124,7 +124,7 @@ def main() -> None:
     ckpt = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
     clt.load_state_dict(ckpt["model_state_dict"])
     del ckpt  # free optimizer tensors from CPU RAM before moving CLT to GPU
-    clt = clt.to(device)
+    clt = clt.to(device=device, dtype=torch.float16)
     clt.eval()
     print(f"  CLT loaded\n")
 
