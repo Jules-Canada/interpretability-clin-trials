@@ -104,7 +104,7 @@ def main() -> None:
     # Load model (once)
     # -----------------------------------------------------------------------
     print(f"Loading {args.model_name}...")
-    model = HookedTransformer.from_pretrained(args.model_name)
+    model = HookedTransformer.from_pretrained(args.model_name, dtype=torch.float16)
     model.eval()
     model = model.to(device)
     print(f"  Loaded: {args.n_layers} layers, d_model={args.d_model}\n")
@@ -120,11 +120,13 @@ def main() -> None:
     )
     clt = CrossLayerTranscoder(clt_cfg)
     print(f"Loading checkpoint: {args.checkpoint}")
-    ckpt = torch.load(args.checkpoint, map_location=device, weights_only=True)
+    # Load to CPU first so optimizer state in clt_final.pt doesn't occupy GPU RAM
+    ckpt = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
     clt.load_state_dict(ckpt["model_state_dict"])
+    del ckpt  # free optimizer tensors from CPU RAM before moving CLT to GPU
     clt = clt.to(device)
     clt.eval()
-    print(f"  Loaded from step {ckpt['step']}\n")
+    print(f"  CLT loaded\n")
 
     attr_cfg = AttributionConfig(
         min_activation=args.min_activation,
