@@ -146,6 +146,47 @@ From the paper (§ Building an Interpretable Replacement Model):
 - Export format must match `anthropics/attribution-graphs-frontend` JSON schema.
   Check `frontend/README.md` for the schema spec before writing `graphs/export.py`.
 
+### Attention Jacobians — REQUIRED for valid completeness
+
+**The T matrix in `graphs/build.py` MUST include attention paths or completeness will be
+~0.001 (MLP paths only). This is not optional — graphs without attention Jacobians cannot
+answer "what caused the logit."**
+
+The transfer matrix from feature `f` at layer `l_s` to the logit must account for the fact
+that each layer's residual contribution propagates forward through **both** skip connections
+and attention. The correct computation:
+
+1. **Attention Jacobian per layer** (from frozen attention pattern `A_h[target, target]`):
+   ```
+   J_l = Σ_h  A_h[target, target] * W_V^h @ W_O^h    (d_model × d_model)
+   ```
+2. **Propagator** (skip connection + attention):
+   ```
+   P_l = I + J_l
+   ```
+3. **Effective readout vector at each layer** (backpropagate `v = W_U[:, target_token]`):
+   ```
+   v_L = v
+   v_l = P_l^T @ v_{l+1}    (for l from L-1 down to 0)
+   ```
+4. **Full transfer matrix** (replace `v` with `v_{l_t+1}` in each layer's contribution):
+   ```
+   T_full[f, l_s] = Σ_{l_t ≥ l_s}  rms_{l_t} * W_dec[l_s→l_t][:, f] · (W_out[l_t] @ v_{l_t+1})
+   ```
+   vs. current broken version:
+   ```
+   T_MLP[f, l_s]  = Σ_{l_t ≥ l_s}  rms_{l_t} * W_dec[l_s→l_t][:, f] · (W_out[l_t] @ v)
+   ```
+
+Expected completeness after fix: 0.6–0.9. Current completeness ~0.001.
+
+**Implementation location:** `graphs/build.py` → `_compute_transfer_matrices()` and the
+`build_attribution_graph()` preamble where attention patterns are fetched from cache.
+Requires: `cache["blocks.{l}.attn.hook_pattern"]`, `model.blocks[l].attn.W_V`,
+`model.blocks[l].attn.W_O` for each layer `l`.
+
+**Do not rebuild graphs or run labeling until this is implemented.**
+
 ---
 
 ## Development Rules
@@ -177,6 +218,11 @@ From the paper (§ Building an Interpretable Replacement Model):
 7. **Use `viz/` for all figures.** Never call matplotlib directly in scripts or notebooks
    without going through a function in `viz/features.py` or `viz/graphs.py`. This keeps
    figures consistent and reusable. Add to `viz/` as new plot types are needed.
+
+8. **Verify completeness before calling graphs valid.** After building any graph, check that
+   `completeness >= 0.5`. If it is below that threshold, the T matrix is missing paths
+   (almost certainly attention Jacobians) and the graph does not answer "what caused the logit."
+   Rendering in the frontend is not sufficient — completeness must be checked numerically.
 
 ---
 
@@ -254,12 +300,14 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
 - [x] extract_activations.py updated: --local_dataset, --text_field, --dtype flags added
 - [x] run_pipeline_medgemma.sh created (n_features=1024, float16, clinical corpus)
 - [x] setup_lambda_medgemma.sh created (HuggingFace login, gated model)
-- [ ] Corpus generation complete (protocols_backup.jsonl building — ~2.5hrs)
-- [ ] Spin up H100 instance with 1TB disk
-- [ ] Accept MedGemma terms on HuggingFace
-- [ ] Run extraction + CLT training
-- [ ] Generate attribution graphs for clinical prompts
-- [ ] Feature labeling and notebook 03
+- [x] CLT trained (50k steps, n_features=1024, H100, L0~91, mse_mean~0.44)
+- [x] 14 clinical graphs generated (MLP-only T matrix — completeness ~0.001, not valid yet)
+- [x] feature_activations.jsonl collected (237 features, all L0 — pruning bug from near-zero scores)
+- [ ] **Implement attention Jacobians in `graphs/build.py`** ← BLOCKER for all downstream work
+- [ ] Rebuild graphs on pod with corrected T matrix (expect completeness 0.6–0.9)
+- [ ] Fix pruning — activation-magnitude fallback committed but needs real completeness to work correctly
+- [ ] Feature labeling with correctly-pruned graphs (current labels are all L0, not representative)
+- [ ] Notebook 03 — MedGemma feature readout
 
 ### Long-lead items
 - [ ] PhysioNet credentialing for MIMIC-IV (apply early — takes weeks)
@@ -275,8 +323,11 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
 - CLT must always be moved to the same device as the model it's paired with.
   Call `clt.to(next(model.parameters()).device)` at entry points (`build_attribution_graph`,
   test fixtures). Never scatter `.to(device)` calls on individual tensors inside helpers.
-- Attribution graph completeness (sum of edges to logit / logit value) is ~0.5–0.8 with an
-  untrained CLT (large reconstruction errors dominate). Expect 0.85–0.99 after training.
+- Attribution graph completeness (sum of edges to logit / logit value) is ~0.001 with
+  MLP-only T matrix — attention paths dominate logit prediction in both Pythia and MedGemma.
+  Completeness was never verified for Phase 1 Pythia graphs; those graphs have the same bug.
+  The paper's 0.85–0.99 figure requires attention Jacobians in the T matrix. See the
+  "Attention Jacobians" section above — this must be implemented before graphs are valid.
 - H100 training speed: ~1.37 steps/s with batch_size=512, n_features=2048, 24 layers. 50k steps ≈ 10hrs.
   n_features=4096 exceeded H100 VRAM (81GB needed vs 79GB available) — settled on 2048.
 - steps/sec timing added to `_log()` in `clt/train.py` (elapsed, eta, steps/s).
