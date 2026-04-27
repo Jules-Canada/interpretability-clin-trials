@@ -403,8 +403,8 @@ def build_attribution_graph(
             # paths go through frozen attention which is not in our T matrix).
             if pos != target_position:
                 continue
-            # (F,)
-            a = feature_acts[l_s][0, pos].detach().cpu()
+            # (F,) — cast to float32; bfloat16 CPU matmuls are not reliably supported
+            a = feature_acts[l_s][0, pos].detach().cpu().float()
             active_mask = a.abs() > cfg.min_activation
             active_indices = active_mask.nonzero(as_tuple=False).squeeze(-1)
             if active_indices.numel() == 0:
@@ -449,7 +449,7 @@ def build_attribution_graph(
                 if (l_s, l_t) not in transfer_cpu:
                     continue
 
-                a_t = feature_acts[l_t][0, pos].detach().cpu()
+                a_t = feature_acts[l_t][0, pos].detach().cpu().float()
                 active_t_mask = a_t.abs() > cfg.min_activation
                 active_t_indices = active_t_mask.nonzero(as_tuple=False).squeeze(-1)
                 if active_t_indices.numel() == 0:
@@ -507,12 +507,12 @@ def build_attribution_graph(
         })
 
         # Embedding → feature edges at every layer (vectorized)
-        embed_vec_cpu = embed_vec.cpu()
+        embed_vec_cpu = embed_vec.cpu().float()
         for l in range(L):
             # (F,) = (F, d_model) @ (d_model,)
             contributions = W_enc_cpu[l] @ embed_vec_cpu
 
-            a_l = feature_acts[l][0, pos].detach().cpu()
+            a_l = feature_acts[l][0, pos].detach().cpu().float()
             active = (a_l.abs() > cfg.min_activation).nonzero(as_tuple=False).squeeze(-1)
 
             for f in active.tolist():
