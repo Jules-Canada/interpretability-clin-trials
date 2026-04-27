@@ -9,9 +9,7 @@ Edge weight formula (§ Attribution Graphs):
   A_{s→t} = a_s × Σ_{ℓ_s ≤ ℓ < ℓ_t} W_dec[l_s→l].T × J^▼_{l→l_t} × W_enc[l_t]
 
 where J^▼ is the Jacobian with stop-gradients on all nonlinearities (attention patterns,
-JumpReLU gates, LayerNorm denominators). With these frozen, J^▼ between residual-stream
-layers collapses to W_out_l (the MLP output projection), making the full path a product
-of linear maps.
+JumpReLU gates, LayerNorm denominators).
 
 Four node types:
   - feature:   active CLT features (l, f, position)
@@ -20,16 +18,29 @@ Four node types:
   - logit:     target token's output logit
 
 Four edge types:
-  - feature   → logit:   a_s × transfer[l_s→L][f_s] @ v
+  - feature   → logit:   a_s × corrected_logit_transfer[l_s][f_s]
   - feature   → feature: a_s × transfer[l_s→l_t][f_s] @ W_enc[l_t][f_t]
   - embedding → feature: x_embed[p] · W_enc[l][f]
-  - error     → logit:   error_l @ W_out_l @ v_l  (where v_l ≈ v for residual nets)
+  - error     → logit:   error_vec @ effective_readout[l]
 
-The "transfer matrix" T[l_s→l_t] ∈ ℝ^{F × d_model} precomputes how each source
-feature propagates through the residual stream to layer l_t:
-  T[l_s→l_t] = Σ_{l''=l_s}^{l_t-1} W_dec[l_s→l''].T @ W_out_{l''}
+Attention Jacobians (required for completeness ≥ 0.5):
+  With frozen attention pattern A_h, each layer propagates residual deltas through
+  both the skip connection and attention. The effective readout vector at layer l is
+  backpropagated from v = ∂logit/∂resid_L:
 
-All edge weights satisfy: pre-activation of t = sum of incoming edge weights.
+    v_L = v
+    v_l = (I + J_l)^T @ v_{l+1}
+    where J_l = Σ_h A_h[target,target] * W_V^h @ W_O^h   (d_model × d_model)
+
+  The effective readout in MLP output space at layer l:
+    effective_readout[l] = W_out[l] @ v_{l+1}            (d_mlp,)
+
+  Feature → logit transfer (scalar per feature, includes attention):
+    corrected_logit_transfer[l_s][f] =
+        Σ_{l_t ≥ l_s} rms[l_t] * W_dec[l_s→l_t][:, f] · effective_readout[l_t]
+
+  Feature → feature transfer uses the MLP-only T matrix (attention paths between
+  intermediate layers are not yet included — a known approximation).
 """
 
 from __future__ import annotations
@@ -148,6 +159,134 @@ def _compute_transfer_matrices(
             transfer[(l_source, L)] = cumulative.clone()
 
     return transfer
+
+
+# ---------------------------------------------------------------------------
+# Attention Jacobian propagation
+# ---------------------------------------------------------------------------
+
+def _compute_attention_propagated_v(
+    model: HookedTransformer,
+    cache: dict,
+    v: Float[Tensor, "d_model"],
+    target_position: int,
+    L: int,
+) -> list[Float[Tensor, "d_model"]]:
+    """
+    Backpropagate v through frozen attention Jacobians to get the effective
+    readout vector at each layer.
+
+    v_at_layer[L] = v  (gradient of logit w.r.t. final residual)
+    v_at_layer[l] = (I + J_l)^T @ v_at_layer[l+1]
+
+    where J_l = Σ_h A_h[target, target] * W_V^h @ W_O^h   captures how a
+    residual delta at the target position at the start of layer l propagates
+    forward to the start of layer l+1 via the same-position attention self-loop.
+
+    Args:
+        model:           HookedTransformer (W_V, W_O accessed per layer)
+        cache:           activation cache containing frozen attention patterns
+        v:               readout vector (d_model,) from _compute_readout_vector
+        target_position: sequence position being traced
+        L:               number of layers
+
+    Returns:
+        list of length L+1; v_at_layer[l] has shape (d_model,), float32
+    """
+    v_at_layer: list[Tensor | None] = [None] * (L + 1)
+    v_at_layer[L] = v.float()
+
+    with torch.no_grad():
+        for l in range(L - 1, -1, -1):
+            # Frozen attention pattern — (n_heads, seq, seq)
+            # Self-attention weight at target position: (n_heads,)
+            a_tt = cache[f"blocks.{l}.attn.hook_pattern"][0, :, target_position, target_position].float()
+
+            # W_V: (n_heads, d_model, d_head)
+            # W_O: (n_heads, d_head, d_model)
+            W_V = model.blocks[l].attn.W_V.float()
+            W_O = model.blocks[l].attn.W_O.float()
+
+            v_curr = v_at_layer[l + 1]
+
+            # J_l^T @ v_curr = Σ_h a_tt[h] * (W_V[h] @ W_O[h])^T @ v_curr
+            #                 = Σ_h a_tt[h] * W_O[h]^T @ (W_V[h]^T @ v_curr)
+
+            # (n_heads, d_head): W_V[h]^T @ v_curr for each head
+            v_val = torch.einsum("hmd,m->hd", W_V, v_curr)
+            # (n_heads, d_model): W_O[h]^T @ v_val[h] for each head
+            # W_O[h] is (d_head, d_model), so W_O[h]^T is (d_model, d_head)
+            # einsum 'hdm,hd->hm' computes Σ_d W_O[h,d,m] * v_val[h,d] = (W_O[h]^T @ v_val[h])_m
+            v_out = torch.einsum("hdm,hd->hm", W_O, v_val)
+            # (d_model,): Σ_h a_tt[h] * v_out[h]
+            J_T_v = torch.einsum("h,hm->m", a_tt, v_out)
+
+            # P_l^T @ v_curr = v_curr + J_l^T @ v_curr  (skip connection + attention)
+            v_at_layer[l] = v_curr + J_T_v
+
+    return v_at_layer  # type: ignore[return-value]
+
+
+def _compute_corrected_logit_transfer(
+    clt: CrossLayerTranscoder,
+    model: HookedTransformer,
+    v_at_layer: list[Float[Tensor, "d_model"]],
+    L: int,
+    mlp_rms_per_layer: dict[int, float] | None = None,
+) -> dict[int, Float[Tensor, "n_features"]]:
+    """
+    Compute per-feature scalar contributions to the logit, including attention paths.
+
+    For feature f at source layer l_s:
+        corrected_T[l_s][f] = Σ_{l_t=l_s}^{L-1}
+            rms[l_t] * W_dec[l_s→l_t][:, f] · (W_out[l_t] @ v_at_layer[l_t+1])
+
+    where v_at_layer[l_t+1] is the effective readout vector at layer l_t+1,
+    backpropagated through all subsequent attention layers.
+
+    Compare to the MLP-only version which uses v (= v_at_layer[L]) for all l_t.
+
+    Args:
+        clt:              trained CrossLayerTranscoder
+        model:            HookedTransformer (W_out accessed per layer)
+        v_at_layer:       output of _compute_attention_propagated_v
+        L:                number of layers
+        mlp_rms_per_layer: per-layer normalization scale (same as in transfer matrix)
+
+    Returns:
+        dict mapping l_source → (n_features,) float32 tensor
+    """
+    device = next(clt.parameters()).device
+
+    # Precompute effective readout in MLP output space at each layer:
+    # effective_readout[l] = W_out[l] @ v_at_layer[l+1]   (d_mlp,)
+    # This is the direction in MLP-output space that contributes to the logit,
+    # accounting for all attention layers after l.
+    effective_readouts: list[Tensor] = []
+    with torch.no_grad():
+        for l in range(L):
+            # (d_mlp, d_model)
+            W_out = model.blocks[l].mlp.W_out.float()
+            # (d_mlp,) = (d_mlp, d_model) @ (d_model,)
+            eff = W_out @ v_at_layer[l + 1].to(W_out.device)
+            effective_readouts.append(eff)
+
+    corrected: dict[int, Tensor] = {}
+    with torch.no_grad():
+        for l_source in range(L):
+            # (n_features,) — accumulates scalar logit contribution per feature
+            acc = torch.zeros(clt.cfg.n_features, device=device, dtype=torch.float32)
+            for offset, decoder in enumerate(clt.decoders[l_source]):
+                l_t = l_source + offset
+                # W_dec[l_source→l_t].weight: (d_mlp, n_features) → .T: (n_features, d_mlp)
+                W_dec_T = decoder.weight.T.float()
+                rms = mlp_rms_per_layer[l_t] if mlp_rms_per_layer else 1.0
+                eff = effective_readouts[l_t].to(device)
+                # (n_features,) = (n_features, d_mlp) @ (d_mlp,)
+                acc = acc + rms * (W_dec_T @ eff)
+            corrected[l_source] = acc
+
+    return corrected, effective_readouts
 
 
 # ---------------------------------------------------------------------------
@@ -293,7 +432,8 @@ def build_attribution_graph(
             for l in range(L):
                 raw = cache[f"blocks.{l}.mlp.hook_post"]
                 mlp_rms_per_layer[l] = raw.float().pow(2).mean().sqrt().clamp(min=1e-8).item()
-        print(f"  [debug] mlp_rms L0={mlp_rms_per_layer[0]:.3f}  L16={mlp_rms_per_layer[16]:.3f}  L33={mlp_rms_per_layer[33]:.3f}", flush=True)
+        mid = L // 2
+        print(f"  [debug] mlp_rms L0={mlp_rms_per_layer[0]:.3f}  L{mid}={mlp_rms_per_layer[mid]:.3f}  L{L-1}={mlp_rms_per_layer[L-1]:.3f}", flush=True)
 
     # -----------------------------------------------------------------------
     # Step 3: Compute readout vector v = ∂T/∂resid_L
@@ -304,11 +444,27 @@ def build_attribution_graph(
     print(f"  [t] readout vector:     {time.time()-t0:.2f}s", flush=True)
 
     # -----------------------------------------------------------------------
+    # Step 3b: Backpropagate v through frozen attention Jacobians
+    # v_at_layer[l] = effective readout vector at the start of layer l,
+    # accounting for how attention at layers l, l+1, ..., L-1 propagates
+    # a residual delta forward to the final logit.
+    # -----------------------------------------------------------------------
+    t0 = time.time()
+    # list[L+1] of (d_model,) tensors; v_at_layer[L] == v
+    v_at_layer = _compute_attention_propagated_v(model, cache, v, target_position, L)
+    print(f"  [t] attn propagation:   {time.time()-t0:.2f}s", flush=True)
+
+    # -----------------------------------------------------------------------
     # Step 4: Precompute transfer matrices
     # -----------------------------------------------------------------------
     t0 = time.time()
-    # transfer[(l_s, l_t)]: (n_features, d_model)
+    # transfer[(l_s, l_t)]: (n_features, d_model) — MLP-only, used for feat→feat edges
     transfer = _compute_transfer_matrices(clt, model, L, mlp_rms_per_layer)
+    # corrected_logit_transfer[l_s]: (n_features,) — includes attention, used for feat→logit
+    # effective_readouts[l]: (d_mlp,) — W_out[l] @ v_at_layer[l+1], used for error→logit
+    corrected_logit_transfer, effective_readouts = _compute_corrected_logit_transfer(
+        clt, model, v_at_layer, L, mlp_rms_per_layer
+    )
     print(f"  [t] transfer matrices:  {time.time()-t0:.2f}s", flush=True)
 
     # -----------------------------------------------------------------------
@@ -393,6 +549,10 @@ def build_attribution_graph(
     transfer_cpu = {k: v.cpu().float() for k, v in transfer.items()}
     W_enc_cpu = [w.cpu().float() for w in W_enc]
     v_cpu = v.cpu().float()
+    # corrected_logit_transfer_cpu[l_s]: (n_features,) scalars — feat→logit weights
+    corrected_logit_transfer_cpu = {l_s: t.cpu().float() for l_s, t in corrected_logit_transfer.items()}
+    # effective_readouts_cpu[l]: (d_mlp,) — for error→logit weights
+    effective_readouts_cpu = [e.cpu().float() for e in effective_readouts]
     print(f"  [t] GPU→CPU transfer:   {time.time()-t0:.2f}s  ({len(transfer_cpu)} matrices)", flush=True)
     t0 = time.time()
 
@@ -429,8 +589,8 @@ def build_attribution_graph(
 
                 # -- Feature → logit edge (only from target position) --
                 if pos == target_position:
-                    T_vec = transfer_cpu[(l_s, L)][f_s]
-                    weight = a_sf * (T_vec @ v_cpu).item()
+                    # Use attention-corrected scalar transfer (includes attention paths)
+                    weight = a_sf * corrected_logit_transfer_cpu[l_s][f_s].item()
                     graph.edges.append({
                         "source": node_id,
                         "target": logit_node_id,
@@ -506,7 +666,10 @@ def build_attribution_graph(
             "label": f'embed("{graph.tokens[pos]}"@{pos})',
         })
 
-        # Embedding → feature edges at every layer (vectorized)
+        # Embedding → feature edges: only at target_position, since feature nodes
+        # only exist there (non-target positions were skipped in the feature loop).
+        if pos != target_position:
+            continue
         embed_vec_cpu = embed_vec.cpu().float()
         for l in range(L):
             # (F,) = (F, d_model) @ (d_model,)
@@ -545,19 +708,13 @@ def build_attribution_graph(
             error = (true_post - clt_recon).detach()
 
         # Error at target position: (d_mlp,)
-        error_vec = error[0, target_position]
+        error_vec = error[0, target_position].float().cpu()
 
-        # W_out[l]: (d_mlp, d_model) in TransformerLens
-        W_out = model.blocks[l].mlp.W_out.detach()
-
-        # Error contribution to residual: (d_model,) = (d_mlp,) @ (d_mlp, d_model)
-        error_resid = error_vec @ W_out
-
-        # Error contribution to logit: scalar = (d_model,) · (d_model,)
-        # Note: error at layer l propagates to final residual via identity skip connections.
-        # With frozen residuals, we approximate ∂T/∂resid_{l+1} ≈ v (the final readout).
-        # This is exact for the last layer; approximate for earlier layers.
-        weight = (error_resid @ v).item()
+        # Error contribution to logit, including attention propagation:
+        # error_vec @ W_out[l] @ v_at_layer[l+1] = error_vec @ effective_readout[l]
+        # This is exact: error enters residual at l+1 and propagates through attention
+        # at layers l+1, ..., L-1 before reaching the logit.
+        weight = (error_vec @ effective_readouts_cpu[l]).item()
 
         error_node_id = f"error_l{l}"
         graph.nodes.append({
