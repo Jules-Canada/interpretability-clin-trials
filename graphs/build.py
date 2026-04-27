@@ -396,6 +396,11 @@ def build_attribution_graph(
 
     for l_s in range(L):
         for pos in range(seq_len):
+            # Only build nodes/edges at the target position — features at other
+            # positions have no linear path to the logit node (cross-position
+            # paths go through frozen attention which is not in our T matrix).
+            if pos != target_position:
+                continue
             # (F,)
             a = feature_acts[l_s][0, pos].detach().cpu()
             active_mask = a.abs() > cfg.min_activation
