@@ -194,21 +194,21 @@ def _compute_attention_propagated_v(
         list of length L+1; v_at_layer[l] has shape (d_model,), float32
     """
     v_at_layer: list[Tensor | None] = [None] * (L + 1)
-    v_at_layer[L] = v.float()
-    # Target norm: keep all v_l at the same scale as v_L to prevent (1+σ)^L explosion.
-    # Direction is preserved (determines feature ranking); only magnitude is stabilized.
-    v_target_norm = v_at_layer[L].norm()
+    # float64 on CPU: early-layer v can grow (1+σ)^L ≈ 8000× — feat_sum and error_sum
+    # accumulate large terms that nearly cancel. float32 loses precision there; float64
+    # handles it. MPS doesn't support float64, so we always run this on CPU.
+    v_at_layer[L] = v.cpu().double()
 
     with torch.no_grad():
         for l in range(L - 1, -1, -1):
             # Frozen attention pattern — (n_heads, seq, seq)
             # Self-attention weight at target position: (n_heads,)
-            a_tt = cache[f"blocks.{l}.attn.hook_pattern"][0, :, target_position, target_position].float()
+            a_tt = cache[f"blocks.{l}.attn.hook_pattern"][0, :, target_position, target_position].cpu().double()
 
             # W_V: (n_heads, d_model, d_head)
             # W_O: (n_heads, d_head, d_model)
-            W_V = model.blocks[l].attn.W_V.float()
-            W_O = model.blocks[l].attn.W_O.float()
+            W_V = model.blocks[l].attn.W_V.cpu().double()
+            W_O = model.blocks[l].attn.W_O.cpu().double()
 
             v_curr = v_at_layer[l + 1]
 
@@ -225,10 +225,7 @@ def _compute_attention_propagated_v(
             J_T_v = torch.einsum("h,hm->m", a_tt, v_out)
 
             # P_l^T @ v_curr = v_curr + J_l^T @ v_curr  (skip connection + attention)
-            v_new = v_curr + J_T_v
-
-            # Renormalize to prevent (1+σ)^L exponential growth across 34 layers
-            v_at_layer[l] = v_new * (v_target_norm / v_new.norm().clamp(min=1e-8))
+            v_at_layer[l] = v_curr + J_T_v
 
     return v_at_layer  # type: ignore[return-value]
 
@@ -268,28 +265,30 @@ def _compute_corrected_logit_transfer(
     # effective_readout[l] = W_out[l] @ v_at_layer[l+1]   (d_mlp,)
     # This is the direction in MLP-output space that contributes to the logit,
     # accounting for all attention layers after l.
+    # float64 on CPU throughout: effective_readouts inherit the large magnitude of early-layer
+    # v_at_layer vectors; accumulating in float64 prevents precision loss when feat_sum
+    # and error_sum are large but nearly equal and opposite.
     effective_readouts: list[Tensor] = []
     with torch.no_grad():
         for l in range(L):
-            # (d_mlp, d_model)
-            W_out = model.blocks[l].mlp.W_out.float()
+            # (d_mlp, d_model) on CPU float64
+            W_out = model.blocks[l].mlp.W_out.cpu().double()
             # (d_mlp,) = (d_mlp, d_model) @ (d_model,)
-            eff = W_out @ v_at_layer[l + 1].to(W_out.device)
+            eff = W_out @ v_at_layer[l + 1]  # v_at_layer is already cpu float64
             effective_readouts.append(eff)
 
     corrected: dict[int, Tensor] = {}
     with torch.no_grad():
         for l_source in range(L):
-            # (n_features,) — accumulates scalar logit contribution per feature
-            acc = torch.zeros(clt.cfg.n_features, device=device, dtype=torch.float32)
+            # (n_features,) float64 on CPU — accumulates scalar logit contribution per feature
+            acc = torch.zeros(clt.cfg.n_features, dtype=torch.float64)
             for offset, decoder in enumerate(clt.decoders[l_source]):
                 l_t = l_source + offset
                 # W_dec[l_source→l_t].weight: (d_mlp, n_features) → .T: (n_features, d_mlp)
-                W_dec_T = decoder.weight.T.float()
+                W_dec_T = decoder.weight.T.cpu().double()
                 rms = mlp_rms_per_layer[l_t] if mlp_rms_per_layer else 1.0
-                eff = effective_readouts[l_t].to(device)
                 # (n_features,) = (n_features, d_mlp) @ (d_mlp,)
-                acc = acc + rms * (W_dec_T @ eff)
+                acc = acc + rms * (W_dec_T @ effective_readouts[l_t])
             corrected[l_source] = acc
 
     return corrected, effective_readouts
@@ -555,10 +554,11 @@ def build_attribution_graph(
     transfer_cpu = {k: v.cpu().float() for k, v in transfer.items()}
     W_enc_cpu = [w.cpu().float() for w in W_enc]
     v_cpu = v.cpu().float()
-    # corrected_logit_transfer_cpu[l_s]: (n_features,) scalars — feat→logit weights
-    corrected_logit_transfer_cpu = {l_s: t.cpu().float() for l_s, t in corrected_logit_transfer.items()}
-    # effective_readouts_cpu[l]: (d_mlp,) — for error→logit weights
-    effective_readouts_cpu = [e.cpu().float() for e in effective_readouts]
+    # Keep float64 on CPU: edge weights are computed by dot products against these
+    # tensors; converting to float32 here would lose the precision gained upstream.
+    corrected_logit_transfer_cpu = {l_s: t.cpu() for l_s, t in corrected_logit_transfer.items()}
+    # effective_readouts_cpu[l]: (d_mlp,) float64 — for error→logit weights
+    effective_readouts_cpu = [e.cpu() for e in effective_readouts]
     print(f"  [t] GPU→CPU transfer:   {time.time()-t0:.2f}s  ({len(transfer_cpu)} matrices)", flush=True)
     t0 = time.time()
 
@@ -713,8 +713,8 @@ def build_attribution_graph(
         else:
             error = (true_post - clt_recon).detach()
 
-        # Error at target position: (d_mlp,)
-        error_vec = error[0, target_position].float().cpu()
+        # Error at target position: (d_mlp,) — cpu float64 to match effective_readout
+        error_vec = error[0, target_position].cpu().double()
 
         # Error contribution to logit, including attention propagation:
         # error_vec @ W_out[l] @ v_at_layer[l+1] = error_vec @ effective_readout[l]
