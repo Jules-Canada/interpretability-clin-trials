@@ -88,6 +88,7 @@ _FEATURE_TYPE_MAP = {
     "embedding": "embedding",
     "error":     "mlp reconstruction error",
     "logit":     "logit",
+    "attention": "attention head",
 }
 
 

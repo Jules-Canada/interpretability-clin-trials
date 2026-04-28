@@ -49,6 +49,7 @@ ALLOWED_FEATURE_TYPES = {
     "embedding",
     "mlp reconstruction error",
     "logit",
+    "attention head",
 }
 
 

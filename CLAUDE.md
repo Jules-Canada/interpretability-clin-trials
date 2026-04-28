@@ -178,14 +178,17 @@ and attention. The correct computation:
    T_MLP[f, l_s]  = Σ_{l_t ≥ l_s}  rms_{l_t} * W_dec[l_s→l_t][:, f] · (W_out[l_t] @ v)
    ```
 
-Expected completeness after fix: 0.6–0.9. Current completeness ~0.001.
+**IMPLEMENTED (2026-04-27).** Verified pythia-70m completeness = 0.91 with random CLT.
 
-**Implementation location:** `graphs/build.py` → `_compute_transfer_matrices()` and the
-`build_attribution_graph()` preamble where attention patterns are fetched from cache.
-Requires: `cache["blocks.{l}.attn.hook_pattern"]`, `model.blocks[l].attn.W_V`,
-`model.blocks[l].attn.W_O` for each layer `l`.
-
-**Do not rebuild graphs or run labeling until this is implemented.**
+Key implementation notes:
+- `_compute_readout_vector` uses frozen-denominator LN gradient (NOT autograd — autograd
+  gives v·r_L = 0 by Euler's theorem for degree-0 homogeneous LN/RMSNorm).
+  Formula: `v = (W_U[:,tok] - mean(W_U[:,tok])) / hook_scale` (Pythia LayerNormPre)
+           `v = W_U[:,tok] * ln_final.w / hook_scale` (Gemma RMSNorm)
+- Completeness denominator = `logit - b_U[tok]` (Pythia has non-zero unembed bias b_U).
+- Attention head cross-position paths captured as `attention` nodes → logit edges.
+- All v_at_layer backprop uses float64 on CPU (MPS doesn't support float64; (1+σ)^L ≈
+  8000× amplification would cause float32 precision loss in feat_sum/error_sum).
 
 ---
 
@@ -301,11 +304,11 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
 - [x] run_pipeline_medgemma.sh created (n_features=1024, float16, clinical corpus)
 - [x] setup_lambda_medgemma.sh created (HuggingFace login, gated model)
 - [x] CLT trained (50k steps, n_features=1024, H100, L0~91, mse_mean~0.44)
-- [x] 14 clinical graphs generated (MLP-only T matrix — completeness ~0.001, not valid yet)
+- [x] 14 clinical graphs generated (MLP-only T matrix — completeness ~0.001, not valid)
 - [x] feature_activations.jsonl collected (237 features, all L0 — pruning bug from near-zero scores)
-- [ ] **Implement attention Jacobians in `graphs/build.py`** ← BLOCKER for all downstream work
-- [ ] Rebuild graphs on pod with corrected T matrix (expect completeness 0.6–0.9)
-- [ ] Fix pruning — activation-magnitude fallback committed but needs real completeness to work correctly
+- [x] **Attention Jacobians + frozen-LN v implemented in `graphs/build.py`** — verified pythia-70m completeness 0.91
+- [ ] Rebuild 14 clinical graphs on pod with corrected implementation (expect completeness 0.6–0.9)
+- [ ] Re-run find_top_activations on correctly-pruned (multi-layer) graphs
 - [ ] Feature labeling with correctly-pruned graphs (current labels are all L0, not representative)
 - [ ] Notebook 03 — MedGemma feature readout
 

@@ -11,17 +11,19 @@ Edge weight formula (§ Attribution Graphs):
 where J^▼ is the Jacobian with stop-gradients on all nonlinearities (attention patterns,
 JumpReLU gates, LayerNorm denominators).
 
-Four node types:
+Five node types:
   - feature:   active CLT features (l, f, position)
   - embedding: token + positional embedding at each sequence position
   - error:     reconstruction error (true MLP output − CLT reconstruction) per layer
+  - attention: cross-position attention head output (l, h) — the part not in self-loop
   - logit:     target token's output logit
 
-Four edge types:
+Five edge types:
   - feature   → logit:   a_s × corrected_logit_transfer[l_s][f_s]
   - feature   → feature: a_s × transfer[l_s→l_t][f_s] @ W_enc[l_t][f_t]
   - embedding → feature: x_embed[p] · W_enc[l][f]
   - error     → logit:   error_vec @ effective_readout[l]
+  - attention → logit:   v_{l+1} · (hook_z[h]@W_O[h] − self_loop[h])
 
 Attention Jacobians (required for completeness ≥ 0.5):
   With frozen attention pattern A_h, each layer propagates residual deltas through
@@ -212,14 +214,23 @@ def _compute_attention_propagated_v(
 
             v_curr = v_at_layer[l + 1]
 
-            # J_l^T @ v_curr = Σ_h a_tt[h] * (W_V[h] @ W_O[h])^T @ v_curr
-            #                 = Σ_h a_tt[h] * W_O[h]^T @ (W_V[h]^T @ v_curr)
+            # LayerNorm Jacobian: attention uses LN(resid) as input, not raw resid.
+            # hook_scale = std(resid) (Pythia/LayerNorm) or rms(resid) (Gemma/RMSNorm).
+            # Frozen J_LN^T @ v = (v - mean(v)) / std   for LayerNorm (no weight)
+            #                   = v * γ / rms            for RMSNorm (with weight γ)
+            ln_scale = cache[f"blocks.{l}.ln1.hook_scale"][0, target_position, 0].cpu().double()
+            if hasattr(model.blocks[l].ln1, 'w'):
+                # RMSNorm (Gemma): no centering, learnable weight γ
+                ln_weight = model.blocks[l].ln1.w.cpu().double()  # (d_model,)
+                v_curr_ln = v_curr * ln_weight / ln_scale
+            else:
+                # LayerNormPre (Pythia): no learnable weight, centering
+                v_curr_ln = (v_curr - v_curr.mean()) / ln_scale
 
-            # (n_heads, d_head): W_V[h]^T @ v_curr for each head
-            v_val = torch.einsum("hmd,m->hd", W_V, v_curr)
-            # (n_heads, d_model): W_O[h]^T @ v_val[h] for each head
-            # W_O[h] is (d_head, d_model), so W_O[h]^T is (d_model, d_head)
-            # einsum 'hdm,hd->hm' computes Σ_d W_O[h,d,m] * v_val[h,d] = (W_O[h]^T @ v_val[h])_m
+            # J_l^T @ v_curr = Σ_h a_tt[h] * (W_V[h] @ W_O[h])^T @ J_LN^T @ v_curr
+            # (n_heads, d_head): W_V[h]^T @ (J_LN^T @ v_curr)
+            v_val = torch.einsum("hmd,m->hd", W_V, v_curr_ln)
+            # (n_heads, d_model): v_val[h] @ W_O[h] for each head
             v_out = torch.einsum("hdm,hd->hm", W_O, v_val)
             # (d_model,): Σ_h a_tt[h] * v_out[h]
             J_T_v = torch.einsum("h,hm->m", a_tt, v_out)
@@ -306,46 +317,48 @@ def _compute_readout_vector(
     L: int,
 ) -> Float[Tensor, "d_model"]:
     """
-    Compute v = ∂T/∂resid_L via autograd on LN_final + unembedding.
+    Compute v = ∂logit/∂resid_L using a frozen-denominator LayerNorm gradient.
 
-    T is the logit of target_token_idx at target_position.
-    resid_L is the final residual stream (before ln_final).
+    Autograd through LN/RMSNorm gives v_auto · r_L = 0 because LN is degree-0
+    homogeneous (Euler's theorem: x · ∇f(x) = 0 for f(cx)=f(x)).  We must freeze
+    the denominator (hook_scale) and treat it as a constant:
+
+      LayerNormPre (Pythia): v = (W_U[:, tok] − mean(W_U[:, tok])) / hook_scale
+      RMSNorm      (Gemma):  v = W_U[:, tok] * ln_final.w / hook_scale
+
+    Then  v · r_L = logit − b_U[tok]  (exactly, under frozen hook_scale).
+
+    hook_scale is the cached std (LayerNorm) or rms (RMSNorm) of the final residual
+    at this target position — the same value that was used in the forward pass.
 
     Args:
         model:            HookedTransformer
-        cache:            activation cache from run_with_cache
+        cache:            activation cache from run_with_cache (must include ln_final hooks)
         target_position:  sequence position to trace
         target_token_idx: vocabulary index of the target token
-        L:                number of layers
+        L:                number of layers (unused; kept for API consistency)
 
     Returns:
-        v of shape (d_model,) — gradient of target logit w.r.t. final residual stream
+        v of shape (d_model,) float32 — frozen-denominator readout vector
     """
-    # Final residual stream before ln_final: hook_resid_post at last layer
-    # (1, seq, d_model)
-    resid_final = cache[f"blocks.{L-1}.hook_resid_post"].detach()
+    with torch.no_grad():
+        # hook_scale: (1, seq, 1) — std (LayerNormPre) or rms (RMSNorm) at target pos
+        hook_scale = cache["ln_final.hook_scale"][0, target_position, 0].cpu().double()
 
-    # Create leaf tensor with grad at the target position
-    # (d_model,)
-    x = resid_final[0, target_position].clone().requires_grad_(True)
+        # W_U: (d_model, d_vocab) in TransformerLens — column for target token
+        W_U_col = model.W_U[:, target_token_idx].cpu().double()  # (d_model,)
 
-    # Apply final LayerNorm and unembedding at this single position
-    # Unsqueeze to (1, 1, d_model) for TransformerLens API compatibility
-    x_3d = x.unsqueeze(0).unsqueeze(0)
+        if hasattr(model.ln_final, 'w'):
+            # RMSNorm (Gemma): frozen gradient = W_U * γ / rms
+            ln_w = model.ln_final.w.cpu().double()  # (d_model,)
+            v = W_U_col * ln_w / hook_scale
+        else:
+            # LayerNormPre (Pythia): frozen gradient = (W_U − mean(W_U)) / std
+            v = (W_U_col - W_U_col.mean()) / hook_scale
 
-    # (1, 1, d_model) → (1, 1, d_model)
-    x_normed = model.ln_final(x_3d)
-
-    # (1, 1, d_vocab)
-    logits = model.unembed(x_normed)
-
-    # Scalar: logit for the target token at target position
-    T = logits[0, 0, target_token_idx]
-    T.backward()
-
-    # (d_model,)
-    v = x.grad.detach()
-    return v
+    # Return float32; _compute_attention_propagated_v will convert to float64 for
+    # the high-precision backprop through all L attention layers.
+    return v.float()
 
 
 # ---------------------------------------------------------------------------
@@ -497,6 +510,14 @@ def build_attribution_graph(
     # scalar
     logit_value = logits[0, target_position, target_token_idx].item()
 
+    # b_U[tok]: unembed bias term — logit = v · r_L + b_U, so v · r_L = logit - b_U.
+    # completeness denominator must be (logit - b_U), not logit.
+    # Gemma/RMSNorm models have no unembed bias (b_U = 0).
+    b_U_val = 0.0
+    if hasattr(model, 'b_U') and model.b_U is not None:
+        b_U_val = model.b_U[target_token_idx].item()
+    decomposable_logit = logit_value - b_U_val
+
     # -----------------------------------------------------------------------
     # Step 7: Build nodes and edges
     # -----------------------------------------------------------------------
@@ -540,6 +561,7 @@ def build_attribution_graph(
     total_incoming_to_logit = 0.0
     _debug_feat_logit_sum = 0.0
     _debug_error_logit_sum = 0.0
+    _debug_embed_logit_sum = 0.0
 
     # -----------------------------------------------------------------------
     # Feature nodes + edges
@@ -676,6 +698,20 @@ def build_attribution_graph(
         # only exist there (non-target positions were skipped in the feature loop).
         if pos != target_position:
             continue
+
+        # Direct embedding → logit edge: v_0 · r_0[target]
+        # This is the skip-connection path from the initial token embedding through
+        # all subsequent attention self-loops to the logit (baked into v_at_layer[0]).
+        # Non-target positions contribute through cross-position attention (attn_sum).
+        embed_logit_weight = (v_at_layer[0] @ embed_vec.cpu().double()).item()
+        graph.edges.append({
+            "source": embed_node_id,
+            "target": logit_node_id,
+            "weight": embed_logit_weight,
+        })
+        total_incoming_to_logit += embed_logit_weight
+        _debug_embed_logit_sum += embed_logit_weight
+
         embed_vec_cpu = embed_vec.cpu().float()
         for l in range(L):
             # (F,) = (F, d_model) @ (d_model,)
@@ -743,14 +779,86 @@ def build_attribution_graph(
     print(f"  [t] error edges:        {time.time()-t0:.2f}s", flush=True)
 
     # -----------------------------------------------------------------------
+    # Attention head nodes + edges (cross-position attention → logit)
+    # -----------------------------------------------------------------------
+    # The backpropagated v_at_layer already bakes in each layer's attention
+    # self-loop (same-position → same-position) via J_l = Σ_h A_h[tgt,tgt]*W_V@W_O.
+    # What's still missing from completeness: cross-position attention, i.e.
+    # Σ_j≠tgt A_h[tgt,j] * (W_V@resid_j)@W_O.  These nodes capture that term.
+    #
+    # Logit contribution of head h at layer l:
+    #   v_{l+1} · (total_attn_out[h] − self_loop_attn[h])
+    # where  total_attn_out[h] = hook_z[h] @ W_O[h]   (d_model,)
+    #        self_loop_attn[h]  = A_h[tgt,tgt] * (resid_pre[tgt] @ W_V[h]) @ W_O[h]
+    t0 = time.time()
+    n_heads = model.cfg.n_heads
+    _debug_attn_logit_sum = 0.0
+
+    for l in range(L):
+        # (d_model,) float64 CPU — residual at target position before layer l
+        resid_target = resid_streams[l][0, target_position].cpu().double()
+        # (d_model,) float64 CPU — effective readout at layer l+1
+        v_lp1 = v_at_layer[l + 1]
+
+        # (n_heads,) float64 — self-attention weight at target position
+        a_tt = cache[f"blocks.{l}.attn.hook_pattern"][0, :, target_position, target_position].cpu().double()
+
+        # (n_heads, d_head) float64 — weighted value sum for each head at target pos
+        z_all = cache[f"blocks.{l}.attn.hook_z"][0, target_position].cpu().double()
+
+        # (n_heads, d_head, d_model)
+        W_O = model.blocks[l].attn.W_O.cpu().double()
+
+        # Total per-head attn output: einsum over d_head → (n_heads, d_model)
+        total_attn = torch.einsum("hd,hdm->hm", z_all, W_O)
+
+        # Self-loop: use hook_v (post-LN value vectors) — includes LayerNorm correctly.
+        # hook_v[tgt, h] = LN(resid[tgt]) @ W_V[h], so a_tt[h] * hook_v[tgt, h] is the
+        # exact self-loop contribution to z_h[tgt] without recomputing LN manually.
+        v_h_all = cache[f"blocks.{l}.attn.hook_v"][0, target_position].cpu().double()  # (n_heads, d_head)
+        self_loop = a_tt.unsqueeze(1) * torch.einsum("hd,hdm->hm", v_h_all, W_O)  # (n_heads, d_model)
+
+        # Cross-position attn output (the missing term): (n_heads, d_model)
+        cross_attn = total_attn - self_loop
+
+        # Logit contribution per head: v_{l+1} · cross_attn[h] → (n_heads,)
+        logit_contribs = torch.einsum("m,hm->h", v_lp1, cross_attn)
+
+        for h in range(n_heads):
+            contrib = logit_contribs[h].item()
+            if abs(contrib) < 1e-8:
+                continue
+            node_id = f"attn_l{l}_h{h}"
+            graph.nodes.append({
+                "id": node_id,
+                "type": "attention",
+                "layer": l,
+                "feature": h,
+                "position": target_position,
+                "activation": abs(contrib),
+                "label": f"L{l}H{h}",
+            })
+            graph.edges.append({
+                "source": node_id,
+                "target": logit_node_id,
+                "weight": contrib,
+            })
+            total_incoming_to_logit += contrib
+            _debug_attn_logit_sum += contrib
+
+    print(f"  [t] attention nodes:    {time.time()-t0:.2f}s", flush=True)
+
+    # -----------------------------------------------------------------------
     # Completeness check
     # -----------------------------------------------------------------------
-    print(f"  [debug] logit_value={logit_value:.4f}  feat_sum={_debug_feat_logit_sum:.4f}  error_sum={_debug_error_logit_sum:.4f}  total={total_incoming_to_logit:.4f}", flush=True)
+    print(f"  [debug] logit_value={logit_value:.4f}  b_U={b_U_val:.4f}  decomposable={decomposable_logit:.4f}", flush=True)
+    print(f"  [debug] feat_sum={_debug_feat_logit_sum:.4f}  error_sum={_debug_error_logit_sum:.4f}  attn_sum={_debug_attn_logit_sum:.4f}  embed_sum={_debug_embed_logit_sum:.4f}  total={total_incoming_to_logit:.4f}", flush=True)
 
-    # completeness = (sum of incoming edges to logit node) / logit_value
-    # Should be close to 1.0 for a faithful attribution
-    if abs(logit_value) > 1e-8:
-        graph.completeness = total_incoming_to_logit / logit_value
+    # completeness = total_incoming / (logit - b_U)
+    # b_U is the unembed bias, which is not decomposed into the graph edges.
+    # With a correct frozen-denominator v, total_incoming ≈ logit - b_U → completeness ≈ 1.0.
+    if abs(decomposable_logit) > 1e-8:
+        graph.completeness = total_incoming_to_logit / decomposable_logit
     else:
         graph.completeness = float("nan")
 
