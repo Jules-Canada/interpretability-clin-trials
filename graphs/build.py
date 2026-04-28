@@ -524,6 +524,13 @@ def build_attribution_graph(
         b_U_val = model.b_U[target_token_idx].item()
     decomposable_logit = logit_value - b_U_val
 
+    # Verify v: v · r_L must equal decomposable_logit (exact under frozen LN).
+    # If this is near-zero, _compute_readout_vector returned wrong v.
+    with torch.no_grad():
+        r_L = cache[f"blocks.{L-1}.hook_resid_post"][0, target_position].cpu().double()
+        v_dot_rL = (v.cpu().double() * r_L).sum().item()
+    print(f"  [debug] v.norm={v.cpu().double().norm():.4f}  v·r_L={v_dot_rL:.4f}  decomposable={decomposable_logit:.4f}", flush=True)
+
     # -----------------------------------------------------------------------
     # Step 7: Build nodes and edges
     # -----------------------------------------------------------------------
