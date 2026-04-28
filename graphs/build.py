@@ -207,10 +207,16 @@ def _compute_attention_propagated_v(
             # Self-attention weight at target position: (n_heads,)
             a_tt = cache[f"blocks.{l}.attn.hook_pattern"][0, :, target_position, target_position].cpu().double()
 
-            # W_V: (n_heads, d_model, d_head)
-            # W_O: (n_heads, d_head, d_model)
+            # W_V: (n_kv_heads, d_model, d_head)  — may be < n_heads under GQA
+            # W_O: (n_heads,    d_head,  d_model)
             W_V = model.blocks[l].attn.W_V.cpu().double()
             W_O = model.blocks[l].attn.W_O.cpu().double()
+
+            # GQA: expand W_V from n_kv_heads to n_heads so einsums align.
+            n_heads_l   = W_O.shape[0]
+            n_kv_heads_l = W_V.shape[0]
+            if n_kv_heads_l != n_heads_l:
+                W_V = W_V.repeat_interleave(n_heads_l // n_kv_heads_l, dim=0)
 
             v_curr = v_at_layer[l + 1]
 
@@ -791,7 +797,6 @@ def build_attribution_graph(
     # where  total_attn_out[h] = hook_z[h] @ W_O[h]   (d_model,)
     #        self_loop_attn[h]  = A_h[tgt,tgt] * (resid_pre[tgt] @ W_V[h]) @ W_O[h]
     t0 = time.time()
-    n_heads = model.cfg.n_heads
     _debug_attn_logit_sum = 0.0
 
     for l in range(L):
@@ -815,7 +820,12 @@ def build_attribution_graph(
         # Self-loop: use hook_v (post-LN value vectors) — includes LayerNorm correctly.
         # hook_v[tgt, h] = LN(resid[tgt]) @ W_V[h], so a_tt[h] * hook_v[tgt, h] is the
         # exact self-loop contribution to z_h[tgt] without recomputing LN manually.
-        v_h_all = cache[f"blocks.{l}.attn.hook_v"][0, target_position].cpu().double()  # (n_heads, d_head)
+        # GQA: hook_v has shape (n_kv_heads, d_head); expand to n_heads for einsum with W_O.
+        v_h_all = cache[f"blocks.{l}.attn.hook_v"][0, target_position].cpu().double()  # (n_kv_heads, d_head)
+        n_kv = v_h_all.shape[0]
+        n_q  = W_O.shape[0]
+        if n_kv != n_q:
+            v_h_all = v_h_all.repeat_interleave(n_q // n_kv, dim=0)  # (n_heads, d_head)
         self_loop = a_tt.unsqueeze(1) * torch.einsum("hd,hdm->hm", v_h_all, W_O)  # (n_heads, d_model)
 
         # Cross-position attn output (the missing term): (n_heads, d_model)
@@ -824,7 +834,7 @@ def build_attribution_graph(
         # Logit contribution per head: v_{l+1} · cross_attn[h] → (n_heads,)
         logit_contribs = torch.einsum("m,hm->h", v_lp1, cross_attn)
 
-        for h in range(n_heads):
+        for h in range(n_q):
             contrib = logit_contribs[h].item()
             if abs(contrib) < 1e-8:
                 continue
