@@ -195,6 +195,9 @@ def _compute_attention_propagated_v(
     """
     v_at_layer: list[Tensor | None] = [None] * (L + 1)
     v_at_layer[L] = v.float()
+    # Target norm: keep all v_l at the same scale as v_L to prevent (1+σ)^L explosion.
+    # Direction is preserved (determines feature ranking); only magnitude is stabilized.
+    v_target_norm = v_at_layer[L].norm()
 
     with torch.no_grad():
         for l in range(L - 1, -1, -1):
@@ -222,7 +225,10 @@ def _compute_attention_propagated_v(
             J_T_v = torch.einsum("h,hm->m", a_tt, v_out)
 
             # P_l^T @ v_curr = v_curr + J_l^T @ v_curr  (skip connection + attention)
-            v_at_layer[l] = v_curr + J_T_v
+            v_new = v_curr + J_T_v
+
+            # Renormalize to prevent (1+σ)^L exponential growth across 34 layers
+            v_at_layer[l] = v_new * (v_target_norm / v_new.norm().clamp(min=1e-8))
 
     return v_at_layer  # type: ignore[return-value]
 
