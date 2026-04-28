@@ -73,14 +73,17 @@ echo "Step 1 complete. HDF5: $(du -sh ${HDF5_PATH} | cut -f1)"
 # ---------------------------------------------------------------------------
 echo "--- Step 2: Train CLT (n_features=${N_FEATURES}, 50k steps) ---"
 python scripts/train_clt.py \
-    --model_name "${MODEL_NAME}" \
-    --hdf5_path "${HDF5_PATH}" \
+    --n_layers "${N_LAYERS}" \
+    --d_model "${D_MODEL}" \
+    --d_mlp "${D_MLP}" \
+    --activation_path "${HDF5_PATH}" \
     --checkpoint_dir "${CHECKPOINT_DIR}" \
     --n_features "${N_FEATURES}" \
     --n_steps 50000 \
     --batch_size 512 \
     --lr 2e-4 \
-    --sparsity_coeff 1e-2
+    --sparsity_coeff 1e-2 \
+    --wandb_group "medgemma-4b"
 
 echo "Step 2 complete."
 
@@ -91,6 +94,8 @@ echo "--- Step 3: Build attribution graphs ---"
 python scripts/run_graphs_batch.py \
     --model_name "${MODEL_NAME}" \
     --checkpoint_dir "${CHECKPOINT_DIR}" \
+    --n_layers "${N_LAYERS}" --d_model "${D_MODEL}" --d_mlp "${D_MLP}" \
+    --n_features "${N_FEATURES}" \
     --prompt_file "${PROMPT_FILE}" \
     --output_dir "${GRAPH_DIR}"
 

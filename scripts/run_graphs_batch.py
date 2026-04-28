@@ -58,12 +58,17 @@ def _device() -> torch.device:
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Build attribution graphs for a batch of prompts.")
 
-    p.add_argument("--checkpoint", type=str, required=True)
+    # Accept either --checkpoint (file) or --checkpoint_dir (directory containing clt_inference.pt)
+    ckpt_grp = p.add_mutually_exclusive_group(required=True)
+    ckpt_grp.add_argument("--checkpoint",     type=str, help="Path to CLT .pt file")
+    ckpt_grp.add_argument("--checkpoint_dir", type=str, help="Directory containing clt_inference.pt")
+
     p.add_argument("--n_layers",   type=int, required=True)
     p.add_argument("--d_model",    type=int, required=True)
     p.add_argument("--d_mlp",      type=int, required=True)
     p.add_argument("--n_features", type=int, default=512)
-    p.add_argument("--prompts_file", type=str, required=True,
+    # Accept --prompts_file or --prompt_file (pipeline script uses the latter)
+    p.add_argument("--prompts_file", "--prompt_file", dest="prompts_file", type=str, required=True,
                    help="Path to JSON file containing list of prompt dicts")
     p.add_argument("--model_name", type=str, default="EleutherAI/pythia-410m")
 
@@ -85,6 +90,10 @@ def main() -> None:
     args = parse_args()
     device = _device()
     print(f"Device: {device}")
+
+    # Resolve checkpoint path
+    if args.checkpoint_dir:
+        args.checkpoint = str(Path(args.checkpoint_dir) / "clt_inference.pt")
 
     # -----------------------------------------------------------------------
     # Load prompts
