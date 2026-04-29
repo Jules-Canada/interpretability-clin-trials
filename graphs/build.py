@@ -220,18 +220,26 @@ def _compute_attention_propagated_v(
 
             v_curr = v_at_layer[l + 1]
 
-            # LayerNorm Jacobian: attention uses LN(resid) as input, not raw resid.
-            # hook_scale = std(resid) (Pythia/LayerNorm) or rms(resid) (Gemma/RMSNorm).
-            # Frozen J_LN^T @ v = (v - mean(v)) / std   for LayerNorm (no weight)
-            #                   = v * γ / rms            for RMSNorm (with weight γ)
+            # Post-attention norm (Gemma 3 only): applied after attn_out, before adding
+            # to residual.  J_ln1_post^T = diag(γ / scale_post_attn).  The skip
+            # connection bypasses this, so we only apply it on the attention path.
+            post_attn_scale_key = f"blocks.{l}.ln1_post.hook_scale"
+            if post_attn_scale_key in cache.cache_dict:
+                scale_post_attn = cache[post_attn_scale_key][0, target_position, 0].cpu().double()
+                gamma_post_attn = model.blocks[l].ln1_post.w.cpu().double()
+                v_for_attn = v_curr * gamma_post_attn / scale_post_attn
+            else:
+                v_for_attn = v_curr
+
+            # Pre-attention LayerNorm Jacobian (frozen denominator).
             ln_scale = cache[f"blocks.{l}.ln1.hook_scale"][0, target_position, 0].cpu().double()
             if hasattr(model.blocks[l].ln1, 'w'):
                 # RMSNorm (Gemma): no centering, learnable weight γ
                 ln_weight = model.blocks[l].ln1.w.cpu().double()  # (d_model,)
-                v_curr_ln = v_curr * ln_weight / ln_scale
+                v_curr_ln = v_for_attn * ln_weight / ln_scale
             else:
                 # LayerNormPre (Pythia): no learnable weight, centering
-                v_curr_ln = (v_curr - v_curr.mean()) / ln_scale
+                v_curr_ln = (v_for_attn - v_for_attn.mean()) / ln_scale
 
             # J_l^T @ v_curr = Σ_h a_tt[h] * (W_V[h] @ W_O[h])^T @ J_LN^T @ v_curr
             # (n_heads, d_head): W_V[h]^T @ (J_LN^T @ v_curr)
@@ -253,6 +261,8 @@ def _compute_corrected_logit_transfer(
     v_at_layer: list[Float[Tensor, "d_model"]],
     L: int,
     mlp_rms_per_layer: dict[int, float] | None = None,
+    cache: dict | None = None,
+    target_position: int = -1,
 ) -> dict[int, Float[Tensor, "n_features"]]:
     """
     Compute per-feature scalar contributions to the logit, including attention paths.
@@ -290,8 +300,20 @@ def _compute_corrected_logit_transfer(
         for l in range(L):
             # (d_mlp, d_model) on CPU float64
             W_out = model.blocks[l].mlp.W_out.cpu().double()
+            v_eff = v_at_layer[l + 1]  # (d_model,) float64
+
+            # Post-MLP norm (Gemma 3 only): applied after mlp_out, before adding to
+            # residual.  Frozen Jacobian = diag(γ_ln2_post / scale_ln2_post).
+            # ∂logit/∂mlp_out = J_ln2_post^T @ v_at_layer[l+1] = γ/scale * v
+            if cache is not None:
+                post_mlp_scale_key = f"blocks.{l}.ln2_post.hook_scale"
+                if post_mlp_scale_key in cache.cache_dict:
+                    scale_post_mlp = cache[post_mlp_scale_key][0, target_position, 0].cpu().double()
+                    gamma_post_mlp = model.blocks[l].ln2_post.w.cpu().double()
+                    v_eff = v_eff * gamma_post_mlp / scale_post_mlp
+
             # (d_mlp,) = (d_mlp, d_model) @ (d_model,)
-            eff = W_out @ v_at_layer[l + 1]  # v_at_layer is already cpu float64
+            eff = W_out @ v_eff
             effective_readouts.append(eff)
 
     corrected: dict[int, Tensor] = {}
@@ -487,7 +509,8 @@ def build_attribution_graph(
     # corrected_logit_transfer[l_s]: (n_features,) — includes attention, used for feat→logit
     # effective_readouts[l]: (d_mlp,) — W_out[l] @ v_at_layer[l+1], used for error→logit
     corrected_logit_transfer, effective_readouts = _compute_corrected_logit_transfer(
-        clt, model, v_at_layer, L, mlp_rms_per_layer
+        clt, model, v_at_layer, L, mlp_rms_per_layer,
+        cache=cache, target_position=target_position,
     )
     print(f"  [t] transfer matrices:  {time.time()-t0:.2f}s", flush=True)
 

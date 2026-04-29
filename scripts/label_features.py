@@ -80,7 +80,7 @@ def format_context(example: dict) -> str:
             parts.append(f">>>{tok}<<<")
         else:
             parts.append(tok)
-    context_str = "".join(parts)
+    context_str = "".join(t if t is not None else "<?>" for t in parts)
     return f"  activation={example['activation']:.3f}  context: {context_str}"
 
 

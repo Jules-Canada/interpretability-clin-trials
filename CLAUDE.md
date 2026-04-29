@@ -14,11 +14,11 @@ in reasoning about eligibility criteria, adverse events, and endpoint inference.
 1. **Complete Pythia-410m proof-of-concept** — finish current training run, generate
    graphs for all 14 clinical prompts, label features, produce notebook readout.
 
-2. **Scale to MedGemma-27B + MIMIC-IV** — apply CLT to a medically-trained model on
-   real clinical notes. Requires PhysioNet credentialing (long-lead item — start early).
-   **Gemma Scope 2 (Dec 2025) confirmed to include cross-layer transcoders for all Gemma 3
-   sizes up to 27B — load these instead of training from scratch if MedGemma is Gemma 3 based.
-   Verify MedGemma base model version before spinning up a training instance.**
+2. **Scale to MedGemma + MIMIC-IV** — apply CLT to a medically-trained model on real clinical
+   notes. Requires PhysioNet credentialing (long-lead item — start early).
+   **Active path: fix `graphs/build.py` with frozen autograd backward pass (handles Gemma 3
+   post-norms), then use our trained CLT on MedGemma-4B-pt. Gemma Scope 2 CLTs only cover
+   270M and 1B — no 4B CLT available. See Phase 2 Models section for full plan.**
 
 3. **Find cross-trial generalisable features** — which features fire consistently across
    trial types vs. which are condition-specific? This is the core scientific question.
@@ -39,14 +39,59 @@ clinical domain, and building a public portfolio for a career pivot into clinica
 - CLT: n_features=2048, 50k steps, H100
 - Key finding: syntactic features, not clinical — expected for a general model
 
-### Phase 2 — Medical domain (in progress)
+### Phase 2 — Medical domain (active path: fix attribution code + use our trained CLT)
+
+**Decision (2026-04-28): Fix `graphs/build.py` to use frozen autograd backward passes, then use
+our existing trained CLT on MedGemma. Do NOT wait for Gemma Scope 2 CLTs.**
+
+**Why not Gemma Scope 2 CLTs:**
+Gemma Scope 2 (Sep 2025 technical report, McDougall et al.) only trains CLTs for Gemma 3 270M
+and 1B. Gemma 3 4B, 12B, and 27B have single-layer transcoders and crosscoders only — no CLT.
+Single-layer transcoders cannot model cross-layer feature→feature edges, which Anthropic's paper
+shows are essential for sparse, interpretable graphs. We need a CLT.
+
+**Why not Gemma Scope 2 single-layer transcoders:**
+They reconstruct MLP outputs AFTER the post-MLP RMSNorm (i.e. what actually enters the residual),
+whereas our CLT reconstructs `mlp_post` (pre-W_out). Different target space, different decoder
+semantics — incompatible with our attribution pipeline without a significant rewrite. Also no
+cross-layer edges.
+
+**Root cause of completeness failure (diagnosed 2026-04-28):**
+Gemma 3 uses post-norms — RMSNorm applied after attention output AND after MLP output before
+adding to the residual. The circuit tracing paper used Claude 3 Sonnet (pre-norm only) and never
+encountered this. Our manual `_compute_attention_propagated_v` + `_compute_corrected_logit_transfer`
+correctly handles attention self-loops but silently skips the post-attention and post-MLP RMSNorm
+Jacobians. Result: completeness ≈ −0.002.
+
+**The fix — frozen autograd backward pass (paper's actual method):**
+The circuit tracing paper never manually propagates v layer-by-layer. Their "backward Jacobian"
+is a PyTorch autograd backward pass with cached values substituted for all nonlinearities:
+- `detach(attn_pattern)` — frozen attention weights
+- `detach(ln_scale)` — frozen denominator for every LN/RMSNorm including post-norms
+- `detach(mlp_gate)` — frozen GeGLU gate values
+
+This is architecture-agnostic: post-norms flow through automatically via frozen-denominator
+Jacobians. No manual derivation. One backward pass per target node gives all source edge weights.
+
+Implementation: delete `_compute_attention_propagated_v` and `_compute_corrected_logit_transfer`,
+replace with a single function that uses TransformerLens hooks to freeze cached nonlinear values,
+then calls `loss.backward()` where `loss = (v_detached · r_L)`. Read off `.grad` at each
+layer's residual and mlp_post tensors. Also fix the logit node input vector:
+  current (wrong for Gemma): `v = W_U[:,tok] * ln_w / hook_scale`
+  correct:                   `v = (W_U[:,tok] - W_U.mean(dim=1)) * ln_w / hook_scale`
+  (subtract mean gradient over vocabulary = ∇(logit_tok − mean_logit) as the paper specifies)
+
+**Cost estimate:**
+- Engineering: ~2–3 days to implement + test frozen backward pass
+- Compute (minimum path, use existing CLT): ~$6 for graph generation on Lambda H100
+- Compute (retrain CLT with better sparsity, L0~20–30 vs current L0~91): ~$50
+- Existing CLT checkpoint at `checkpoints/medgemma-4b-1024/clt_inference.pt` is usable
+  for initial validation; retrain only if graphs are too noisy for feature labeling.
+
 **google/medgemma-4b-pt** (Gemma 3 4B, 34 layers, d_model=2560, d_mlp=10240 GeGLU)
+- Confirmed base model: `google/gemma-3-4b-pt` (verified via HuggingFace model tree)
 - Gated model — requires HuggingFace terms acceptance before downloading
-- Corpus: clinical trial protocols JSONL (49,002 docs, ~2M tokens target), field `full_text`
-- CLT: n_features=1024, float16 storage (~435GB HDF5 for 500k tokens), H100 with 520GB+ disk
-- HDF5 size: 870KB/token (34 layers × 12800 dims × 2 bytes). 2M tokens = ~1.74TB — needs dedicated storage.
-- Scripts: `scripts/setup_lambda_medgemma.sh`, `scripts/run_pipeline_medgemma.sh`
-- Checkpoint dir: `checkpoints/medgemma-4b-1024/`
+- Our trained CLT: `checkpoints/medgemma-4b-1024/clt_inference.pt` (n_features=1024, L0~91)
 
 Use TransformerLens for hooking into residual streams and MLP outputs.
 Do NOT switch models mid-project without updating this file.
@@ -252,6 +297,39 @@ When labeling features found in attribution graphs, record labels in
 
 ---
 
+## Pod Setup (RunPod — do this in order on every fresh instance)
+
+```bash
+# 1. Clone repo
+git clone https://YOUR_TOKEN@github.com/Jules-Canada/ignis.git
+cd ignis
+
+# 2. Fix torchvision conflict (breaks transformer_lens import)
+pip uninstall torchvision torchaudio -y
+
+# 3. Install project deps
+pip install -e .
+
+# 4. Point HuggingFace cache at the volume (avoids "no disk space" on root)
+export HF_HOME=/workspace/.cache/huggingface
+
+# 5. HuggingFace login (MedGemma is gated — token is at ~/.cache/huggingface/token on Mac)
+python -c "from huggingface_hub import login; login(token='YOUR_HF_TOKEN')"
+
+# 6. SCP checkpoint from Mac (run on Mac, create dir on pod first)
+#    On pod:  mkdir -p ~/ignis/checkpoints/medgemma-4b-1024
+#    On Mac:  scp -P <PORT> -i ~/.ssh/id_ed25519 checkpoints/medgemma-4b-1024/clt_inference.pt root@<IP>:~/ignis/checkpoints/medgemma-4b-1024/
+```
+
+**Known gotchas:**
+- `huggingface-cli login` and `hf login` are both broken on this image — use the python one-liner above
+- `torchvision` must be uninstalled before importing `transformer_lens` or you get a segfault
+- Root disk is ~10GB; always set `HF_HOME=/workspace/.cache/huggingface` before downloading MedGemma (3.6GB weights)
+- For graph generation only: A10 (24GB) is sufficient, no need for H100
+- Repo clones as `interpretability-clin-trials` not `ignis` — adjust paths accordingly
+
+---
+
 ## Compute Notes
 
 - CLT training on Pythia-410m: expect ~4–8 GPU-hours on a single A100 for a reasonable
@@ -299,17 +377,24 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
 - [x] Feature labeling complete (feature_labels.jsonl, apply_labels.py patched graph JSONs)
 - [x] Notebook 02 written — data-driven readout, no model loading required
 
-### Phase 2 — MedGemma-4B-pt (in progress)
+### Phase 2 — MedGemma-4B-pt (active, 2026-04-28)
 - [x] extract_activations.py updated: --local_dataset, --text_field, --dtype flags added
 - [x] run_pipeline_medgemma.sh created (n_features=1024, float16, clinical corpus)
 - [x] setup_lambda_medgemma.sh created (HuggingFace login, gated model)
 - [x] CLT trained (50k steps, n_features=1024, H100, L0~91, mse_mean~0.44)
-- [x] 14 clinical graphs generated (MLP-only T matrix — completeness ~0.001, not valid)
-- [x] feature_activations.jsonl collected (237 features, all L0 — pruning bug from near-zero scores)
-- [x] **Attention Jacobians + frozen-LN v implemented in `graphs/build.py`** — verified pythia-70m completeness 0.91
-- [ ] Rebuild 14 clinical graphs on pod with corrected implementation (expect completeness 0.6–0.9)
-- [ ] Re-run find_top_activations on correctly-pruned (multi-layer) graphs
-- [ ] Feature labeling with correctly-pruned graphs (current labels are all L0, not representative)
+- [x] Attention Jacobians + frozen-LN v implemented — verified pythia-70m completeness 0.91
+- [x] Diagnosed post-norm incompatibility — Gemma 3 post-norms break completeness (~−0.002)
+- [x] Confirmed fix path: frozen autograd backward pass (paper's actual method), architecture-agnostic
+- [x] Ruled out Gemma Scope 2 CLTs — only available for 270M and 1B, not 4B
+- [ ] **Next**: Rewrite `graphs/build.py` — replace manual v_at_layer/effective_readout with frozen
+      autograd backward pass. Delete `_compute_attention_propagated_v` and
+      `_compute_corrected_logit_transfer`. Use TransformerLens hooks to detach cached LN scales,
+      attn patterns, GeGLU gates. Fix logit v to `(W_U[:,tok] - W_U.mean(dim=1)) * ln_w / hook_scale`.
+- [ ] Validate on Pythia-70m: completeness should remain ~0.91
+- [ ] Validate on MedGemma: completeness should reach ≥ 0.5
+- [ ] Rebuild 14 clinical graphs against MedGemma with existing CLT checkpoint
+- [ ] If graphs too noisy (L0~91): retrain CLT targeting L0~20–30 (~$50 compute on Lambda H100)
+- [ ] Feature labeling with correctly-pruned graphs
 - [ ] Notebook 03 — MedGemma feature readout
 
 ### Long-lead items
@@ -358,3 +443,15 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
 - Clinical trial protocol corpus: 49,002 docs from ClinicalTrials.gov, avg ~26k tokens/doc,
   JSONL with `full_text` field. Use --text_field full_text with extract_activations.py.
   2M tokens covers ~77 documents — sufficient for a proof-of-concept CLT run.
+- **Gemma Scope 2 (McDougall et al., Sep 2025) CLTs only cover Gemma 3 270M and 1B** — not 4B,
+  12B, or 27B. O(layers²) cost made larger CLTs impractical. 4B has single-layer skip transcoders
+  on all layers, but these lack cross-layer edges and target a different space (post-MLP-norm output,
+  not mlp_post). Cannot be dropped into our pipeline without significant rework. Our own trained
+  CLT (`checkpoints/medgemma-4b-1024/`) remains the right artifact to use.
+- **Gemma 3 post-norms break attribution completeness.** With our MedGemma CLT, v·r_L = 21.5
+  (v is correct) but completeness ≈ −0.002. Root cause: Gemma 3 applies RMSNorm after each
+  attention and MLP output before the residual addition. The method's effective_readout[l] =
+  W_out[l] @ v_{l+1} is wrong — it must pass through the frozen post-norm Jacobian. The
+  circuit tracing paper used Claude 3 Sonnet (pre-norm only) and never hit this. Pythia (also
+  pre-norm) works fine at 0.91. Fix: port post-norm handling from Gemma Scope 2's attribution
+  tooling, or use their pre-trained CLTs which were built knowing the architecture.
