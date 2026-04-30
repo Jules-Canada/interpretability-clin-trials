@@ -129,6 +129,34 @@ class CrossLayerTranscoder(nn.Module):
             for l_source in range(L)
         ])
 
+        # Dataset-level RMS scales used during training (set externally via
+        # load_scales_from_checkpoint). Persistent=False so old checkpoints without
+        # scales still load via strict=True; populated post-hoc when present.
+        # NaN init lets `has_scales()` distinguish "not loaded" from "real zero".
+        self.register_buffer(
+            "resid_scales", torch.full((L,), float("nan")), persistent=False,
+        )
+        self.register_buffer(
+            "mlp_scales", torch.full((L,), float("nan")), persistent=False,
+        )
+
+    def has_scales(self) -> bool:
+        """True if dataset-level normalization scales have been loaded."""
+        return not (
+            torch.isnan(self.resid_scales).any() or torch.isnan(self.mlp_scales).any()
+        )
+
+    def load_scales_from_checkpoint(self, ckpt: dict) -> bool:
+        """
+        Populate resid_scales / mlp_scales from a checkpoint dict if present.
+        Returns True if scales were loaded.
+        """
+        if "resid_scales" in ckpt and "mlp_scales" in ckpt:
+            self.resid_scales = ckpt["resid_scales"].to(self.resid_scales.device).float()
+            self.mlp_scales = ckpt["mlp_scales"].to(self.mlp_scales.device).float()
+            return True
+        return False
+
     @staticmethod
     def _make_encoder(d_model: int, n_features: int, bound: float) -> nn.Linear:
         """Linear encoder with bias, initialized to U(-bound, bound)."""

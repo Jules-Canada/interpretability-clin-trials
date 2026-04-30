@@ -455,3 +455,18 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
   circuit tracing paper used Claude 3 Sonnet (pre-norm only) and never hit this. Pythia (also
   pre-norm) works fine at 0.91. Fix: port post-norm handling from Gemma Scope 2's attribution
   tooling, or use their pre-trained CLTs which were built knowing the architecture.
+- **RMS scale persistence (2026-04-30).** The CLT trains with dataset-level per-layer RMS
+  scales computed once at loader init from a 4096-token sample of the HDF5
+  (`clt/loader.py:_compute_scales`). Until 2026-04-30 these scales were never persisted —
+  `_save_checkpoint` wrote only `model_state_dict` + `optimizer_state_dict`. At inference
+  `graphs/build.py` fell back to per-prompt RMS, which drifts wildly across prompts and
+  inflates feature contributions by 5-10×, breaking the feat/error cancellation. Symptom:
+  on MedGemma, the steroid test prompt happened to land near training-time RMS and gave
+  completeness=0.76, but eligibility prompts gave completeness=4.14 / 8.14 (unphysical).
+  Recovery path: `scripts/compute_clt_scales.py` reads the HDF5, computes per-layer RMS
+  over a 100k-token sample, and writes `resid_scales` + `mlp_scales` into the existing
+  checkpoint. `clt/model.py` registers non-persistent buffers populated post-load via
+  `clt.load_scales_from_checkpoint(ckpt)`. `graphs/build.py` prefers saved scales and
+  warns + falls back to per-prompt only if a checkpoint predates this change. **TODO**:
+  update `clt/train.py:_save_checkpoint` to bundle scales automatically so future training
+  runs (e.g. the planned L0~20-30 retrain) don't recreate this gap.

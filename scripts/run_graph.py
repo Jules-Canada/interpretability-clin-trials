@@ -121,7 +121,8 @@ def main() -> None:
     clt.load_state_dict(ckpt["model_state_dict"])
     clt = clt.to(device)
     clt.eval()
-    print(f"  Loaded from step {ckpt['step']}")
+    scales_loaded = clt.load_scales_from_checkpoint(ckpt)
+    print(f"  Loaded from step {ckpt['step']} (scales: {'yes' if scales_loaded else 'NO — per-prompt fallback'})")
 
     # -----------------------------------------------------------------------
     # Tokenize prompt + resolve target token

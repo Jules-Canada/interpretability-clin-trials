@@ -132,10 +132,11 @@ def main() -> None:
     # Load to CPU first so optimizer state in clt_final.pt doesn't occupy GPU RAM
     ckpt = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
     clt.load_state_dict(ckpt["model_state_dict"])
+    scales_loaded = clt.load_scales_from_checkpoint(ckpt)
     del ckpt  # free optimizer tensors from CPU RAM before moving CLT to GPU
     clt = clt.to(device=device, dtype=torch.bfloat16)
     clt.eval()
-    print(f"  CLT loaded\n")
+    print(f"  CLT loaded (scales: {'yes' if scales_loaded else 'NO — per-prompt fallback'})\n")
 
     attr_cfg = AttributionConfig(
         min_activation=args.min_activation,

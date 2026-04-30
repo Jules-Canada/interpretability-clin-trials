@@ -447,15 +447,25 @@ def build_attribution_graph(
     ]
 
     # Normalize residual streams if CLT was trained with normalization.
-    # Scales are estimated from the prompt's own activations (per-layer RMS).
-    # This is an approximation of the dataset-level normalization used during
-    # training; good enough for inference on reasonable-length prompts.
+    # Prefer the dataset-level scales bundled with the checkpoint (correct, stable);
+    # fall back to per-prompt RMS only if the checkpoint predates the scale-saving
+    # change. Per-prompt RMS drifts wildly across prompts and inflates feature
+    # contributions by 5-10× — see CLAUDE.md "RMS scale persistence".
+    use_saved_scales = clt.cfg.normalize_activations and clt.has_scales()
     if clt.cfg.normalize_activations:
-        resid_streams_enc = []
-        for r in resid_streams:
-            # r: (1, seq, d_model)
-            rms = r.float().pow(2).mean().sqrt().clamp(min=1e-8)
-            resid_streams_enc.append(r / rms)
+        if use_saved_scales:
+            resid_streams_enc = [
+                r / clt.resid_scales[l].to(r.device).clamp(min=1e-8)
+                for l, r in enumerate(resid_streams)
+            ]
+        else:
+            print("  [warn] CLT has no saved scales; falling back to per-prompt RMS "
+                  "(graphs may be untrustworthy — run scripts/compute_clt_scales.py)", flush=True)
+            resid_streams_enc = []
+            for r in resid_streams:
+                # r: (1, seq, d_model)
+                rms = r.float().pow(2).mean().sqrt().clamp(min=1e-8)
+                resid_streams_enc.append(r / rms)
     else:
         resid_streams_enc = resid_streams
 
@@ -470,16 +480,23 @@ def build_attribution_graph(
     # Per-layer RMS of raw mlp_post — used to un-normalize the CLT decoder outputs.
     # The CLT was trained to reconstruct mlp_post / rms, so decoder output is in
     # normalized space; multiplying by rms converts back to raw space for error and
-    # transfer matrix computations.
+    # transfer matrix computations. Prefer saved dataset-level scales as above.
     mlp_rms_per_layer: dict[int, float] | None = None
     if clt.cfg.normalize_activations:
-        mlp_rms_per_layer = {}
-        with torch.no_grad():
-            for l in range(L):
-                raw = cache[f"blocks.{l}.mlp.hook_post"]
-                mlp_rms_per_layer[l] = raw.float().pow(2).mean().sqrt().clamp(min=1e-8).item()
+        if use_saved_scales:
+            mlp_rms_per_layer = {
+                l: clt.mlp_scales[l].clamp(min=1e-8).item() for l in range(L)
+            }
+            src = "saved"
+        else:
+            mlp_rms_per_layer = {}
+            with torch.no_grad():
+                for l in range(L):
+                    raw = cache[f"blocks.{l}.mlp.hook_post"]
+                    mlp_rms_per_layer[l] = raw.float().pow(2).mean().sqrt().clamp(min=1e-8).item()
+            src = "per-prompt"
         mid = L // 2
-        print(f"  [debug] mlp_rms L0={mlp_rms_per_layer[0]:.3f}  L{mid}={mlp_rms_per_layer[mid]:.3f}  L{L-1}={mlp_rms_per_layer[L-1]:.3f}", flush=True)
+        print(f"  [debug] mlp_rms ({src}) L0={mlp_rms_per_layer[0]:.3f}  L{mid}={mlp_rms_per_layer[mid]:.3f}  L{L-1}={mlp_rms_per_layer[L-1]:.3f}", flush=True)
 
     # -----------------------------------------------------------------------
     # Step 3: Compute readout vector v = ∂T/∂resid_L
