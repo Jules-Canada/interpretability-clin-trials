@@ -858,11 +858,24 @@ def build_attribution_graph(
             v_h_all = v_h_all.repeat_interleave(n_q // n_kv, dim=0)  # (n_heads, d_head)
         self_loop = a_tt.unsqueeze(1) * torch.einsum("hd,hdm->hm", v_h_all, W_O)  # (n_heads, d_model)
 
-        # Cross-position attn output (the missing term): (n_heads, d_model)
+        # Cross-position attn output (the missing term): (n_heads, d_model).
+        # cross_attn lives in pre-post-attn-norm space (raw Σ_h hook_z @ W_O).
+        # On Gemma 3, ln1_post is applied to attn_out before the residual add, so we
+        # must pull v_{l+1} back through that frozen RMSNorm Jacobian (γ/scale)
+        # before dotting with cross_attn — same correction as in
+        # _compute_attention_propagated_v above. Pre-norm models (Pythia) skip this.
         cross_attn = total_attn - self_loop
 
-        # Logit contribution per head: v_{l+1} · cross_attn[h] → (n_heads,)
-        logit_contribs = torch.einsum("m,hm->h", v_lp1, cross_attn)
+        post_attn_scale_key = f"blocks.{l}.ln1_post.hook_scale"
+        if post_attn_scale_key in cache.cache_dict:
+            scale_post_attn = cache[post_attn_scale_key][0, target_position, 0].cpu().double()
+            gamma_post_attn = model.blocks[l].ln1_post.w.cpu().double()
+            v_for_cross = v_lp1 * gamma_post_attn / scale_post_attn
+        else:
+            v_for_cross = v_lp1
+
+        # Logit contribution per head: v_for_cross · cross_attn[h] → (n_heads,)
+        logit_contribs = torch.einsum("m,hm->h", v_for_cross, cross_attn)
 
         for h in range(n_q):
             contrib = logit_contribs[h].item()
