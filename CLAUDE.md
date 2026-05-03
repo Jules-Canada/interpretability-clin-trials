@@ -301,8 +301,8 @@ When labeling features found in attribution graphs, record labels in
 
 ```bash
 # 1. Clone repo
-git clone https://YOUR_TOKEN@github.com/Jules-Canada/ignis.git
-cd ignis
+git clone https://YOUR_TOKEN@github.com/Jules-Canada/interpretability-clin-trials.git
+cd interpretability-clin-trials
 
 # 2. Fix torchvision conflict (breaks transformer_lens import)
 pip uninstall torchvision torchaudio -y
@@ -316,9 +316,12 @@ export HF_HOME=/workspace/.cache/huggingface
 # 5. HuggingFace login (MedGemma is gated — token is at ~/.cache/huggingface/token on Mac)
 python -c "from huggingface_hub import login; login(token='YOUR_HF_TOKEN')"
 
-# 6. SCP checkpoint from Mac (run on Mac, create dir on pod first)
-#    On pod:  mkdir -p ~/ignis/checkpoints/medgemma-4b-1024
-#    On Mac:  scp -P <PORT> -i ~/.ssh/id_ed25519 checkpoints/medgemma-4b-1024/clt_inference.pt root@<IP>:~/ignis/checkpoints/medgemma-4b-1024/
+# 6. tmux for long batch runs
+apt update && apt install -y tmux
+
+# 7. SCP checkpoint from Mac (run on Mac, create dir on pod first)
+#    On pod:  mkdir -p ~/interpretability-clin-trials/checkpoints/medgemma-4b-1024
+#    On Mac:  scp -P <PORT> -i ~/.ssh/id_ed25519 checkpoints/medgemma-4b-1024/clt_inference.pt root@<IP>:~/interpretability-clin-trials/checkpoints/medgemma-4b-1024/
 ```
 
 **Known gotchas:**
@@ -326,7 +329,7 @@ python -c "from huggingface_hub import login; login(token='YOUR_HF_TOKEN')"
 - `torchvision` must be uninstalled before importing `transformer_lens` or you get a segfault
 - Root disk is ~10GB; always set `HF_HOME=/workspace/.cache/huggingface` before downloading MedGemma (3.6GB weights)
 - For graph generation only: A10 (24GB) is sufficient, no need for H100
-- Repo clones as `interpretability-clin-trials` not `ignis` — adjust paths accordingly
+- Repo dir is `interpretability-clin-trials` (the GitHub repo name), not `ignis` (the Mac local dir)
 
 ---
 
@@ -349,10 +352,10 @@ then prints the exact scp commands to run. See `docs/pipeline_lessons.md` for wh
 scp commands (run from your Mac):
 ```
 INSTANCE=ubuntu@<ip>
-scp "$INSTANCE:ignis/frontend/graph_data/*.json" frontend/graph_data/
-scp "$INSTANCE:ignis/checkpoints/pythia-410m-2048/clt_inference.pt" checkpoints/pythia-410m-2048/
-scp "$INSTANCE:ignis/data/feature_activations.jsonl" data/
-scp "$INSTANCE:ignis/data/graph_features.json" data/
+scp "$INSTANCE:interpretability-clin-trials/frontend/graph_data/*.json" frontend/graph_data/
+scp "$INSTANCE:interpretability-clin-trials/checkpoints/pythia-410m-2048/clt_inference.pt" checkpoints/pythia-410m-2048/
+scp "$INSTANCE:interpretability-clin-trials/data/feature_activations.jsonl" data/
+scp "$INSTANCE:interpretability-clin-trials/data/graph_features.json" data/
 ```
 
 **Rule: run all 4 scp commands before terminating. The HDF5 stays on the instance and is
@@ -386,10 +389,10 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
 - [x] Diagnosed post-norm incompatibility — Gemma 3 post-norms break completeness (~−0.002)
 - [x] Confirmed fix path: frozen autograd backward pass (paper's actual method), architecture-agnostic
 - [x] Ruled out Gemma Scope 2 CLTs — only available for 270M and 1B, not 4B
-- [ ] **Next**: Rewrite `graphs/build.py` — replace manual v_at_layer/effective_readout with frozen
-      autograd backward pass. Delete `_compute_attention_propagated_v` and
-      `_compute_corrected_logit_transfer`. Use TransformerLens hooks to detach cached LN scales,
-      attn patterns, GeGLU gates. Fix logit v to `(W_U[:,tok] - W_U.mean(dim=1)) * ln_w / hook_scale`.
+- [x] Post-attn norm Jacobian added to cross-position attention edges (commit 87a6b9b) — steroid prompt 0.39 → 0.76
+- [x] RMS scale persistence + saved-scale path (commit 3b5125b) — fixes per-prompt drift but does NOT fix completeness inflation on most prompts
+- [x] Diagnostics arc (2026-05-02 → 2026-05-03): 4 diagnostic scripts (`scripts/diag_*.py`), summarized in `docs/diagnostics_log.md`. Conclusion: manual chain-rule code is unverifiable in isolation; autograd rewrite is the right move.
+- [ ] **Next**: Execute the autograd rewrite per `docs/autograd_plan.md`. Phase 0: re-baseline Pythia-70m. Phase 1: build `graphs/build_autograd.py` alongside existing build.py. Phase 2: pytest regression suite. Phase 3: cutover. Phase 4: re-run 14 clinical graphs. Phase 5 contingent: CLT retrain at L0~20–30 if graphs noisy.
 - [ ] Validate on Pythia-70m: completeness should remain ~0.91
 - [ ] Validate on MedGemma: completeness should reach ≥ 0.5
 - [ ] Rebuild 14 clinical graphs against MedGemma with existing CLT checkpoint
