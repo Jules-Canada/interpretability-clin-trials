@@ -178,3 +178,111 @@ See `docs/autograd_plan.md` for the rewrite plan.
 - Does the frozen-rms approximation itself break down on Gemma 3 with γ in the hundreds? Autograd doesn't fix this if we still freeze the rms denominator. We'll find out empirically once autograd lands.
 - Is the CLT's L0 ≈ 91 too high for clean per-feature attribution even with correct math? Possible we'll need to retrain at L0 ~ 20–30. Budget for that contingency in the plan.
 - The CLT was trained on full-protocol activations but tested on short-sentence activations. We should not assume good cross-distribution generalization. May need to re-evaluate which prompts are appropriate.
+
+---
+
+## Phase 0 — Pythia-70m baseline (2026-05-03)
+
+Re-ran the existing manual-Jacobian `graphs/build.py` against Pythia-70m on a
+fixed prompt before starting the autograd rewrite, to establish the regression
+target Phase 1 must match within ±0.02.
+
+| field | value |
+|---|---|
+| script | `scripts/phase0_baseline.py` |
+| record | `docs/phase0_baseline.json` |
+| model | EleutherAI/pythia-70m (6 layers, d_model=512, d_mlp=2048) |
+| CLT | random init, n_features=128, seed=0 (decoders ~ N(0, 0.01)) |
+| prompt | `"The capital of France is"` |
+| target | `" Paris"` (vocab idx 7785) |
+| device | mps |
+| logit_value | 15.2718 |
+| **completeness** | **0.9133** |
+| nodes | 415 |
+| edges | 49,791 |
+
+Confirms CLAUDE.md's "0.91 with random CLT" is reproducible. Phase 1's
+`graphs/build_autograd.py` must produce completeness in `[0.8933, 0.9333]`
+on this exact configuration to count as a passing baseline.
+
+---
+
+## Phase 1 — Autograd build, Pythia-70m validation (2026-05-03)
+
+`graphs/build_autograd.py` lands. ONE autograd backward pass against a
+frozen-nonlinearity forward replaces the manual `_compute_readout_vector` +
+`_compute_attention_propagated_v` + `_compute_corrected_logit_transfer` chain.
+Hooks freeze attention pattern + every LN/RMSNorm scale; `hook_mlp_out` is
+detached so the backward at `hook_resid_pre` only includes skip + attention
+(matches the paper's linearised-MLP-via-CLT model). `grad_at_mlp_post` is
+derived manually after the autograd pass since the mlp_out detach severs the
+autograd path to mlp_post.
+
+**Regression result** (`scripts/phase1_validate_autograd.py`,
+`docs/phase1_autograd.json`):
+
+| | manual baseline | autograd | Δ |
+|---|---|---|---|
+| completeness | 0.9133 | 0.8996 | −0.0137 |
+
+Inside the ±0.02 acceptance window. Phase 1 PASS.
+
+### Substantive finding — autograd reveals cross-position indirect paths
+
+`scripts/diag_autograd_vs_manual.py` compares `v_at_layer[l]` (manual) to
+`grads['resid_pre'][l]` (autograd) layer by layer:
+
+| layer | ‖manual‖ | ‖autograd‖ | cos | rel L2 |
+|---|---|---|---|---|
+| 6 | 2.1917 | 2.1917 | **1.000000** | 0.000 |
+| 5 | 2.2459 | 2.2464 | 0.995649 | 0.093 |
+| 4 | 2.2675 | 2.2687 | 0.992319 | 0.124 |
+| 3 | 2.3362 | 2.3651 | 0.950772 | 0.312 |
+| 2 | 2.3943 | 2.4292 | 0.911903 | 0.417 |
+| 1 | 2.4452 | 2.4751 | 0.871103 | 0.505 |
+| 0 | 4.9215 | 5.3372 | **0.133158** | 1.267 |
+
+The two agree exactly at the readout (layer L), then drift by exactly one
+layer's worth per step — the fingerprint of a per-layer term that manual
+omits and autograd captures.
+
+**What manual misses.** `_compute_attention_propagated_v` propagates v as
+`v_at_layer[l] = v_at_layer[l+1] + (J_attn[l] = a_tt[h] · W_V@W_O)^T @ v_at_layer[l+1]`.
+The `a_tt[h] = pattern[target, target]` term only models the **self-attention**
+path (target query reading from target key). But in the linearised replacement
+model, perturbing `resid_pre[l, target]` also perturbs `v[l, target]`, which
+perturbs `attn_out[l, q]` for every query q via `pattern[q, target]`. Those
+perturbations at OTHER positions then feed back to `attn_out[l+k, target]`
+through cross-position attention reads at later layers. This **cross-position
+indirect** path is real in the linearised model and autograd traces it; manual
+silently drops it.
+
+**Why completeness still lands close (−0.014 vs the manual baseline):** the
+total decomposition `feat + error + embed + attn = decomposable_logit` still
+holds for both linearisations (it's just `v · r_L` at the readout). What
+shifts is the per-component breakdown. With autograd:
+
+| component | manual | autograd | Δ |
+|---|---|---|---|
+| feat_sum | −0.5498 | −0.4081 | +0.142 |
+| error_sum | 6.2618 | 5.5790 | −0.683 |
+| attn_sum | 5.3457 | 5.3867 | +0.041 |
+| embed_sum | 0.0692 | 0.4030 | +0.334 |
+| total | 11.1270 | 10.9606 | −0.166 |
+
+The cross-position indirect contributions get redistributed across
+embed/attn/feat. The 0.166 gap to `decomposable_logit = 12.18` widens slightly
+because the redistribution pulls some weight onto features below the
+`min_activation` threshold (currently 0).
+
+**Implication.** The autograd version is the paper-faithful one (the paper
+specifies "Jacobian with stop-gradients on all nonlinearities" = full chain
+rule of the linearised model = what autograd computes). The manual code was a
+simplification that happened to land at 0.91 because cross-position
+contributions were absorbed into the error and attn nodes. We're not
+regressing — we're correcting.
+
+Open question for Phase 4: on MedGemma, where the manual code reached
+completeness 4–8 (unphysical), the cross-position indirect path may be the
+dominant inflation source. If so, autograd should land closer to ~1.0
+naturally, without per-prompt tuning.

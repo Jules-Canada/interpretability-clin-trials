@@ -83,7 +83,7 @@ layer's residual and mlp_post tensors. Also fix the logit node input vector:
 
 **Cost estimate:**
 - Engineering: ~2–3 days to implement + test frozen backward pass
-- Compute (minimum path, use existing CLT): ~$6 for graph generation on Lambda H100
+- Compute (minimum path, use existing CLT): ~$6 for graph generation on RunPod H100
 - Compute (retrain CLT with better sparsity, L0~20–30 vs current L0~91): ~$50
 - Existing CLT checkpoint at `checkpoints/medgemma-4b-1024/clt_inference.pt` is usable
   for initial validation; retrain only if graphs are too noisy for feature labeling.
@@ -182,58 +182,59 @@ From the paper (§ Building an Interpretable Replacement Model):
 
 ## Attribution Graph Facts (read before touching graphs/)
 
-- **Freeze** attention patterns and LayerNorm denominators before computing attributions.
-  This makes feature→feature interactions linear and attribution well-defined.
-- Nodes: CLT features, token embeddings, reconstruction errors, output logits.
+- **Freeze** every multiplicative nonlinearity (attention pattern, LN/RMSNorm scale,
+  GeGLU gate) before computing attributions. This makes the model linear in the
+  residual stream and gives a well-defined chain rule.
+- Nodes: CLT features, token embeddings, reconstruction errors, attention head
+  cross-position contributions, output logits.
 - Edges: linear effects between nodes. Feature pre-activation = sum of input edges.
 - Pruning: keep top-K nodes/edges by contribution to target token logit. See §Appendix:
   Graph Pruning for the exact algorithm.
 - Export format must match `anthropics/attribution-graphs-frontend` JSON schema.
   Check `frontend/README.md` for the schema spec before writing `graphs/export.py`.
 
-### Attention Jacobians — REQUIRED for valid completeness
+### How `graphs/build.py` computes attribution gradients
 
-**The T matrix in `graphs/build.py` MUST include attention paths or completeness will be
-~0.001 (MLP paths only). This is not optional — graphs without attention Jacobians cannot
-answer "what caused the logit."**
+ONE `torch.autograd.grad` backward pass through a frozen-nonlinearity forward
+gives every per-layer gradient the edge formulas need. Implementation lives in
+`_compute_attribution_gradients`. The forward installs TransformerLens hooks that:
 
-The transfer matrix from feature `f` at layer `l_s` to the logit must account for the fact
-that each layer's residual contribution propagates forward through **both** skip connections
-and attention. The correct computation:
+1. **Replace every `attn.hook_pattern`** with its cached `.detach()` value.
+2. **Replace every LN/RMSNorm `hook_scale`** with its cached `.detach()` value —
+   `ln1`, `ln2`, `ln_final` on every architecture; `ln1_post`, `ln2_post` on
+   Gemma 3. Anything new (e.g. `ln3` on a future arch) flows through automatically:
+   we freeze every `*.hook_scale` that exists in the cache.
+3. **Detach `hook_mlp_out`** at every layer. This severs autograd's path back
+   through the MLP so `∂logit/∂hook_resid_pre[l]` flows along skip + attention
+   only — matches the paper's linearised replacement model where MLPs are
+   replaced by CLT decoder outputs.
 
-1. **Attention Jacobian per layer** (from frozen attention pattern `A_h[target, target]`):
-   ```
-   J_l = Σ_h  A_h[target, target] * W_V^h @ W_O^h    (d_model × d_model)
-   ```
-2. **Propagator** (skip connection + attention):
-   ```
-   P_l = I + J_l
-   ```
-3. **Effective readout vector at each layer** (backpropagate `v = W_U[:, target_token]`):
-   ```
-   v_L = v
-   v_l = P_l^T @ v_{l+1}    (for l from L-1 down to 0)
-   ```
-4. **Full transfer matrix** (replace `v` with `v_{l_t+1}` in each layer's contribution):
-   ```
-   T_full[f, l_s] = Σ_{l_t ≥ l_s}  rms_{l_t} * W_dec[l_s→l_t][:, f] · (W_out[l_t] @ v_{l_t+1})
-   ```
-   vs. current broken version:
-   ```
-   T_MLP[f, l_s]  = Σ_{l_t ≥ l_s}  rms_{l_t} * W_dec[l_s→l_t][:, f] · (W_out[l_t] @ v)
-   ```
+After backward, three gradient signals are available for the edge formulas:
 
-**IMPLEMENTED (2026-04-27).** Verified pythia-70m completeness = 0.91 with random CLT.
+- `grad['resid_pre'][l]` for `l ∈ [0, L]` — direct from autograd. Used for
+  embedding → logit edges (`embed · grad_at_resid_pre[0]`).
+- `grad['attn_out'][l]` for `l ∈ [0, L-1]` — direct from autograd. Used for
+  cross-position attention → logit edges (`cross_attn[h] · grad_at_attn_out[l]`).
+  The post-attn-norm Jacobian is baked in for free on Gemma 3 because `ln1_post`
+  is in the autograd graph with frozen scale.
+- `grad['mlp_post'][l]` for `l ∈ [0, L-1]` — derived after autograd as
+  `W_out.T @ ((γ_post/scale_post).detach() * grad_at_resid_pre[l+1])`. The
+  manual derivation is needed because the `hook_mlp_out` detach severs
+  autograd's path to `mlp_post`. Used for feature → logit and error → logit edges.
 
-Key implementation notes:
-- `_compute_readout_vector` uses frozen-denominator LN gradient (NOT autograd — autograd
-  gives v·r_L = 0 by Euler's theorem for degree-0 homogeneous LN/RMSNorm).
-  Formula: `v = (W_U[:,tok] - mean(W_U[:,tok])) / hook_scale` (Pythia LayerNormPre)
-           `v = W_U[:,tok] * ln_final.w / hook_scale` (Gemma RMSNorm)
-- Completeness denominator = `logit - b_U[tok]` (Pythia has non-zero unembed bias b_U).
-- Attention head cross-position paths captured as `attention` nodes → logit edges.
-- All v_at_layer backprop uses float64 on CPU (MPS doesn't support float64; (1+σ)^L ≈
-  8000× amplification would cause float32 precision loss in feat_sum/error_sum).
+Why architecture-agnostic: post-norms, GeGLU, RoPE, GQA all flow through the
+chain rule for free. Adding a new model = no new Jacobian code, just
+`HookedTransformer.from_pretrained(...)`.
+
+Sanity check: `grad_at_resid_pre[L] · resid_post[L-1] == logit - b_U` exactly
+under the frozen `ln_final` scale. The build prints both numbers as
+`v·r_L=... decomposable=...` — they should match to several digits.
+
+Verified completeness on Pythia-70m at rewrite time: 0.8996 (recorded in
+`docs/phase1_autograd.json`). Regression-tested in
+`tests/test_attribution_completeness.py`. See `docs/autograd_plan.md` and
+`docs/diagnostics_log.md` for the rewrite history and the diagnostic chain
+that led to it.
 
 ---
 
@@ -342,7 +343,7 @@ apt update && apt install -y tmux
   on every CLT training step.
 - For local dev/testing, use `pythia-70m` (6 layers) — fast enough to iterate on CPU.
 
-### Pre-termination checklist (run before killing any Lambda instance)
+### Pre-termination checklist (run before killing any pod instance)
 
 **If `run_pipeline.sh` completed fully, Step 4 already ran — skip to scp.**
 **If the pipeline was interrupted, run `bash scripts/pre_terminate.sh` first.** It handles
@@ -371,7 +372,7 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
 - [x] Repo scaffolded
 - [x] Toy model test passing
 - [x] CLT training loop implemented
-- [x] Activations extracted from Pythia-410m (5M tokens, Lambda Labs H100)
+- [x] Activations extracted from Pythia-410m (5M tokens, RunPod H100)
 - [x] CLT trained (50k steps, n_features=2048, H100)
 - [x] Attribution graph construction implemented
 - [x] Frontend rendering a graph (france_capital, water_boil working locally)
@@ -383,7 +384,7 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
 ### Phase 2 — MedGemma-4B-pt (active, 2026-04-28)
 - [x] extract_activations.py updated: --local_dataset, --text_field, --dtype flags added
 - [x] run_pipeline_medgemma.sh created (n_features=1024, float16, clinical corpus)
-- [x] setup_lambda_medgemma.sh created (HuggingFace login, gated model)
+- [x] setup_pod_medgemma.sh created (HuggingFace login, gated model)
 - [x] CLT trained (50k steps, n_features=1024, H100, L0~91, mse_mean~0.44)
 - [x] Attention Jacobians + frozen-LN v implemented — verified pythia-70m completeness 0.91
 - [x] Diagnosed post-norm incompatibility — Gemma 3 post-norms break completeness (~−0.002)
@@ -392,16 +393,19 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
 - [x] Post-attn norm Jacobian added to cross-position attention edges (commit 87a6b9b) — steroid prompt 0.39 → 0.76
 - [x] RMS scale persistence + saved-scale path (commit 3b5125b) — fixes per-prompt drift but does NOT fix completeness inflation on most prompts
 - [x] Diagnostics arc (2026-05-02 → 2026-05-03): 4 diagnostic scripts (`scripts/diag_*.py`), summarized in `docs/diagnostics_log.md`. Conclusion: manual chain-rule code is unverifiable in isolation; autograd rewrite is the right move.
-- [ ] **Next**: Execute the autograd rewrite per `docs/autograd_plan.md`. Phase 0: re-baseline Pythia-70m. Phase 1: build `graphs/build_autograd.py` alongside existing build.py. Phase 2: pytest regression suite. Phase 3: cutover. Phase 4: re-run 14 clinical graphs. Phase 5 contingent: CLT retrain at L0~20–30 if graphs noisy.
-- [ ] Validate on Pythia-70m: completeness should remain ~0.91
+- [x] Phase 0 (2026-05-03): Pythia-70m re-baseline — `scripts/phase0_baseline.py` records completeness = 0.9133 on `"The capital of France is" → " Paris"` (random CLT, n_features=128, seed=0). Result locked in `docs/phase0_baseline.json`; regression target for Phase 1 is [0.8933, 0.9333].
+- [x] Phase 1 (2026-05-03): `graphs/build_autograd.py` lands. ONE autograd backward against a frozen-nonlinearity forward (freeze attention pattern + every LN/RMSNorm scale; detach `hook_mlp_out`). Pythia-70m completeness = 0.8996 — inside the ±0.02 window. **Substantive finding**: autograd captures cross-position indirect attention paths the manual code silently dropped — `cos(grad_at_resid_pre[l])` between manual and autograd drifts from 1.0 at the readout to 0.13 at layer 0, by exactly one layer's worth per step. Autograd is the paper-faithful chain rule of the linearised replacement model; manual was a self-attention-only simplification. See `docs/diagnostics_log.md` "Phase 1" section. Validation script: `scripts/phase1_validate_autograd.py`; diagnostic: `scripts/diag_autograd_vs_manual.py`.
+- [x] Phase 2 (2026-05-03): `tests/test_attribution_completeness.py` locks in three regression bounds. Toy 2-layer + fixed seed → completeness within ±0.02 of 1.000000; Pythia-70m on Phase 0 prompt → completeness ≥ 0.85; MedGemma-4B on eligibility prompt → completeness ≥ 0.5 (`@pytest.mark.slow`, auto-skips when checkpoint or saved RMS scales are missing). `slow` marker registered in pyproject.toml.
+- [x] Phase 3 (2026-05-03): cutover complete. Autograd implementation moved into `graphs/build.py` (single canonical implementation; manual chain-rule code retired). `build_autograd.py` deleted; superseded helper-and-validation scripts deleted (`scripts/phase0_baseline.py`, `scripts/phase1_validate_autograd.py`, `scripts/diag_autograd_vs_manual.py`, `scripts/diag_jacobian.py`). Test imports updated to use `graphs.build`. CLAUDE.md "Attribution Graph Facts" rewritten to describe the autograd approach. Full suite post-cutover: 50 passed, 1 skipped (3-test drop accounts exactly for the `_compute_readout_vector` tests removed alongside the helper).
+- [ ] **Next**: Phase 4 of `docs/autograd_plan.md` — re-run the 14 clinical graphs on MedGemma against the new autograd build. First step on a pod with HDF5: run `scripts/compute_clt_scales.py` to bundle saved RMS scales into the checkpoint (currently missing — that's why the Phase 2 MedGemma test skips locally). Then `scripts/run_graphs_batch.py`. Verify all 14 give completeness ≥ 0.5. Phase 5 contingent: CLT retrain at L0~20–30 if graphs noisy.
 - [ ] Validate on MedGemma: completeness should reach ≥ 0.5
 - [ ] Rebuild 14 clinical graphs against MedGemma with existing CLT checkpoint
-- [ ] If graphs too noisy (L0~91): retrain CLT targeting L0~20–30 (~$50 compute on Lambda H100)
+- [ ] If graphs too noisy (L0~91): retrain CLT targeting L0~20–30 (~$50 compute on RunPod H100)
 - [ ] Feature labeling with correctly-pruned graphs
 - [ ] Notebook 03 — MedGemma feature readout
 
 ### Long-lead items
-- [ ] PhysioNet credentialing for MIMIC-IV (apply early — takes weeks)
+- [x] PhysioNet credentialing for MIMIC-IV (granted 2026-05-08)
 
 ## Findings So Far
 
@@ -414,11 +418,12 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
 - CLT must always be moved to the same device as the model it's paired with.
   Call `clt.to(next(model.parameters()).device)` at entry points (`build_attribution_graph`,
   test fixtures). Never scatter `.to(device)` calls on individual tensors inside helpers.
-- Attribution graph completeness (sum of edges to logit / logit value) is ~0.001 with
-  MLP-only T matrix — attention paths dominate logit prediction in both Pythia and MedGemma.
-  Completeness was never verified for Phase 1 Pythia graphs; those graphs have the same bug.
-  The paper's 0.85–0.99 figure requires attention Jacobians in the T matrix. See the
-  "Attention Jacobians" section above — this must be implemented before graphs are valid.
+- Attribution graph completeness must include attention paths: an MLP-only T matrix
+  gives ~0.001 because attention dominates logit prediction in both Pythia and MedGemma.
+  The current `graphs/build.py` handles this correctly via the autograd backward pass
+  through the linearised model — see "Attribution Graph Facts" above. Phase 1 Pythia
+  graphs (pre-autograd) have the MLP-only bug and must NOT be cited as valid; rebuild
+  if needed. Pythia-70m baseline under the autograd build is 0.8996.
 - H100 training speed: ~1.37 steps/s with batch_size=512, n_features=2048, 24 layers. 50k steps ≈ 10hrs.
   n_features=4096 exceeded H100 VRAM (81GB needed vs 79GB available) — settled on 2048.
 - steps/sec timing added to `_log()` in `clt/train.py` (elapsed, eta, steps/s).
@@ -427,8 +432,8 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
 - HDF5 now stores `token_ids` dataset (int32) for feature labeling context reconstruction.
   Old HDF5 files without this field need to be re-extracted before running label_features.py.
 - flush_every default changed 500→5 to prevent ~200GB RAM accumulation before first disk write.
-- torchvision/torchaudio conflict on Lambda: pins torch==2.5.1, incompatible with torch 2.11.0.
-  Removed from setup_lambda.sh; uninstall manually on existing instances.
+- torchvision/torchaudio conflict on pods: pins torch==2.5.1, incompatible with torch 2.11.0.
+  Removed from setup_pod.sh; uninstall manually on existing instances.
 - HDF5 size for 5M tokens, 24 layers: ~2.5TB (resid + mlp_post, float32) or ~491GB (resid only).
   The "~20GB" estimate was wrong. A10 instances have 1.4TB disk — only fits resid_only. Use
   `--resid_only` flag for find_top_activations runs; full extraction needs H100 or dedicated storage.
@@ -442,10 +447,12 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
   check to skip rewrite for local development.
 - MedGemma-4B-pt CLT config: n_features=1024 chosen to fit H100 VRAM (34 layers, d_mlp=10240
   GeGLU, decoder matrix is O(L*(L+1)/2 × n_features × d_mlp)). float16 storage reduces HDF5
-  to ~400GB for 2M tokens (resid + mlp_post, 34 layers). Use 1TB Lambda disk.
+  to ~400GB for 2M tokens (resid + mlp_post, 34 layers). Use 1TB pod volume.
 - Clinical trial protocol corpus: 49,002 docs from ClinicalTrials.gov, avg ~26k tokens/doc,
   JSONL with `full_text` field. Use --text_field full_text with extract_activations.py.
   2M tokens covers ~77 documents — sufficient for a proof-of-concept CLT run.
+  Local copy on Julie's Mac: `/Users/juliecannon/Desktop/protocol_corpus/ct_corpus/protocols.jsonl`
+  (6.0 GB). Not in the repo — scp this up to `data/protocols.jsonl` on every fresh pod.
 - **Gemma Scope 2 (McDougall et al., Sep 2025) CLTs only cover Gemma 3 270M and 1B** — not 4B,
   12B, or 27B. O(layers²) cost made larger CLTs impractical. 4B has single-layer skip transcoders
   on all layers, but these lack cross-layer edges and target a different space (post-MLP-norm output,

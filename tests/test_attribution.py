@@ -18,7 +18,6 @@ from clt.config import AttributionConfig, CLTConfig
 from clt.model import CrossLayerTranscoder
 from graphs.build import (
     AttributionGraph,
-    _compute_readout_vector,
     _compute_transfer_matrices,
     build_attribution_graph,
 )
@@ -140,39 +139,6 @@ def test_transfer_matrix_accumulates(toy_clt, toy_transformer):
         assert torch.allclose(diff, expected_increment, atol=1e-5), (
             f"Transfer matrix accumulation wrong for l_s={l_s}"
         )
-
-
-# ---------------------------------------------------------------------------
-# Readout vector tests
-# ---------------------------------------------------------------------------
-
-
-def test_readout_vector_shape(toy_transformer, toy_cache, toy_tokens):
-    target_token_idx = 42
-    v = _compute_readout_vector(
-        toy_transformer, toy_cache, target_position=-1,
-        target_token_idx=target_token_idx, L=N_LAYERS,
-    )
-    assert v.shape == (D_MODEL,), f"Readout vector shape {v.shape} != ({D_MODEL},)"
-
-
-def test_readout_vector_nonzero(toy_transformer, toy_cache, toy_tokens):
-    """Gradient of logit w.r.t. residual stream should be non-zero."""
-    target_token_idx = 42
-    v = _compute_readout_vector(
-        toy_transformer, toy_cache, target_position=-1,
-        target_token_idx=target_token_idx, L=N_LAYERS,
-    )
-    assert v.abs().max().item() > 1e-8, "Readout vector is all zeros"
-
-
-def test_readout_vector_varies_by_token(toy_transformer, toy_cache):
-    """Different target tokens → different readout vectors."""
-    v1 = _compute_readout_vector(toy_transformer, toy_cache, -1, 10, N_LAYERS)
-    v2 = _compute_readout_vector(toy_transformer, toy_cache, -1, 20, N_LAYERS)
-    assert not torch.allclose(v1, v2, atol=1e-6), (
-        "Readout vectors for different tokens should differ"
-    )
 
 
 # ---------------------------------------------------------------------------

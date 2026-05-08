@@ -33,3 +33,6 @@ include = ["clt*", "graphs*", "interventions*", "prompts*", "viz*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "slow: tests that load large models or trained checkpoints (opt-in: pytest -m slow)",
+]

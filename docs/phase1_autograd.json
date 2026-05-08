@@ -1,0 +1,17 @@
+{
+  "baseline_file": "docs/phase0_baseline.json",
+  "model": "EleutherAI/pythia-70m",
+  "prompt": "The capital of France is",
+  "target_token": " Paris",
+  "n_features": 128,
+  "seed": 0,
+  "baseline_completeness": 0.913272469436102,
+  "autograd_completeness": 0.8996169905964669,
+  "delta": -0.013655478839635027,
+  "tolerance": 0.02,
+  "passed": true,
+  "logit_value": 15.271763801574707,
+  "n_nodes": 415,
+  "n_edges": 49791,
+  "device": "mps"
+}

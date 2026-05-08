@@ -1,0 +1,13 @@
+{
+  "model": "EleutherAI/pythia-70m",
+  "prompt": "The capital of France is",
+  "target_token": " Paris",
+  "target_token_idx": 7785,
+  "n_features": 128,
+  "seed": 0,
+  "logit_value": 15.271763801574707,
+  "completeness": 0.913272469436102,
+  "n_nodes": 415,
+  "n_edges": 49791,
+  "device": "mps"
+}
