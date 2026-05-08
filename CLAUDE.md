@@ -315,10 +315,7 @@ pip uninstall torchvision torchaudio -y
 export HF_TOKEN=YOUR_HF_TOKEN
 bash scripts/setup_pod_medgemma.sh   # or setup_pod.sh for non-MedGemma
 
-# 4. tmux for long batch runs
-apt update && apt install -y tmux
-
-# 5. SCP corpus + checkpoint from Mac (paths land on /workspace via symlinks
+# 4. SCP corpus + checkpoint from Mac (paths land on /workspace via symlinks
 #    set up in step 3). Run from Mac:
 #    scp -P <PORT> -i ~/.ssh/id_ed25519 \
 #        ~/Desktop/protocol_corpus/ct_corpus/protocols.jsonl \

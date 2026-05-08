@@ -49,6 +49,14 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# 0b. Install tmux (needed to keep extract/train/graphs alive across SSH drops)
+# ---------------------------------------------------------------------------
+if ! command -v tmux >/dev/null 2>&1; then
+    echo "--- Installing tmux ---"
+    apt-get update -qq && apt-get install -y -qq tmux
+fi
+
+# ---------------------------------------------------------------------------
 # 1. Virtual environment
 # ---------------------------------------------------------------------------
 echo "--- Creating virtual environment ---"
