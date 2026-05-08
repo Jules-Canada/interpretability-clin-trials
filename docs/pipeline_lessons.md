@@ -1,6 +1,6 @@
 # Pipeline Lessons — Pythia-410m Run 1
 
-Issues discovered after the first full training run (April 2026, Lambda H100).
+Issues discovered after the first full training run (April 2026, RunPod H100).
 
 ---
 

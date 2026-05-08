@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# scripts/setup_lambda_medgemma.sh
+# scripts/setup_pod_medgemma.sh
 #
-# One-time environment setup on a fresh Lambda Labs H100 instance for MedGemma-4B-pt.
+# One-time environment setup on a fresh GPU pod (RunPod H100) for MedGemma-4B-pt.
 # Run this once after SSH-ing in and cloning the repo.
 #
 # Prerequisites:
@@ -11,11 +11,11 @@
 # Usage:
 #   git clone https://github.com/Jules-Canada/interpretability-clin-trials.git ignis
 #   cd ignis
-#   bash scripts/setup_lambda_medgemma.sh
+#   bash scripts/setup_pod_medgemma.sh
 
 set -euo pipefail
 
-echo "=== ignis Lambda Labs setup (MedGemma-4B-pt) ==="
+echo "=== ignis pod setup (MedGemma-4B-pt) ==="
 echo "Python: $(python3 --version)"
 echo "CUDA:   $(nvcc --version 2>/dev/null | grep release || echo 'nvcc not found')"
 echo "GPU:    $(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null || echo 'nvidia-smi not found')"
@@ -83,3 +83,4 @@ echo
 echo "=== Setup complete ==="
 echo "Upload corpus, then run:"
 echo "  bash scripts/run_pipeline_medgemma.sh"
+

@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# scripts/setup_lambda.sh
+# scripts/setup_pod.sh
 #
-# One-time environment setup on a fresh Lambda Labs A100 instance.
+# One-time environment setup on a fresh GPU pod (RunPod A100/H100).
 # Run this once after SSH-ing in and cloning the repo.
 #
 # Usage:
 #   git clone https://github.com/Jules-Canada/interpretability-clin-trials.git ignis
 #   cd ignis
-#   bash scripts/setup_lambda.sh
+#   bash scripts/setup_pod.sh
 
 set -euo pipefail
 
-echo "=== ignis Lambda Labs setup ==="
+echo "=== ignis pod setup ==="
 echo "Python: $(python3 --version)"
 echo "CUDA:   $(nvcc --version 2>/dev/null | grep release || echo 'nvcc not found')"
 echo "GPU:    $(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null || echo 'nvidia-smi not found')"

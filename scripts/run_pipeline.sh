@@ -2,11 +2,11 @@
 # scripts/run_pipeline.sh
 #
 # Full pipeline: extraction → training → graphs → feature labeling prep.
-# Run on the Lambda instance. Steps 1–4 all happen here because steps 3–4
+# Run on the pod (RunPod H100). Steps 1–4 all happen here because steps 3–4
 # need the HDF5 file (which stays on the instance and is not scp'd home).
 #
 # Expected runtime: ~1hr extraction, ~10hrs training, ~30min graphs, ~15min features = ~12hrs
-# Expected cost:    ~$18 at Lambda Labs H100 rates (~$1.50/hr)
+# Expected cost:    ~$18 at RunPod H100 rates (~$1.50/hr)
 #
 # Usage:
 #   source .venv/bin/activate

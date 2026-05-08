@@ -234,7 +234,7 @@ Embed contribution: `embed_vec · grad_at_resid_pre[0]` — same.
 
 **Steps:**
 
-1. Spin up H100 (Lambda or RunPod).
+1. Spin up H100 (RunPod).
 2. Re-extract MedGemma activations if HDF5 isn't preserved.
 3. Train new CLT with `sparsity_coeff` increased to target L0 ≈ 25.
    - Estimate based on current `sparsity_coeff=1e-2` giving L0~91: try `sparsity_coeff=4e-2` first, iterate.

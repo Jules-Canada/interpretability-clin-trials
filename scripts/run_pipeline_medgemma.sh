@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # scripts/run_pipeline_medgemma.sh
 #
-# End-to-end CLT training pipeline for MedGemma-4B-pt on a Lambda Labs H100.
+# End-to-end CLT training pipeline for MedGemma-4B-pt on a RunPod H100.
 #
 # Model: google/medgemma-4b-pt (Gemma 3 4B, 34 layers, d_model=2560, d_mlp=10240 GeGLU)
 # Corpus: clinical trial protocols (data/protocols.jsonl, --text_field full_text)
 # Storage: float16 HDF5 — ~400GB for 2M tokens (resid + mlp_post, 34 layers)
-#          Requires a 500GB+ disk (use 1TB Lambda volume to be safe).
+#          Requires a 500GB+ pod volume (1TB to be safe).
 #
 # Usage (from ignis/ directory with .venv active):
 #   source .venv/bin/activate
