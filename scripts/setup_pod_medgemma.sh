@@ -23,6 +23,32 @@ echo "Disk:   $(df -h . | awk 'NR==2{print $2" total, "$4" free"}')"
 echo
 
 # ---------------------------------------------------------------------------
+# 0. Relocate heavy dirs to /workspace + persist HF_HOME
+# ---------------------------------------------------------------------------
+# RunPod's root disk is ~20GB; the corpus (6GB) + CLT checkpoint (12GB) + HF
+# model weights (~7GB for MedGemma) blow past that. /workspace is the large
+# attached volume. Symlink data/ and checkpoints/ into /workspace, and force
+# HF_HOME there too so model downloads land on the volume.
+# Idempotent — re-runs leave existing symlinks alone.
+echo "--- Relocating heavy dirs to /workspace ---"
+if [ -d /workspace ]; then
+    mkdir -p /workspace/data/activations \
+             /workspace/checkpoints/medgemma-4b-1024 \
+             /workspace/.cache/huggingface
+    [ ! -e data ]        && ln -s /workspace/data data
+    [ ! -e checkpoints ] && ln -s /workspace/checkpoints checkpoints
+    export HF_HOME=/workspace/.cache/huggingface
+    grep -q 'HF_HOME=/workspace' ~/.bashrc 2>/dev/null \
+        || echo 'export HF_HOME=/workspace/.cache/huggingface' >> ~/.bashrc
+    echo "  data/        -> $(readlink data 2>/dev/null || echo '(real dir, not symlinked)')"
+    echo "  checkpoints/ -> $(readlink checkpoints 2>/dev/null || echo '(real dir, not symlinked)')"
+    echo "  HF_HOME=${HF_HOME}"
+else
+    echo "  WARNING: /workspace not found — heavy artifacts will go to root disk."
+    echo "  Make sure root has 30GB+ free or this run will fail."
+fi
+
+# ---------------------------------------------------------------------------
 # 1. Virtual environment
 # ---------------------------------------------------------------------------
 echo "--- Creating virtual environment ---"
@@ -54,8 +80,10 @@ echo
 huggingface-cli login --token "${HF_TOKEN}" 2>/dev/null || hf auth login --token "${HF_TOKEN:?Set HF_TOKEN env var to your HuggingFace read token}"
 
 # ---------------------------------------------------------------------------
-# 5. Create data directories
+# 5. Create remaining (small) data directories
 # ---------------------------------------------------------------------------
+# data/ and checkpoints/ already point at /workspace via section 0; just ensure
+# expected subdirs exist. frontend/graph_data lives on root — graph JSONs are tiny.
 echo "--- Creating data directories ---"
 mkdir -p data/activations
 mkdir -p checkpoints/medgemma-4b-1024
@@ -65,8 +93,14 @@ mkdir -p frontend/graph_data
 # 6. Upload clinical trial protocol corpus
 # ---------------------------------------------------------------------------
 echo "--- Corpus upload ---"
-echo "Upload protocols_backup.jsonl from your Mac before running the pipeline:"
-echo "  scp protocols_backup.jsonl ubuntu@<ip>:ignis/data/protocols.jsonl"
+echo "From your Mac, scp the corpus + CLT checkpoint up:"
+echo "  scp -P <PORT> -i ~/.ssh/id_ed25519 \\"
+echo "      ~/Desktop/protocol_corpus/ct_corpus/protocols.jsonl \\"
+echo "      root@<ip>:interpretability-clin-trials/data/protocols.jsonl"
+echo "  scp -P <PORT> -i ~/.ssh/id_ed25519 \\"
+echo "      ~/Desktop/ignis/checkpoints/medgemma-4b-1024/clt_inference.pt \\"
+echo "      root@<ip>:interpretability-clin-trials/checkpoints/medgemma-4b-1024/"
+echo "Both will follow the /workspace symlinks set up in section 0."
 
 # ---------------------------------------------------------------------------
 # 7. Verify GPU is visible to PyTorch

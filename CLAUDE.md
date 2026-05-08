@@ -308,27 +308,30 @@ cd interpretability-clin-trials
 # 2. Fix torchvision conflict (breaks transformer_lens import)
 pip uninstall torchvision torchaudio -y
 
-# 3. Install project deps
-pip install -e .
+# 3. Set HF token then run setup script — it handles venv, torch, deps,
+#    HF login, AND symlinks data/ + checkpoints/ to /workspace so the
+#    20GB root disk doesn't fill up. Both setup_pod.sh and
+#    setup_pod_medgemma.sh do this.
+export HF_TOKEN=YOUR_HF_TOKEN
+bash scripts/setup_pod_medgemma.sh   # or setup_pod.sh for non-MedGemma
 
-# 4. Point HuggingFace cache at the volume (avoids "no disk space" on root)
-export HF_HOME=/workspace/.cache/huggingface
-
-# 5. HuggingFace login (MedGemma is gated — token is at ~/.cache/huggingface/token on Mac)
-python -c "from huggingface_hub import login; login(token='YOUR_HF_TOKEN')"
-
-# 6. tmux for long batch runs
+# 4. tmux for long batch runs
 apt update && apt install -y tmux
 
-# 7. SCP checkpoint from Mac (run on Mac, create dir on pod first)
-#    On pod:  mkdir -p ~/interpretability-clin-trials/checkpoints/medgemma-4b-1024
-#    On Mac:  scp -P <PORT> -i ~/.ssh/id_ed25519 checkpoints/medgemma-4b-1024/clt_inference.pt root@<IP>:~/interpretability-clin-trials/checkpoints/medgemma-4b-1024/
+# 5. SCP corpus + checkpoint from Mac (paths land on /workspace via symlinks
+#    set up in step 3). Run from Mac:
+#    scp -P <PORT> -i ~/.ssh/id_ed25519 \
+#        ~/Desktop/protocol_corpus/ct_corpus/protocols.jsonl \
+#        root@<IP>:interpretability-clin-trials/data/protocols.jsonl
+#    scp -P <PORT> -i ~/.ssh/id_ed25519 \
+#        ~/Desktop/ignis/checkpoints/medgemma-4b-1024/clt_inference.pt \
+#        root@<IP>:interpretability-clin-trials/checkpoints/medgemma-4b-1024/
 ```
 
 **Known gotchas:**
-- `huggingface-cli login` and `hf login` are both broken on this image — use the python one-liner above
+- `huggingface-cli login` and `hf login` are both broken on some images — `setup_pod*.sh` falls back to `hf auth login` automatically; if both fail, drop in: `python -c "from huggingface_hub import login; login(token='$HF_TOKEN')"`
 - `torchvision` must be uninstalled before importing `transformer_lens` or you get a segfault
-- Root disk is ~10GB; always set `HF_HOME=/workspace/.cache/huggingface` before downloading MedGemma (3.6GB weights)
+- **Root disk is 20GB on RunPod, /workspace is huge** — never put corpus, HDF5, model checkpoints, or HF cache on root. The setup script handles this via symlinks; if you ever set up a pod manually, replicate those symlinks first or scp will fail at ~50% with "write remote: Failure"
 - For graph generation only: A10 (24GB) is sufficient, no need for H100
 - Repo dir is `interpretability-clin-trials` (the GitHub repo name), not `ignis` (the Mac local dir)
 

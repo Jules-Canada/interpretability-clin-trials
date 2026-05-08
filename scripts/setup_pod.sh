@@ -18,6 +18,30 @@ echo "GPU:    $(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null ||
 echo
 
 # ---------------------------------------------------------------------------
+# 0. Relocate heavy dirs to /workspace + persist HF_HOME
+# ---------------------------------------------------------------------------
+# RunPod's root disk is ~20GB; activation HDF5s + checkpoints + HF model
+# weights blow past that. /workspace is the large attached volume. Symlink
+# data/ and checkpoints/ into /workspace, and force HF_HOME there so model
+# downloads land on the volume. Idempotent.
+echo "--- Relocating heavy dirs to /workspace ---"
+if [ -d /workspace ]; then
+    mkdir -p /workspace/data/activations \
+             /workspace/checkpoints \
+             /workspace/.cache/huggingface
+    [ ! -e data ]        && ln -s /workspace/data data
+    [ ! -e checkpoints ] && ln -s /workspace/checkpoints checkpoints
+    export HF_HOME=/workspace/.cache/huggingface
+    grep -q 'HF_HOME=/workspace' ~/.bashrc 2>/dev/null \
+        || echo 'export HF_HOME=/workspace/.cache/huggingface' >> ~/.bashrc
+    echo "  data/        -> $(readlink data 2>/dev/null || echo '(real dir, not symlinked)')"
+    echo "  checkpoints/ -> $(readlink checkpoints 2>/dev/null || echo '(real dir, not symlinked)')"
+    echo "  HF_HOME=${HF_HOME}"
+else
+    echo "  WARNING: /workspace not found — heavy artifacts will go to root disk."
+fi
+
+# ---------------------------------------------------------------------------
 # 1. Virtual environment
 # ---------------------------------------------------------------------------
 echo "--- Creating virtual environment ---"
