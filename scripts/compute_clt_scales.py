@@ -95,6 +95,10 @@ def main() -> None:
     ckpt["mlp_scales"] = mlp_scales
 
     # Atomic write: temp file → move (avoids partial writes on NFS-backed dirs).
+    # _use_new_zipfile_serialization=False forces the legacy pickle path. The
+    # default zipfile writer does file-position consistency checks that fail
+    # on RunPod's mfs network filesystem with errors like
+    # "unexpected pos N vs N-104"; legacy pickle has no such check.
     with tempfile.NamedTemporaryFile(
         dir=os.path.dirname(args.checkpoint) or ".",
         prefix=".scales_tmp_",
@@ -103,7 +107,7 @@ def main() -> None:
     ) as tmp:
         tmp_path = tmp.name
     try:
-        torch.save(ckpt, tmp_path)
+        torch.save(ckpt, tmp_path, _use_new_zipfile_serialization=False)
         shutil.move(tmp_path, args.checkpoint)
     except Exception:
         if os.path.exists(tmp_path):
