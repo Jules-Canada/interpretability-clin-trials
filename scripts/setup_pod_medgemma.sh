@@ -75,7 +75,7 @@ pip install --quiet torch --index-url https://download.pytorch.org/whl/cu121
 # 3. Install project dependencies
 # ---------------------------------------------------------------------------
 echo "--- Installing ignis and dependencies ---"
-pip install --quiet -e ".[train]"
+pip install --quiet -e ".[dev]"
 
 # ---------------------------------------------------------------------------
 # 4. HuggingFace login (required for gated MedGemma model)
