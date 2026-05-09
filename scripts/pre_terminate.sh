@@ -31,24 +31,23 @@ echo "  D_MODEL        : $D_MODEL"
 echo "  D_MLP          : $D_MLP"
 echo
 
-# Resolve checkpoint: prefer clt_final.pt, fall back to latest step checkpoint
-CHECKPOINT="$CHECKPOINT_DIR/clt_final.pt"
-if [ ! -f "$CHECKPOINT" ]; then
-    CHECKPOINT=$(ls -t "$CHECKPOINT_DIR"/clt_step_*.pt 2>/dev/null | head -1 || true)
-    if [ -z "$CHECKPOINT" ]; then
-        echo "ERROR: no checkpoint found in $CHECKPOINT_DIR"
-        exit 1
-    fi
-    echo "Note: clt_final.pt not found, using $CHECKPOINT"
-fi
-echo "Checkpoint: $CHECKPOINT"
-
-# Strip optimizer state
 INFERENCE_CKPT="$CHECKPOINT_DIR/clt_inference.pt"
+
+# If clt_inference.pt already exists, the strip is done — no need to resolve a
+# source checkpoint. Otherwise, prefer clt_final.pt and fall back to latest step.
 if [ -f "$INFERENCE_CKPT" ]; then
     echo "clt_inference.pt already exists — skipping strip"
 else
-    echo "Stripping optimizer state → $INFERENCE_CKPT ..."
+    CHECKPOINT="$CHECKPOINT_DIR/clt_final.pt"
+    if [ ! -f "$CHECKPOINT" ]; then
+        CHECKPOINT=$(ls -t "$CHECKPOINT_DIR"/clt_step_*.pt 2>/dev/null | head -1 || true)
+        if [ -z "$CHECKPOINT" ]; then
+            echo "ERROR: no checkpoint found in $CHECKPOINT_DIR (need clt_final.pt, clt_step_*.pt, or pre-stripped clt_inference.pt)"
+            exit 1
+        fi
+        echo "Note: clt_final.pt not found, using $CHECKPOINT"
+    fi
+    echo "Stripping optimizer state from $CHECKPOINT → $INFERENCE_CKPT ..."
     python3 -c "
 import torch
 ckpt = torch.load('$CHECKPOINT', map_location='cpu', weights_only=False)
