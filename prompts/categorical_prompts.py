@@ -36,7 +36,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: no current systemic corticosteroid use.\n"
             "Patient: aspirin 81mg, metoprolol 25mg, atorvastatin 40mg.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "Yes",
         "domain_tags": ["categorical", "drug_class", "steroid", "pharmacology"],
@@ -46,7 +46,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: no current systemic corticosteroid use.\n"
             "Patient: aspirin 81mg, metoprolol 25mg, dexamethasone 4mg daily.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "No",
         "domain_tags": ["categorical", "drug_class", "steroid", "pharmacology"],
@@ -58,7 +58,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: no chronic glucocorticoid therapy.\n"
             "Patient: metformin, lisinopril, atorvastatin.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "Yes",
         "domain_tags": ["categorical", "drug_class", "steroid", "pharmacology"],
@@ -68,7 +68,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: no chronic glucocorticoid therapy.\n"
             "Patient: metformin, lisinopril, prednisone 10mg daily.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "No",
         "domain_tags": ["categorical", "drug_class", "steroid", "pharmacology"],
@@ -80,7 +80,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: no systemic steroid within 14 days.\n"
             "Patient: ibuprofen 600mg PRN, omeprazole 20mg daily.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "Yes",
         "domain_tags": ["categorical", "drug_class", "steroid", "NSAID_distractor"],
@@ -90,7 +90,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: no systemic steroid within 14 days.\n"
             "Patient: ibuprofen 600mg PRN, hydrocortisone 20mg daily.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "No",
         "domain_tags": ["categorical", "drug_class", "steroid", "NSAID_distractor"],
@@ -107,7 +107,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: non-small cell lung cancer only.\n"
             "Patient: lung adenocarcinoma, stage IV.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "Yes",
         "domain_tags": ["categorical", "histology", "NSCLC", "oncology"],
@@ -117,7 +117,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: non-small cell lung cancer only.\n"
             "Patient: small cell lung cancer, extensive stage.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "No",
         "domain_tags": ["categorical", "histology", "NSCLC", "oncology"],
@@ -129,7 +129,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: hepatocellular carcinoma required.\n"
             "Patient: HCC, BCLC stage B, Child-Pugh A.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "Yes",
         "domain_tags": ["categorical", "histology", "HCC", "oncology", "hepatic"],
@@ -139,7 +139,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: hepatocellular carcinoma required.\n"
             "Patient: intrahepatic cholangiocarcinoma, Child-Pugh A.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "No",
         "domain_tags": ["categorical", "histology", "HCC", "oncology", "hepatic"],
@@ -151,7 +151,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: triple-negative breast cancer required.\n"
             "Patient: invasive ductal carcinoma, ER 0%, PR 0%, HER2 IHC 0.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "Yes",
         "domain_tags": ["categorical", "histology", "TNBC", "oncology"],
@@ -161,7 +161,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: triple-negative breast cancer required.\n"
             "Patient: invasive ductal carcinoma, ER 95%, PR 80%, HER2 IHC 0.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "No",
         "domain_tags": ["categorical", "histology", "TNBC", "oncology"],
@@ -178,7 +178,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: visceral metastatic disease required.\n"
             "Patient: liver and lung metastases on imaging.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "Yes",
         "domain_tags": ["categorical", "anatomic_site", "visceral", "metastatic"],
@@ -188,7 +188,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: visceral metastatic disease required.\n"
             "Patient: bone-only metastases on imaging.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "No",
         "domain_tags": ["categorical", "anatomic_site", "visceral", "metastatic"],
@@ -200,7 +200,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: bone-only metastatic disease.\n"
             "Patient: multiple osseous metastases, no visceral involvement.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "Yes",
         "domain_tags": ["categorical", "anatomic_site", "bone_only", "metastatic"],
@@ -210,7 +210,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: bone-only metastatic disease.\n"
             "Patient: bone and hepatic metastases on staging scans.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "No",
         "domain_tags": ["categorical", "anatomic_site", "bone_only", "metastatic"],
@@ -222,7 +222,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: no active CNS metastases.\n"
             "Patient: pulmonary and hepatic metastases, brain MRI negative.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "Yes",
         "domain_tags": ["categorical", "anatomic_site", "CNS", "brain_mets"],
@@ -232,7 +232,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: no active CNS metastases.\n"
             "Patient: pulmonary metastases and untreated cerebellar lesion.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "No",
         "domain_tags": ["categorical", "anatomic_site", "CNS", "brain_mets"],
@@ -249,7 +249,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: functional spleen required.\n"
             "Patient: native spleen, no prior abdominal surgery.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "Yes",
         "domain_tags": ["categorical", "surgical_history", "spleen", "physiology"],
@@ -259,7 +259,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: functional spleen required.\n"
             "Patient: s/p splenectomy following MVA, 2018.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "No",
         "domain_tags": ["categorical", "surgical_history", "spleen", "physiology"],
@@ -271,7 +271,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: native gallbladder required for imaging.\n"
             "Patient: no prior abdominal surgery.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "Yes",
         "domain_tags": ["categorical", "surgical_history", "gallbladder", "imaging"],
@@ -281,7 +281,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: native gallbladder required for imaging.\n"
             "Patient: s/p laparoscopic cholecystectomy, 2015.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "No",
         "domain_tags": ["categorical", "surgical_history", "gallbladder", "imaging"],
@@ -293,7 +293,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: ability to absorb oral medications.\n"
             "Patient: no prior gastrointestinal surgery.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "Yes",
         "domain_tags": ["categorical", "surgical_history", "GI", "absorption"],
@@ -303,7 +303,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: ability to absorb oral medications.\n"
             "Patient: s/p total gastrectomy with Roux-en-Y reconstruction.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "No",
         "domain_tags": ["categorical", "surgical_history", "GI", "absorption"],
@@ -320,7 +320,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: no β-lactam antibiotic allergy.\n"
             "Patient: documented sulfa rash, 2010.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "Yes",
         "domain_tags": ["categorical", "allergy", "beta_lactam", "drug_class"],
@@ -330,7 +330,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: no β-lactam antibiotic allergy.\n"
             "Patient: documented penicillin anaphylaxis, 2015.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "No",
         "domain_tags": ["categorical", "allergy", "beta_lactam", "drug_class"],
@@ -342,7 +342,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: no sulfonamide allergy.\n"
             "Patient: documented amoxicillin rash, 2018.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "Yes",
         "domain_tags": ["categorical", "allergy", "sulfonamide", "drug_class"],
@@ -352,7 +352,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: no sulfonamide allergy.\n"
             "Patient: Stevens-Johnson syndrome from TMP-SMX, 2012.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "No",
         "domain_tags": ["categorical", "allergy", "sulfonamide", "drug_class"],
@@ -364,7 +364,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: no NSAID hypersensitivity.\n"
             "Patient: penicillin allergy (urticaria), no other drug allergies.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "Yes",
         "domain_tags": ["categorical", "allergy", "NSAID", "drug_class"],
@@ -374,7 +374,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: no NSAID hypersensitivity.\n"
             "Patient: aspirin-induced bronchospasm, Samter's triad.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "No",
         "domain_tags": ["categorical", "allergy", "NSAID", "drug_class"],
@@ -391,7 +391,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: HER2-negative breast cancer required.\n"
             "Patient: HER2 IHC 2+, FISH not amplified (HER2/CEP17 ratio 1.4).\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "Yes",
         "domain_tags": ["categorical", "receptor", "HER2", "conditional", "biomarker"],
@@ -401,7 +401,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: HER2-negative breast cancer required.\n"
             "Patient: HER2 IHC 2+, FISH amplified (HER2/CEP17 ratio 4.2).\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "No",
         "domain_tags": ["categorical", "receptor", "HER2", "conditional", "biomarker"],
@@ -413,7 +413,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: HER2-negative breast cancer required.\n"
             "Patient: HER2 IHC 0 by ASCO/CAP guidelines.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "Yes",
         "domain_tags": ["categorical", "receptor", "HER2", "biomarker"],
@@ -423,7 +423,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: HER2-negative breast cancer required.\n"
             "Patient: HER2 IHC 3+ (uniform circumferential membrane staining).\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "No",
         "domain_tags": ["categorical", "receptor", "HER2", "biomarker"],
@@ -435,7 +435,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: hormone receptor positive disease required.\n"
             "Patient: ER 95%, PR 80%, HER2 IHC 1+.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "Yes",
         "domain_tags": ["categorical", "receptor", "HR", "ER", "biomarker"],
@@ -445,7 +445,7 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "text": (
             "Criterion: hormone receptor positive disease required.\n"
             "Patient: ER < 1%, PR 0%, HER2 IHC 0.\n"
-            "Eligible (answer Yes or No):"
+            "Eligible?\nAnswer:"
         ),
         "target_token": "No",
         "domain_tags": ["categorical", "receptor", "HR", "ER", "biomarker"],
