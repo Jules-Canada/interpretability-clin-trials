@@ -58,6 +58,7 @@ from tqdm import tqdm
 
 from clt.config import CLTConfig
 from clt.model import CrossLayerTranscoder
+from scripts._tokenizer_resolve import resolve_model_name
 
 
 def parse_args() -> argparse.Namespace:
@@ -80,8 +81,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--features_file",    type=str, default=None,
                    help="Optional JSON file listing specific (layer, feature) pairs to label. "
                         "If omitted, all features in all layers are processed.")
-    p.add_argument("--model_name",       type=str, default="EleutherAI/pythia-410m",
-                   help="Used to reconstruct token strings from the HDF5 token indices")
+    p.add_argument("--model_name",       type=str, default=None,
+                   help="Tokenizer used to reconstruct token strings from the HDF5 "
+                        "token indices. Normally OMITTED: extract_activations.py "
+                        "records the model in the HDF5's 'model_name' attr and that "
+                        "is used automatically. If you pass it anyway it is asserted "
+                        "against the attr — a mismatch is a hard error (this is how "
+                        "a wrong tokenizer is caught). Required only for legacy HDF5 "
+                        "files written before the attr existed.")
 
     return p.parse_args()
 
@@ -284,11 +291,13 @@ def main() -> None:
     # -----------------------------------------------------------------------
     # Load tokenizer for context string decoding
     # -----------------------------------------------------------------------
+    model_name = resolve_model_name(args.activation_path, args.model_name)
     tokenizer = None
     try:
         from transformers import AutoTokenizer
-        tokenizer = AutoTokenizer.from_pretrained(args.model_name)
-        print(f"Loaded tokenizer for {args.model_name}")
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        print(f"Loaded tokenizer for {model_name} "
+              f"(source: {'HDF5 attr' if args.model_name is None else 'CLI, asserted against HDF5 attr'})")
     except Exception as e:
         print(f"Warning: could not load tokenizer ({e}). Context strings will be token IDs only.")
 

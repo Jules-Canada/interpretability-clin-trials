@@ -431,6 +431,15 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
   contiguous blocks instead — critical when chunk size is 1024 tokens.
 - HDF5 now stores `token_ids` dataset (int32) for feature labeling context reconstruction.
   Old HDF5 files without this field need to be re-extracted before running label_features.py.
+- HDF5 is self-describing: `extract_activations.py` stamps `attrs["model_name"]`.
+  `find_top_activations.py` / `fix_feature_activations_tokenizer.py` read it via
+  `scripts/_tokenizer_resolve.py` and pick the decode tokenizer from it — **normally
+  do NOT pass `--model_name`**. Passing it asserts against the attr (mismatch = hard
+  error; this is how a wrong tokenizer is caught now, not just an omitted one).
+  `--model_name` is required only for pre-attr legacy HDF5s (e.g. the Phase 4
+  MedGemma dump) — those have no recorded truth so a wrong value there is still
+  silent; pass the matching model explicitly. Root-caused from the Phase 4 bug
+  where a Pythia default tokenizer silently decoded MedGemma ids into garbage.
 - flush_every default changed 500→5 to prevent ~200GB RAM accumulation before first disk write.
 - torchvision/torchaudio conflict on pods: pins torch==2.5.1, incompatible with torch 2.11.0.
   Removed from setup_pod.sh; uninstall manually on existing instances.

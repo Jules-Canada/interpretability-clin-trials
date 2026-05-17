@@ -22,6 +22,7 @@ RESUME=${1:-""}
 # ---------------------------------------------------------------------------
 # Config — change these if you change model or feature count
 # ---------------------------------------------------------------------------
+MODEL_NAME="EleutherAI/pythia-410m"   # tokenizer must match the model that made the HDF5
 N_FEATURES=2048
 N_LAYERS=24
 D_MODEL=1024
@@ -61,7 +62,7 @@ if [ ! -f "$ACTIVATION_PATH" ]; then
     echo "--- Step 1: Extracting activations from Pythia-410m ---"
     echo "    Target: 5M tokens | ETA: ~1hr"
     python scripts/extract_activations.py \
-        --model_name EleutherAI/pythia-410m \
+        --model_name "$MODEL_NAME" \
         --output_path "$ACTIVATION_PATH" \
         --max_tokens 5000000 \
         --batch_size 16 \
@@ -152,6 +153,7 @@ python scripts/find_top_activations.py \
     --d_model "$D_MODEL" \
     --d_mlp "$D_MLP" \
     --n_features "$N_FEATURES" \
+    --model_name "$MODEL_NAME" \
     --features_file data/graph_features.json \
     --output_path data/feature_activations.jsonl
 

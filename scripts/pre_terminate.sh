@@ -11,7 +11,12 @@
 #
 # Usage (MedGemma-4B-pt):
 #   bash scripts/pre_terminate.sh checkpoints/medgemma-4b-1024 1024 \
-#       /medgemma-4b.h5 34 2560 10240
+#       /medgemma-4b.h5 34 2560 10240 google/medgemma-4b-pt
+#
+# NOTE: arg 7 (MODEL_NAME) is the tokenizer find_top_activations.py decodes
+# context strings with. It MUST match the model that produced the HDF5.
+# Omitting it on a MedGemma run is exactly the Phase 4 bug (Pythia tokenizer
+# silently decoded MedGemma token ids into garbage).
 
 set -euo pipefail
 
@@ -21,6 +26,7 @@ ACTIVATION_PATH=${3:-"data/activations/pythia-410m.h5"}
 N_LAYERS=${4:-24}
 D_MODEL=${5:-1024}
 D_MLP=${6:-4096}
+MODEL_NAME=${7:-"EleutherAI/pythia-410m"}
 
 echo "=== pre_terminate.sh ==="
 echo "  CHECKPOINT_DIR : $CHECKPOINT_DIR"
@@ -29,6 +35,7 @@ echo "  ACTIVATION_PATH: $ACTIVATION_PATH"
 echo "  N_LAYERS       : $N_LAYERS"
 echo "  D_MODEL        : $D_MODEL"
 echo "  D_MLP          : $D_MLP"
+echo "  MODEL_NAME     : $MODEL_NAME"
 echo
 
 INFERENCE_CKPT="$CHECKPOINT_DIR/clt_inference.pt"
@@ -85,6 +92,7 @@ else
         --d_model "$D_MODEL" \
         --d_mlp "$D_MLP" \
         --n_features "$N_FEATURES" \
+        --model_name "$MODEL_NAME" \
         --features_file data/graph_features.json \
         --output_path data/feature_activations.jsonl
 fi
