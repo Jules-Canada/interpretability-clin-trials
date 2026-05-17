@@ -451,3 +451,91 @@ CATEGORICAL_PROMPTS: list[TrialPrompt] = [
         "domain_tags": ["categorical", "receptor", "HR", "ER", "biomarker"],
     },
 ]
+
+
+# --------------------------------------------------------------------------
+# Dynamic-range control set.
+#
+# Trivial, short, single-criterion prompts where the criterion is satisfied (or
+# not) by direct lexical/identity match — essentially zero clinical reasoning.
+# Same scaffold as CATEGORICAL_PROMPTS so probabilities are directly comparable.
+#
+# Purpose: bound the TOP of the model's confidence range on this scaffold. If
+# these only reach ~0.3 p_agg, the ceiling is the base model + "Answer:" format,
+# not prompt difficulty — and the categorical set's low numbers are not a
+# reasoning-failure signal. Screen this set alongside CATEGORICAL_PROMPTS.
+# (See auto-memory project_prompt_design_flaw, Effect 1 / base-model diffuseness.)
+# --------------------------------------------------------------------------
+
+EASY_INCLUSION_PROMPTS: list[TrialPrompt] = [
+
+    # --- Age: numeric, obvious ---
+    {
+        "id": "easy_age_001_pos",
+        "text": "Criterion: age 18 or older.\nPatient: 45 years old.\nEligible?\nAnswer:",
+        "target_token": "Yes",
+        "domain_tags": ["easy", "control", "age"],
+    },
+    {
+        "id": "easy_age_001_neg",
+        "text": "Criterion: age 18 or older.\nPatient: 6 years old.\nEligible?\nAnswer:",
+        "target_token": "No",
+        "domain_tags": ["easy", "control", "age"],
+    },
+
+    # --- Sex: direct match ---
+    {
+        "id": "easy_sex_001_pos",
+        "text": "Criterion: female patients only.\nPatient: 52-year-old woman.\nEligible?\nAnswer:",
+        "target_token": "Yes",
+        "domain_tags": ["easy", "control", "sex"],
+    },
+    {
+        "id": "easy_sex_001_neg",
+        "text": "Criterion: female patients only.\nPatient: 60-year-old man.\nEligible?\nAnswer:",
+        "target_token": "No",
+        "domain_tags": ["easy", "control", "sex"],
+    },
+
+    # --- Diagnosis: same word in criterion and profile ---
+    {
+        "id": "easy_dx_001_pos",
+        "text": "Criterion: must have type 2 diabetes.\nPatient: type 2 diabetes.\nEligible?\nAnswer:",
+        "target_token": "Yes",
+        "domain_tags": ["easy", "control", "diagnosis"],
+    },
+    {
+        "id": "easy_dx_001_neg",
+        "text": "Criterion: must have type 2 diabetes.\nPatient: no diabetes.\nEligible?\nAnswer:",
+        "target_token": "No",
+        "domain_tags": ["easy", "control", "diagnosis"],
+    },
+
+    # --- Consent: direct match ---
+    {
+        "id": "easy_consent_001_pos",
+        "text": "Criterion: must provide written informed consent.\nPatient: signed written informed consent.\nEligible?\nAnswer:",
+        "target_token": "Yes",
+        "domain_tags": ["easy", "control", "consent"],
+    },
+    {
+        "id": "easy_consent_001_neg",
+        "text": "Criterion: must provide written informed consent.\nPatient: declined to provide consent.\nEligible?\nAnswer:",
+        "target_token": "No",
+        "domain_tags": ["easy", "control", "consent"],
+    },
+
+    # --- Near-tautology: absolute ceiling probe ---
+    {
+        "id": "easy_trivial_001_pos",
+        "text": "Criterion: patient must be enrolled in the study.\nPatient: enrolled in the study.\nEligible?\nAnswer:",
+        "target_token": "Yes",
+        "domain_tags": ["easy", "control", "tautology"],
+    },
+    {
+        "id": "easy_trivial_001_neg",
+        "text": "Criterion: patient must be enrolled in the study.\nPatient: not enrolled in the study.\nEligible?\nAnswer:",
+        "target_token": "No",
+        "domain_tags": ["easy", "control", "tautology"],
+    },
+]
