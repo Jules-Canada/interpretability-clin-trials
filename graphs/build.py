@@ -136,6 +136,7 @@ def _compute_attribution_gradients(
     target_position: int,
     target_token_idx: int,
     L: int,
+    contrastive_ids: tuple[list[int], list[int]] | None = None,
 ) -> dict[str, list[Tensor]]:
     """
     Return the per-layer gradients of target_logit through the linearised model:
@@ -224,7 +225,13 @@ def _compute_attribution_gradients(
     # Resolve negative target_position to a positive index for indexing the logit.
     seq_len = tokens.shape[1]
     pos_abs = target_position if target_position >= 0 else seq_len + target_position
-    target_logit = logits[0, pos_abs, target_token_idx]
+
+    if contrastive_ids is not None:
+        pos_ids, neg_ids = contrastive_ids
+        target_logit = (logits[0, pos_abs, pos_ids].mean()
+                        - logits[0, pos_abs, neg_ids].mean())
+    else:
+        target_logit = logits[0, pos_abs, target_token_idx]
 
     # torch.autograd.grad computes only the requested gradients and does not
     # accumulate to .grad — leaves the model state untouched.
@@ -276,8 +283,9 @@ def build_attribution_graph(
     model: HookedTransformer,
     clt: CrossLayerTranscoder,
     tokens: Float[Tensor, "1 seq"],
-    target_token_idx: int,
+    target_token_idx: int = -1,
     cfg: AttributionConfig | None = None,
+    contrastive: tuple[list[int], list[int]] | None = None,
 ) -> AttributionGraph:
     """
     Build an attribution graph for a given prompt and target token.
@@ -286,8 +294,12 @@ def build_attribution_graph(
         model:            Frozen HookedTransformer (weights not modified)
         clt:              Trained CrossLayerTranscoder
         tokens:           Integer token ids, shape (1, seq)
-        target_token_idx: Vocabulary index of the token to trace
+        target_token_idx: Vocabulary index of the token to trace (single-token mode).
+                          Ignored when `contrastive` is provided.
         cfg:              AttributionConfig; uses defaults if None
+        contrastive:      (pos_token_ids, neg_token_ids) for contrastive mode.
+                          Target becomes mean(logit[pos_ids]) − mean(logit[neg_ids]).
+                          Features that push equally toward both classes cancel.
 
     Returns:
         AttributionGraph with nodes and edges populated.
@@ -369,6 +381,7 @@ def build_attribution_graph(
     t0 = time.time()
     grads = _compute_attribution_gradients(
         model, cache, tokens, target_position, target_token_idx, L,
+        contrastive_ids=contrastive,
     )
     print(f"  [t] autograd gradients: {time.time()-t0:.2f}s", flush=True)
 
@@ -407,11 +420,20 @@ def build_attribution_graph(
     # -----------------------------------------------------------------------
     with torch.no_grad():
         logits = model(tokens)
-    logit_value = logits[0, target_position, target_token_idx].item()
 
-    b_U_val = 0.0
-    if hasattr(model, "b_U") and model.b_U is not None:
-        b_U_val = model.b_U[target_token_idx].item()
+    if contrastive is not None:
+        pos_ids, neg_ids = contrastive
+        logit_value = (logits[0, target_position, pos_ids].float().mean()
+                       - logits[0, target_position, neg_ids].float().mean()).item()
+        b_U_val = 0.0
+        if hasattr(model, "b_U") and model.b_U is not None:
+            b_U_val = (model.b_U[pos_ids].float().mean()
+                       - model.b_U[neg_ids].float().mean()).item()
+    else:
+        logit_value = logits[0, target_position, target_token_idx].item()
+        b_U_val = 0.0
+        if hasattr(model, "b_U") and model.b_U is not None:
+            b_U_val = model.b_U[target_token_idx].item()
     decomposable_logit = logit_value - b_U_val
 
     # autograd's grad at resid_post[L-1] is the readout vector v.  Verify
@@ -428,10 +450,20 @@ def build_attribution_graph(
     # -----------------------------------------------------------------------
     if model.tokenizer is not None:
         str_tokens = model.to_str_tokens(tokens[0])
-        target_token_str = model.tokenizer.decode([target_token_idx])
+        if contrastive is not None:
+            pos_ids, neg_ids = contrastive
+            pos_str = "/".join(model.tokenizer.decode([i]).strip() for i in pos_ids)
+            neg_str = "/".join(model.tokenizer.decode([i]).strip() for i in neg_ids)
+            target_token_str = f"{pos_str}−{neg_str}"
+        else:
+            target_token_str = model.tokenizer.decode([target_token_idx])
     else:
         str_tokens = [str(t) for t in tokens[0].tolist()]
-        target_token_str = str(target_token_idx)
+        if contrastive is not None:
+            pos_ids, neg_ids = contrastive
+            target_token_str = f"{pos_ids}−{neg_ids}"
+        else:
+            target_token_str = str(target_token_idx)
 
     n_active_at_target = sum(
         (feature_acts[l][0, target_position].abs() > cfg.min_activation).sum().item()

@@ -296,3 +296,60 @@ def test_node_influence_scores_sorted(toy_transformer, toy_clt, toy_tokens):
     scores = node_influence_scores(graph, full_cfg)
     values = [s for _, s in scores]
     assert values == sorted(values, reverse=True), "Scores not sorted descending"
+
+
+# ---------------------------------------------------------------------------
+# Contrastive readout tests
+# ---------------------------------------------------------------------------
+
+
+def test_contrastive_graph_builds(toy_transformer, toy_clt, toy_tokens):
+    """Contrastive mode produces a valid graph with the same structure."""
+    cfg = AttributionConfig(min_activation=0.0)
+    pos_ids = [10, 20]
+    neg_ids = [30, 40]
+    graph = build_attribution_graph(
+        toy_transformer, toy_clt, toy_tokens, cfg=cfg,
+        contrastive=(pos_ids, neg_ids),
+    )
+    assert isinstance(graph, AttributionGraph)
+    assert len(graph.nodes) > 0
+    assert len(graph.edges) > 0
+    assert "−" in graph.target_token
+
+
+def test_contrastive_completeness_finite(toy_transformer, toy_clt, toy_tokens):
+    """Contrastive completeness should be finite and close to 1.0 on a toy model."""
+    cfg = AttributionConfig(min_activation=0.0)
+    pos_ids = [10, 20, 30]
+    neg_ids = [50, 60, 70]
+    graph = build_attribution_graph(
+        toy_transformer, toy_clt, toy_tokens, cfg=cfg,
+        contrastive=(pos_ids, neg_ids),
+    )
+    assert abs(graph.completeness) < 10.0, f"Completeness {graph.completeness} unreasonably large"
+    assert not torch.isnan(torch.tensor(graph.completeness))
+
+
+def test_contrastive_equals_difference_of_singles(toy_transformer, toy_clt, toy_tokens):
+    """Contrastive logit_value should equal mean(logit[pos]) − mean(logit[neg])."""
+    cfg = AttributionConfig(min_activation=0.0)
+    pos_ids = [15]
+    neg_ids = [85]
+
+    graph_pos = build_attribution_graph(
+        toy_transformer, toy_clt, toy_tokens, pos_ids[0], cfg,
+    )
+    graph_neg = build_attribution_graph(
+        toy_transformer, toy_clt, toy_tokens, neg_ids[0], cfg,
+    )
+    graph_contrastive = build_attribution_graph(
+        toy_transformer, toy_clt, toy_tokens, cfg=cfg,
+        contrastive=(pos_ids, neg_ids),
+    )
+
+    expected_diff = graph_pos.logit_value - graph_neg.logit_value
+    assert abs(graph_contrastive.logit_value - expected_diff) < 1e-3, (
+        f"Contrastive logit {graph_contrastive.logit_value:.4f} != "
+        f"pos−neg {expected_diff:.4f}"
+    )

@@ -47,6 +47,35 @@ from graphs.export import load_feature_labels, save_graph
 from graphs.prune import prune_graph, node_influence_scores
 
 
+def _resolve_contrastive_ids(
+    model: HookedTransformer, pos_word: str, neg_word: str
+) -> tuple[list[int], list[int]]:
+    """Resolve all single-token surface-form variants for two answer classes."""
+    assert model.tokenizer is not None
+    tok = model.tokenizer
+
+    def variants(word: str) -> list[int]:
+        base = word.strip()
+        forms = sorted({base, base.lower(), base.upper(), base.capitalize()})
+        ids: list[int] = []
+        seen: set[int] = set()
+        for form in forms:
+            for cand in (" " + form, form):
+                enc = tok.encode(cand, add_special_tokens=False)
+                if len(enc) == 1 and enc[0] not in seen:
+                    seen.add(enc[0])
+                    ids.append(enc[0])
+        return ids
+
+    pos_ids = variants(pos_word)
+    neg_ids = variants(neg_word)
+    if not pos_ids:
+        raise ValueError(f"No single-token forms found for positive class '{pos_word}'")
+    if not neg_ids:
+        raise ValueError(f"No single-token forms found for negative class '{neg_word}'")
+    return pos_ids, neg_ids
+
+
 def _device() -> torch.device:
     if torch.backends.mps.is_available():
         return torch.device("mps")
@@ -71,6 +100,15 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--prompts_file", "--prompt_file", dest="prompts_file", type=str, required=True,
                    help="Path to JSON file containing list of prompt dicts")
     p.add_argument("--model_name", type=str, default="EleutherAI/pythia-410m")
+
+    # Contrastive mode
+    p.add_argument("--contrastive", action="store_true",
+                   help="Use contrastive readout: mean(logit[Yes_variants]) − mean(logit[No_variants]). "
+                        "Prompts must have target_token = 'Yes' or 'No' (the positive class).")
+    p.add_argument("--pos_word", type=str, default="Yes",
+                   help="Positive answer class word for contrastive mode")
+    p.add_argument("--neg_word", type=str, default="No",
+                   help="Negative answer class word for contrastive mode")
 
     # Graph settings
     p.add_argument("--top_k_nodes",     type=int,   default=30)
@@ -145,6 +183,12 @@ def main() -> None:
         max_path_length=args.max_path_length,
     )
 
+    # Resolve contrastive token IDs if requested
+    contrastive_pair: tuple[list[int], list[int]] | None = None
+    if args.contrastive:
+        contrastive_pair = _resolve_contrastive_ids(model, args.pos_word, args.neg_word)
+        print(f"  Contrastive mode: pos={contrastive_pair[0]} neg={contrastive_pair[1]}\n")
+
     # -----------------------------------------------------------------------
     # Process each prompt
     # -----------------------------------------------------------------------
@@ -159,26 +203,37 @@ def main() -> None:
         print(f"  Prompt: {prompt!r}  →  {target_tok!r}")
 
         try:
-            # Verify target token is single-token
-            try:
-                target_token_idx = model.to_single_token(target_tok)
-            except Exception:
-                raise ValueError(
-                    f"'{target_tok}' is not a single token. "
-                    "Check spelling and leading space."
-                )
-
             tokens = model.to_tokens(prompt)
 
-            graph = build_attribution_graph(
-                model, clt, tokens, target_token_idx, cfg=attr_cfg
-            )
+            if contrastive_pair is not None:
+                graph = build_attribution_graph(
+                    model, clt, tokens, cfg=attr_cfg,
+                    contrastive=contrastive_pair,
+                )
+                target_token_idx = None
+            else:
+                # Verify target token is single-token
+                try:
+                    target_token_idx = model.to_single_token(target_tok)
+                except Exception:
+                    raise ValueError(
+                        f"'{target_tok}' is not a single token. "
+                        "Check spelling and leading space."
+                    )
+                graph = build_attribution_graph(
+                    model, clt, tokens, target_token_idx, cfg=attr_cfg
+                )
             pruned = prune_graph(graph, cfg=attr_cfg)
 
             with torch.no_grad():
                 logits = model(tokens)
-            probs = torch.softmax(logits[0, -1], dim=-1)
-            logit_prob = probs[target_token_idx].item()
+            if contrastive_pair is not None:
+                pos_ids, neg_ids = contrastive_pair
+                probs = torch.softmax(logits[0, -1].float(), dim=-1)
+                logit_prob = (probs[pos_ids].sum() - probs[neg_ids].sum()).item()
+            else:
+                probs = torch.softmax(logits[0, -1], dim=-1)
+                logit_prob = probs[target_token_idx].item()
 
             output_path = f"{args.output_dir}/{slug}.json"
             saved = save_graph(
@@ -189,7 +244,8 @@ def main() -> None:
                 feature_labels=feature_labels,
             )
 
-            print(f"  Completeness: {graph.completeness:.4f}  |  p({target_tok})={logit_prob:.4f}")
+            prob_label = "p(pos)−p(neg)" if contrastive_pair else f"p({target_tok})"
+            print(f"  Completeness: {graph.completeness:.4f}  |  {prob_label}={logit_prob:.4f}")
             print(f"  Saved: {saved}")
             results.append({"id": slug, "status": "ok", "completeness": graph.completeness})
 

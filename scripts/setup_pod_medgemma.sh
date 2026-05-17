@@ -40,6 +40,8 @@ if [ -d /workspace ]; then
     export HF_HOME=/workspace/.cache/huggingface
     grep -q 'HF_HOME=/workspace' ~/.bashrc 2>/dev/null \
         || echo 'export HF_HOME=/workspace/.cache/huggingface' >> ~/.bashrc
+    grep -q 'source.*\.venv/bin/activate' ~/.bashrc 2>/dev/null \
+        || echo 'cd /interpretability-clin-trials 2>/dev/null && source .venv/bin/activate 2>/dev/null' >> ~/.bashrc
     echo "  data/        -> $(readlink data 2>/dev/null || echo '(real dir, not symlinked)')"
     echo "  checkpoints/ -> $(readlink checkpoints 2>/dev/null || echo '(real dir, not symlinked)')"
     echo "  HF_HOME=${HF_HOME}"
@@ -123,6 +125,9 @@ print(f'VRAM: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB')
 
 echo
 echo "=== Setup complete ==="
+echo "Activate the venv in every new shell (or tmux pane):"
+echo "  source .venv/bin/activate"
+echo
 echo "Upload corpus, then run:"
 echo "  bash scripts/run_pipeline_medgemma.sh"
 
