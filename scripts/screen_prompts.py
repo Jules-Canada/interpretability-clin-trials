@@ -9,10 +9,16 @@ For each prompt:
   3. Print p(target), top-K predicted tokens, and a PASS/FAIL flag against
      --min_prob.
 
-Catches the two failure modes that bit us in Phase 4:
+Catches the failure modes that bit us:
   - target_token doesn't tokenize to a single Gemma token (silent mismatch)
   - p(target) < threshold, meaning the model isn't actually predicting the
     target — graphs would be meaningless.
+  - bf16 logit quantization: a low-precision forward snaps logits onto a coarse
+    grid, so distinct tokens collapse to bit-identical probabilities and the
+    softmax is artificially flattened. A "no dynamic range" read taken in bf16
+    is not trustworthy. The script flags this and a float32 run clears it.
+    Run the dynamic-range / diffuseness control in **float32** (see
+    docs/rescreen_checklist.md).
 
 Supports both the new "text" key (categorical_prompts) and the legacy "prompt"
 key (eligibility / adverse_events / endpoints).
@@ -111,6 +117,19 @@ def resolve_variant_ids(tok, text: str, word: str) -> tuple[list[str], list[int]
     return literals, ids
 
 
+def quantization_tie(probs: torch.Tensor, k: int = 8) -> bool:
+    """True if any two distinct top-k tokens have bit-identical probability.
+
+    Genuine float32 softmax over a ~256k vocab essentially never assigns the
+    exact same probability to two different tokens. When it happens the logits
+    came off a coarse grid — the signature of a bf16 (or lower) forward pass.
+    Such a run flattens the output distribution and must not be used to argue
+    the model "has no dynamic range" (see auto-memory project_prompt_design_flaw).
+    """
+    vals = probs.topk(min(k, probs.numel())).values.tolist()
+    return len(set(vals)) < len(vals)
+
+
 def pick_device(arg: str) -> torch.device:
     if arg != "auto":
         return torch.device(arg)
@@ -164,6 +183,7 @@ def main() -> None:
     results: list[dict] = []
     multi_token: list[tuple[str, str]] = []
     failures: list[tuple[str, str, float]] = []
+    tie_ids: list[str] = []
 
     header = (f"{'id':<32} {'target':<8} {'flag':<6} "
               f"{'p_raw':>8} {'p_agg':>8}   top-{args.top_k}")
@@ -202,6 +222,10 @@ def main() -> None:
         top_p, top_i = probs.topk(args.top_k)
         top = [(tok.decode([i]), float(p)) for i, p in zip(top_i.tolist(), top_p.tolist())]
 
+        tie = quantization_tie(probs)
+        if tie:
+            tie_ids.append(pid)
+
         # Gate on aggregated mass — that's the model's true answer confidence.
         flag = "PASS" if p_agg >= args.min_prob else "FAIL"
         if flag == "FAIL":
@@ -217,6 +241,7 @@ def main() -> None:
             "single_token": target_id is not None, "p_target": p_target,
             "p_agg": p_agg, "agg_literals": agg_literals,
             "top_k": [{"token": t, "p": p} for t, p in top],
+            "quant_tie": tie,
         })
 
     print()
@@ -228,12 +253,32 @@ def main() -> None:
     for pid, lit, p in failures:
         print(f"  {pid}: p_agg({lit!r}-class)={p:.3f}")
 
+    if tie_ids:
+        print()
+        print("!" * 76)
+        print(f"QUANTIZATION ARTIFACT: {len(tie_ids)}/{len(results)} prompts have distinct")
+        print(f"tokens at bit-identical probability (dtype={dtype}). The logits came")
+        print("off a coarse grid — the softmax is artificially flattened. Any read of")
+        print("dynamic range / 'base-model diffuseness' from THIS run is unreliable.")
+        if dtype is not torch.float32:
+            print("Re-run with --dtype float32 before drawing distribution conclusions.")
+        else:
+            print("This is float32 — ties are unexpected; investigate before trusting.")
+        print("!" * 76)
+
     pair_check(prompts, results, args.min_prob)
 
     if args.output:
         Path(args.output).parent.mkdir(parents=True, exist_ok=True)
         with open(args.output, "w") as f:
-            json.dump({"model": args.model_name, "results": results}, f, indent=2)
+            json.dump({
+                "model": args.model_name,
+                "dtype": str(dtype),
+                "device": str(device),
+                "quant_tie_count": len(tie_ids),
+                "quant_tie_ids": tie_ids,
+                "results": results,
+            }, f, indent=2)
         print(f"\nWrote per-prompt results to {args.output}")
 
 

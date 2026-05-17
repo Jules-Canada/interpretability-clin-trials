@@ -4,6 +4,27 @@ Read this + auto-memory `project_prompt_design_flaw` to resume. This was a
 dedicated prompt-quality session. Nothing committed; all changes are in the
 working tree (see "Working tree state" below).
 
+## ✅ Review addendum (2026-05-16, later) — RESOLVED, read this first
+
+The bf16 v2/easy screens had a precision artifact (18/36 categorical prompts
+with bit-identical token probabilities = bf16 logit quantization flattening the
+softmax — same *class* of bug as the original 4/18 single-token artifact).
+Controlled it: float32 re-screen on a RunPod H100 →
+`data/{categorical,easy}_screen_fp32.json`. The pod ran the committed
+screen_prompts.py (quant-tie detector was local/uncommitted at run time), so
+verified directly — re-ran the bit-identical-prob check on the JSONs: bf16 v2
+18/36 ties, float32 0/36 and 0/10. Artifact cleared.
+
+**Verdict: the artifact was cosmetic for the aggregated metric.** Float32 p_agg
+is essentially identical to bf16 (categorical mean ~0.40 both; easy 0.18–0.51
+vs 0.17–0.51). The no-dynamic-range / base-model-diffuseness conclusion below is
+therefore **confirmed precision-clean, not overturned** — trivial identity
+prompts still score at/below hard categorical ones; the generic ' No' lean
+persists in float32. The scaffold/model decision below stands on solid ground.
+`scripts/screen_prompts.py` now self-flags quant ties; `docs/rescreen_checklist.md`
+makes float32 the precision control. Everything from "One-line state" down is the
+original write-up and remains valid.
+
 ## One-line state
 
 The clinical prompts are NOT the problem. The categorical set is sound. The real
