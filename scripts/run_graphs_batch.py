@@ -76,6 +76,27 @@ def _resolve_contrastive_ids(
     return pos_ids, neg_ids
 
 
+def _resolve_chat_template(template: str, model_name: str) -> str | None:
+    """Return the template name to use, or None for no wrapping."""
+    if template == "none":
+        return None
+    if template != "auto":
+        return template
+    # Auto-detect: enable for instruction-tuned models
+    name_lower = model_name.lower()
+    if "-it" in name_lower or "instruct" in name_lower:
+        if "gemma" in name_lower:
+            return "gemma"
+    return None
+
+
+def _wrap_prompt(prompt: str, template: str) -> str:
+    """Wrap a raw prompt string with a chat template."""
+    if template == "gemma":
+        return f"<start_of_turn>user\n{prompt}<end_of_turn>\n<start_of_turn>model\n"
+    raise ValueError(f"Unknown chat template: {template!r}")
+
+
 def _device() -> torch.device:
     if torch.backends.mps.is_available():
         return torch.device("mps")
@@ -100,6 +121,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--prompts_file", "--prompt_file", dest="prompts_file", type=str, required=True,
                    help="Path to JSON file containing list of prompt dicts")
     p.add_argument("--model_name", type=str, default="EleutherAI/pythia-410m")
+    p.add_argument("--chat_template", type=str, default="auto",
+                   choices=["auto", "none", "gemma"],
+                   help="Chat template to wrap prompts. 'auto' enables for IT models, "
+                        "'none' disables, 'gemma' forces Gemma 3 format.")
 
     # Contrastive mode
     p.add_argument("--contrastive", action="store_true",
@@ -137,7 +162,14 @@ def main() -> None:
     # Load prompts
     # -----------------------------------------------------------------------
     prompts = json.loads(Path(args.prompts_file).read_text())
-    print(f"Loaded {len(prompts)} prompts from {args.prompts_file}\n")
+    print(f"Loaded {len(prompts)} prompts from {args.prompts_file}")
+
+    chat_tmpl = _resolve_chat_template(args.chat_template, args.model_name)
+    if chat_tmpl:
+        print(f"Chat template: {chat_tmpl} (wrapping all prompts)")
+    else:
+        print(f"Chat template: none")
+    print()
 
     # -----------------------------------------------------------------------
     # Load feature labels (optional)
@@ -197,6 +229,8 @@ def main() -> None:
     for i, entry in enumerate(prompts):
         slug       = entry["id"]
         prompt     = entry["prompt"]
+        if chat_tmpl:
+            prompt = _wrap_prompt(prompt, chat_tmpl)
         target_tok = entry["target_token"]
 
         print(f"[{i+1}/{len(prompts)}] {slug}")

@@ -400,16 +400,45 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
 - [x] Phase 3 (2026-05-03): cutover complete. Autograd implementation moved into `graphs/build.py` (single canonical implementation; manual chain-rule code retired). `build_autograd.py` deleted; superseded helper-and-validation scripts deleted (`scripts/phase0_baseline.py`, `scripts/phase1_validate_autograd.py`, `scripts/diag_autograd_vs_manual.py`, `scripts/diag_jacobian.py`). Test imports updated to use `graphs.build`. CLAUDE.md "Attribution Graph Facts" rewritten to describe the autograd approach. Full suite post-cutover: 50 passed, 1 skipped (3-test drop accounts exactly for the `_compute_readout_vector` tests removed alongside the helper).
 - [x] Phase 4 (2026-05-08): RunPod H100 batch run. `scripts/compute_clt_scales.py` populated `resid_scales`/`mlp_scales` into `checkpoints/medgemma-4b-1024/clt_inference.pt` (resid mean=525, mlp mean=0.187, computed from 100k-token sample of `/workspace/medgemma-4b.h5`). `scripts/run_graphs_batch.py` produced 14 graph JSONs in `frontend/graph_data/`. **Result: 12/12 clinical prompts cleared completeness ≥ 0.5, mean ≈0.70** (range 0.55–0.81). The two non-clinical sanity prompts: water_boil 0.71, france_capital 0.47. Phase 4 gating signal: PASSED — autograd build is paper-faithful on Gemma 3 post-norms.
 - [x] Phase 4 post-pipeline: `scripts/collect_graph_features.py` extracted 148 unique (layer, feature) pairs across 10 layers (0,2,5,7,9,16,18,23,24,25). `scripts/find_top_activations.py` produced `data/feature_activations.jsonl` (~58min over 1.6TB HDF5). Bug discovered: script's `--model_name` defaulted to Pythia, decoding context strings under wrong vocab. Fixed in-place via new `scripts/fix_feature_activations_tokenizer.py` (re-decodes from saved `token_idx` against HDF5 — no re-scan needed). 2960 examples re-decoded across 148 features. All artifacts scp'd back; pod terminated.
-- [ ] **Next**: feature labeling on the 5 high-p MedGemma graphs (partial_response p=0.85, eligible_age p=0.61, endpoint_survival p=0.55, dose_reduction_neutropenia p=0.55, progressive_disease p=0.43). Use `scripts/label_features.py --resume` with `data/feature_activations.jsonl`.
-- [ ] Trial prompt rewrite (separate session): current 14 prompts telegraph the target token. Symptom: the four "ineligible/excluded" prompts have p(target) < 0.05 — the model doesn't predict the word the prompt is fishing for. New format: real protocol criteria block + patient profile + "the patient is" → forces evaluation. See `project_prompt_design_flaw.md` in auto-memory.
-- [ ] If labeled graphs too dense (L0~91 noise): retrain CLT targeting L0~20–30 (~$50 compute on RunPod H100). Decision after first labeling pass.
-- [ ] Notebook 03 — MedGemma feature readout
+- [x] Phase 5 (2026-05-16 → 2026-05-17): Contrastive methodology pivot + Track B validation.
+  **Contrastive screening (Track A):** `scripts/screen_contrastive.py` computes
+  `logit(Yes_agg) − logit(No_agg)` per prompt, reports pair separation gap.
+  **Result: 13/18 categorical pairs separate correctly (gap > 0), mean gap +0.123.
+  Easy controls: 5/5 separate, mean gap +0.677 (5.5× larger). Dynamic range
+  restored** — the model DOES discriminate trivial from hard on the logit
+  difference, confirming the base-model-diffuseness finding was an absolute-p
+  measurement artifact. Steroids systematically fail (3/3 near-zero or flipped).
+  **Track B (medical-factual cloze):** `prompts/medical_knowledge.py` (15 prompts).
+  7/15 pass single-token screening (7 multi-token under Gemma tokenizer, 1 wrong
+  target). Graphs generated for all 7 passing prompts — **completeness 0.76–0.90**,
+  p(target) 0.28–0.95. Pipeline validated on MedGemma for large-signal targets.
+  **Contrastive graphs (Track A) FAILED at current CLT quality.** L0~91 produces
+  ~0.55 logits of constant No-bias in the Yes−No direction regardless of prompt
+  content. For single-token targets (logit ~20+) this is 2% noise; for contrastive
+  targets (logit-diff ~0.2) it's 250% noise → wild completeness (−17, +41, etc.).
+  **Decision: retrain CLT at L0~20–30 before contrastive graphs.** Track B graphs
+  and contrastive screening results are clean and usable now.
+  Code landed: `graphs/build.py` contrastive param, `scripts/screen_contrastive.py`,
+  `scripts/run_both_tracks.sh`, `prompts/medical_knowledge.py`,
+  3 new tests in `tests/test_attribution.py` (51 total pass).
+- [ ] **Next**: retrain CLT at L0~20–30 (~$50 on H100, ~10 hrs). Sparser CLT reduces
+  cancellation noise for contrastive targets. Then re-run contrastive graphs on the
+  13 separating pairs.
+- [ ] Feature labeling on Track B graphs (7 medical-factual). Use
+  `scripts/label_features.py --resume` — needs `find_top_activations` run first
+  against the MedGemma HDF5 for the new graph features.
+- [ ] Fix multi-token medical-knowledge prompts (imatinib, trastuzumab, protamine,
+  Hodgkin, troponin, 45, 140) — replace with single-token targets under Gemma tokenizer.
+- [ ] Notebook 03 — MedGemma feature readout (Track B graphs + contrastive screening)
 
 ### Long-lead items
 - [x] PhysioNet credentialing for MIMIC-IV (granted 2026-05-08)
 
 ## Findings So Far
 
+- **The circuit tracing paper used an instruction-tuned model (Claude 3 Sonnet), not a base model.**
+  There is no methodological reason to prefer base/pt models over IT models for CLT training or
+  attribution graphs. IT models are valid targets — the paper's reference implementation IS one.
 - `sparsity_coeff=2e-4` is too weak — reconstruction dominates and L0 saturates near n_features.
   Updated default to `1e-2`. L0 still high at 500 steps on 50k tokens; expect improvement at scale.
 - Activation extraction uses `monology/pile-uncopyrighted` streamed from HuggingFace.
@@ -490,3 +519,24 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
   warns + falls back to per-prompt only if a checkpoint predates this change. **TODO**:
   update `clt/train.py:_save_checkpoint` to bundle scales automatically so future training
   runs (e.g. the planned L0~20-30 retrain) don't recreate this gap.
+- **Contrastive readout for binary decisions (2026-05-16).** `graphs/build.py` now accepts
+  a `contrastive=(pos_ids, neg_ids)` parameter. Target becomes
+  `mean(logit[pos_ids]) − mean(logit[neg_ids])` — same autograd backward, same completeness
+  check, same edge formulas. Features pushing equally toward both answers cancel by
+  construction, decontaminating scaffold/format artifacts from the graph. Standard approach
+  for binary-decision circuit analysis (IOI, sparse feature circuits).
+- **Contrastive graphs require sparser CLTs than single-token graphs.** At L0~91, the CLT
+  projects a constant ~0.55-logit No-bias onto the Yes−No direction regardless of prompt
+  content. For single-token targets (logit ~20+) this is <3% noise and completeness is
+  0.76–0.90. For contrastive targets (logit-diff ~0.2) the same absolute noise is >100% →
+  completeness is meaningless. Root cause: thousands of dense feature contributions must
+  cancel precisely to hit a near-zero target; at L0~91 they don't. Fix: retrain CLT at
+  L0~20–30, reducing active features ~4× and correspondingly reducing cancellation noise.
+- **Contrastive screening (logit-diff pair separation) is a valid and sensitive metric even
+  when the base model is diffuse.** `medgemma-4b-pt` with the `Eligible?\nAnswer:` scaffold
+  showed no dynamic range on absolute p_agg (easy controls ≈ categorical ≈ 0.3). On the
+  contrastive metric, easy gaps are 5.5× larger than categorical (0.677 vs 0.123 mean).
+  The model DOES discriminate difficulty internally — absolute p was the wrong metric.
+- **Gemma tokenizer splits many medical terms** (imatinib, trastuzumab, protamine, Hodgkin,
+  troponin) into multi-token sequences. Single-token medical targets that work: metformin,
+  pancreas, heart, embolism, plexus, gallbladder, K. Design prompts around these.

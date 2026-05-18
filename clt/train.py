@@ -152,6 +152,15 @@ def train(
     optimizer = torch.optim.Adam(clt.parameters(), lr=train_cfg.lr)
     os.makedirs(train_cfg.checkpoint_dir, exist_ok=True)
 
+    MIN_FREE_BYTES = 12 * 1024**3
+    free = shutil.disk_usage(train_cfg.checkpoint_dir).free
+    if free < MIN_FREE_BYTES:
+        free_gb = free / 1024**3
+        raise RuntimeError(
+            f"Only {free_gb:.1f}GB free on {train_cfg.checkpoint_dir} — need ≥12GB. "
+            f"Use --checkpoint_dir /workspace/... to write to the large volume."
+        )
+
     start_step = 0
     if resume_from is not None:
         ckpt = torch.load(resume_from, map_location=next(clt.parameters()).device, weights_only=True)
