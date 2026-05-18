@@ -271,10 +271,9 @@ def _save_checkpoint(
     final_path = os.path.join(train_cfg.checkpoint_dir, name)
     os.makedirs(train_cfg.checkpoint_dir, exist_ok=True)
 
-    # Write to /tmp (local NVMe) first, then move atomically.
-    # On NFS-backed checkpoint dirs a 36GB write can fail mid-stream;
-    # writing locally avoids that and keeps the final copy intact.
-    with tempfile.NamedTemporaryFile(dir="/tmp", suffix=".pt.tmp", delete=False) as tmp:
+    # Write to a temp file on the same filesystem as the final path, then rename.
+    # This avoids partial-write corruption and avoids filling a small root /tmp.
+    with tempfile.NamedTemporaryFile(dir=train_cfg.checkpoint_dir, suffix=".pt.tmp", delete=False) as tmp:
         tmp_path = tmp.name
 
     try:
