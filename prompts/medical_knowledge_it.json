@@ -1,0 +1,50 @@
+[
+  {
+    "id": "pharm_metformin",
+    "prompt": "What is the first-line oral medication for type 2 diabetes? Answer with one word.",
+    "target_token": " metformin",
+    "domain_tags": ["pharmacology", "diabetes"]
+  },
+  {
+    "id": "pharm_warfarin_moa",
+    "prompt": "Warfarin acts by inhibiting which vitamin? Answer with one letter.",
+    "target_token": " K",
+    "domain_tags": ["pharmacology", "anticoagulation"]
+  },
+  {
+    "id": "path_insulin_organ",
+    "prompt": "Which organ contains the beta cells that produce insulin? Answer with one word.",
+    "target_token": " pancreas",
+    "domain_tags": ["pathophysiology", "endocrine"]
+  },
+  {
+    "id": "path_mi_artery",
+    "prompt": "The left anterior descending artery supplies the anterior wall of which organ? Answer with one word.",
+    "target_token": " heart",
+    "domain_tags": ["pathophysiology", "cardiology"]
+  },
+  {
+    "id": "path_dvt_complication",
+    "prompt": "The most dangerous complication of deep vein thrombosis is pulmonary what? Answer with one word.",
+    "target_token": " embolism",
+    "domain_tags": ["pathophysiology", "hematology"]
+  },
+  {
+    "id": "dx_auer_rods",
+    "prompt": "Auer rods on peripheral smear are pathognomonic for acute what type of leukemia? Answer with one word.",
+    "target_token": " myeloid",
+    "domain_tags": ["diagnostics", "hematology"]
+  },
+  {
+    "id": "anat_csf_production",
+    "prompt": "Cerebrospinal fluid is produced by the choroid what? Answer with one word.",
+    "target_token": " plexus",
+    "domain_tags": ["anatomy", "neurology"]
+  },
+  {
+    "id": "anat_bile_storage",
+    "prompt": "Which organ stores and concentrates bile? Answer with one word.",
+    "target_token": " gallbladder",
+    "domain_tags": ["anatomy", "hepatobiliary"]
+  }
+]

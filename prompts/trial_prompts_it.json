@@ -1,0 +1,146 @@
+[
+  {
+    "id": "cat_steroid_001_pos",
+    "prompt": "Criterion: no current systemic corticosteroid use.\nPatient: aspirin 81mg, metoprolol 25mg, atorvastatin 40mg.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "Yes",
+    "domain_tags": ["categorical", "drug_class", "steroid"]
+  },
+  {
+    "id": "cat_steroid_001_neg",
+    "prompt": "Criterion: no current systemic corticosteroid use.\nPatient: aspirin 81mg, metoprolol 25mg, dexamethasone 4mg daily.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "No",
+    "domain_tags": ["categorical", "drug_class", "steroid"]
+  },
+  {
+    "id": "cat_steroid_002_pos",
+    "prompt": "Criterion: no chronic glucocorticoid therapy.\nPatient: metformin, lisinopril, atorvastatin.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "Yes",
+    "domain_tags": ["categorical", "drug_class", "steroid"]
+  },
+  {
+    "id": "cat_steroid_002_neg",
+    "prompt": "Criterion: no chronic glucocorticoid therapy.\nPatient: metformin, lisinopril, prednisone 10mg daily.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "No",
+    "domain_tags": ["categorical", "drug_class", "steroid"]
+  },
+  {
+    "id": "cat_histology_001_pos",
+    "prompt": "Criterion: non-small cell lung cancer only.\nPatient: lung adenocarcinoma, stage IV.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "Yes",
+    "domain_tags": ["categorical", "histology", "NSCLC"]
+  },
+  {
+    "id": "cat_histology_001_neg",
+    "prompt": "Criterion: non-small cell lung cancer only.\nPatient: small cell lung cancer, extensive stage.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "No",
+    "domain_tags": ["categorical", "histology", "NSCLC"]
+  },
+  {
+    "id": "cat_histology_003_pos",
+    "prompt": "Criterion: triple-negative breast cancer required.\nPatient: invasive ductal carcinoma, ER 0%, PR 0%, HER2 IHC 0.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "Yes",
+    "domain_tags": ["categorical", "histology", "TNBC"]
+  },
+  {
+    "id": "cat_histology_003_neg",
+    "prompt": "Criterion: triple-negative breast cancer required.\nPatient: invasive ductal carcinoma, ER 95%, PR 80%, HER2 IHC 0.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "No",
+    "domain_tags": ["categorical", "histology", "TNBC"]
+  },
+  {
+    "id": "cat_site_001_pos",
+    "prompt": "Criterion: visceral metastatic disease required.\nPatient: liver and lung metastases on imaging.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "Yes",
+    "domain_tags": ["categorical", "anatomic_site", "visceral"]
+  },
+  {
+    "id": "cat_site_001_neg",
+    "prompt": "Criterion: visceral metastatic disease required.\nPatient: bone-only metastases on imaging.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "No",
+    "domain_tags": ["categorical", "anatomic_site", "visceral"]
+  },
+  {
+    "id": "cat_site_003_pos",
+    "prompt": "Criterion: no active CNS metastases.\nPatient: pulmonary and hepatic metastases, brain MRI negative.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "Yes",
+    "domain_tags": ["categorical", "anatomic_site", "CNS"]
+  },
+  {
+    "id": "cat_site_003_neg",
+    "prompt": "Criterion: no active CNS metastases.\nPatient: pulmonary metastases and untreated cerebellar lesion.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "No",
+    "domain_tags": ["categorical", "anatomic_site", "CNS"]
+  },
+  {
+    "id": "cat_surgical_001_pos",
+    "prompt": "Criterion: functional spleen required.\nPatient: native spleen, no prior abdominal surgery.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "Yes",
+    "domain_tags": ["categorical", "surgical_history", "spleen"]
+  },
+  {
+    "id": "cat_surgical_001_neg",
+    "prompt": "Criterion: functional spleen required.\nPatient: s/p splenectomy following MVA, 2018.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "No",
+    "domain_tags": ["categorical", "surgical_history", "spleen"]
+  },
+  {
+    "id": "cat_allergy_001_pos",
+    "prompt": "Criterion: no beta-lactam antibiotic allergy.\nPatient: documented sulfa rash, 2010.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "Yes",
+    "domain_tags": ["categorical", "allergy", "beta_lactam"]
+  },
+  {
+    "id": "cat_allergy_001_neg",
+    "prompt": "Criterion: no beta-lactam antibiotic allergy.\nPatient: documented penicillin anaphylaxis, 2015.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "No",
+    "domain_tags": ["categorical", "allergy", "beta_lactam"]
+  },
+  {
+    "id": "cat_receptor_001_pos",
+    "prompt": "Criterion: HER2-negative breast cancer required.\nPatient: HER2 IHC 2+, FISH not amplified (HER2/CEP17 ratio 1.4).\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "Yes",
+    "domain_tags": ["categorical", "receptor", "HER2"]
+  },
+  {
+    "id": "cat_receptor_001_neg",
+    "prompt": "Criterion: HER2-negative breast cancer required.\nPatient: HER2 IHC 2+, FISH amplified (HER2/CEP17 ratio 4.2).\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "No",
+    "domain_tags": ["categorical", "receptor", "HER2"]
+  },
+  {
+    "id": "easy_age_001_pos",
+    "prompt": "Criterion: age 18 or older.\nPatient: 45 years old.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "Yes",
+    "domain_tags": ["easy", "control", "age"]
+  },
+  {
+    "id": "easy_age_001_neg",
+    "prompt": "Criterion: age 18 or older.\nPatient: 6 years old.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "No",
+    "domain_tags": ["easy", "control", "age"]
+  },
+  {
+    "id": "easy_sex_001_pos",
+    "prompt": "Criterion: female patients only.\nPatient: 52-year-old woman.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "Yes",
+    "domain_tags": ["easy", "control", "sex"]
+  },
+  {
+    "id": "easy_sex_001_neg",
+    "prompt": "Criterion: female patients only.\nPatient: 60-year-old man.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "No",
+    "domain_tags": ["easy", "control", "sex"]
+  },
+  {
+    "id": "easy_dx_001_pos",
+    "prompt": "Criterion: must have type 2 diabetes.\nPatient: type 2 diabetes.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "Yes",
+    "domain_tags": ["easy", "control", "diagnosis"]
+  },
+  {
+    "id": "easy_dx_001_neg",
+    "prompt": "Criterion: must have type 2 diabetes.\nPatient: no diabetes.\nIs this patient eligible? Answer Yes or No.",
+    "target_token": "No",
+    "domain_tags": ["easy", "control", "diagnosis"]
+  }
+]

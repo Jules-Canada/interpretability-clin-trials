@@ -173,11 +173,17 @@ def to_frontend_json(
         for edge in graph.edges
     ]
 
+    metadata = {
+        "prompt_tokens": graph.tokens,
+        "scan": model_name,
+        "completeness": graph.completeness,
+        "logit_value": graph.logit_value,
+    }
+    if logit_probability is not None and math.isfinite(logit_probability):
+        metadata["target_probability"] = logit_probability
+
     data = {
-        "metadata": {
-            "prompt_tokens": graph.tokens,
-            "scan": model_name,
-        },
+        "metadata": metadata,
         "nodes": nodes_out,
         "links": links_out,
         "qParams": {},
