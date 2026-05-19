@@ -1,0 +1,533 @@
+{
+  "metadata": {
+    "prompt_tokens": [
+      "<bos>",
+      "Which",
+      " organ",
+      " stores",
+      " and",
+      " concentrates",
+      " bile",
+      "?",
+      " Answer",
+      " with",
+      " one",
+      " word",
+      "."
+    ],
+    "scan": "google/medgemma-4b-it",
+    "completeness": 0.4684975000383169,
+    "logit_value": 16.125,
+    "target_probability": 5.8650970458984375e-05
+  },
+  "nodes": [
+    {
+      "node_id": "logit_165027",
+      "jsNodeId": "logit_165027",
+      "layer": null,
+      "feature": 0,
+      "feature_type": "logit",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "\" gallbladder\" k(p=0.0001)",
+      "vis_link": "",
+      "isLogit": true
+    },
+    {
+      "node_id": "feat_l0_p12_f16",
+      "jsNodeId": "feat_l0_p12_f16",
+      "layer": 0,
+      "feature": 16,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "L0F16@12",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p12_f82",
+      "jsNodeId": "feat_l0_p12_f82",
+      "layer": 0,
+      "feature": 82,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "L0F82@12",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p12_f275",
+      "jsNodeId": "feat_l0_p12_f275",
+      "layer": 0,
+      "feature": 275,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "L0F275@12",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p12_f366",
+      "jsNodeId": "feat_l0_p12_f366",
+      "layer": 0,
+      "feature": 366,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "L0F366@12",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p12_f368",
+      "jsNodeId": "feat_l0_p12_f368",
+      "layer": 0,
+      "feature": 368,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "L0F368@12",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p12_f375",
+      "jsNodeId": "feat_l0_p12_f375",
+      "layer": 0,
+      "feature": 375,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "L0F375@12",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p12_f462",
+      "jsNodeId": "feat_l0_p12_f462",
+      "layer": 0,
+      "feature": 462,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "L0F462@12",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p12_f503",
+      "jsNodeId": "feat_l0_p12_f503",
+      "layer": 0,
+      "feature": 503,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "L0F503@12",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p12_f570",
+      "jsNodeId": "feat_l0_p12_f570",
+      "layer": 0,
+      "feature": 570,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "L0F570@12",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p12_f677",
+      "jsNodeId": "feat_l0_p12_f677",
+      "layer": 0,
+      "feature": 677,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "L0F677@12",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p12_f799",
+      "jsNodeId": "feat_l0_p12_f799",
+      "layer": 0,
+      "feature": 799,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "L0F799@12",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p12_f874",
+      "jsNodeId": "feat_l0_p12_f874",
+      "layer": 0,
+      "feature": 874,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "L0F874@12",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p12_f896",
+      "jsNodeId": "feat_l0_p12_f896",
+      "layer": 0,
+      "feature": 896,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "L0F896@12",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p12_f974",
+      "jsNodeId": "feat_l0_p12_f974",
+      "layer": 0,
+      "feature": 974,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "L0F974@12",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p12_f1023",
+      "jsNodeId": "feat_l0_p12_f1023",
+      "layer": 0,
+      "feature": 1023,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "L0F1023@12",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l20",
+      "jsNodeId": "error_l20",
+      "layer": 20,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "error L20",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l21",
+      "jsNodeId": "error_l21",
+      "layer": 21,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "error L21",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l22",
+      "jsNodeId": "error_l22",
+      "layer": 22,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "error L22",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l23",
+      "jsNodeId": "error_l23",
+      "layer": 23,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "error L23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l24",
+      "jsNodeId": "error_l24",
+      "layer": 24,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "error L24",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l25",
+      "jsNodeId": "error_l25",
+      "layer": 25,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "error L25",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l26",
+      "jsNodeId": "error_l26",
+      "layer": 26,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "error L26",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l27",
+      "jsNodeId": "error_l27",
+      "layer": 27,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "error L27",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l28",
+      "jsNodeId": "error_l28",
+      "layer": 28,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "error L28",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l29",
+      "jsNodeId": "error_l29",
+      "layer": 29,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "error L29",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l30",
+      "jsNodeId": "error_l30",
+      "layer": 30,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "error L30",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l31",
+      "jsNodeId": "error_l31",
+      "layer": 31,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "error L31",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l32",
+      "jsNodeId": "error_l32",
+      "layer": 32,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "error L32",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l33",
+      "jsNodeId": "error_l33",
+      "layer": 33,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 12,
+      "probe_location_idx": 12,
+      "clerp": "error L33",
+      "vis_link": "",
+      "isLogit": false
+    }
+  ],
+  "links": [
+    {
+      "source": "error_l27",
+      "target": "logit_165027",
+      "weight": 1.8110331246861124
+    },
+    {
+      "source": "error_l26",
+      "target": "logit_165027",
+      "weight": 1.6149210075533378
+    },
+    {
+      "source": "error_l25",
+      "target": "logit_165027",
+      "weight": 1.4724850752652363
+    },
+    {
+      "source": "error_l23",
+      "target": "logit_165027",
+      "weight": 0.9513634894707285
+    },
+    {
+      "source": "error_l28",
+      "target": "logit_165027",
+      "weight": 0.8877898997771916
+    },
+    {
+      "source": "error_l32",
+      "target": "logit_165027",
+      "weight": -0.7792227461044408
+    },
+    {
+      "source": "error_l31",
+      "target": "logit_165027",
+      "weight": -0.5992789214393296
+    },
+    {
+      "source": "error_l24",
+      "target": "logit_165027",
+      "weight": 0.4008848862436068
+    },
+    {
+      "source": "error_l22",
+      "target": "logit_165027",
+      "weight": 0.3961312830315053
+    },
+    {
+      "source": "error_l20",
+      "target": "logit_165027",
+      "weight": 0.39492072778919246
+    },
+    {
+      "source": "feat_l0_p12_f874",
+      "target": "logit_165027",
+      "weight": 0.350647961080237
+    },
+    {
+      "source": "error_l21",
+      "target": "logit_165027",
+      "weight": 0.3501491179820195
+    },
+    {
+      "source": "error_l33",
+      "target": "logit_165027",
+      "weight": 0.3231766037220636
+    },
+    {
+      "source": "error_l30",
+      "target": "logit_165027",
+      "weight": -0.3079778912056872
+    },
+    {
+      "source": "feat_l0_p12_f462",
+      "target": "logit_165027",
+      "weight": 0.2933734495145726
+    },
+    {
+      "source": "error_l29",
+      "target": "logit_165027",
+      "weight": 0.24934963039982924
+    },
+    {
+      "source": "feat_l0_p12_f503",
+      "target": "logit_165027",
+      "weight": -0.23808764036950258
+    },
+    {
+      "source": "feat_l0_p12_f974",
+      "target": "logit_165027",
+      "weight": 0.20727091611388862
+    },
+    {
+      "source": "feat_l0_p12_f368",
+      "target": "logit_165027",
+      "weight": 0.17503932316771373
+    },
+    {
+      "source": "feat_l0_p12_f896",
+      "target": "logit_165027",
+      "weight": 0.16882194185176483
+    },
+    {
+      "source": "feat_l0_p12_f82",
+      "target": "logit_165027",
+      "weight": -0.16388872510848787
+    },
+    {
+      "source": "feat_l0_p12_f1023",
+      "target": "logit_165027",
+      "weight": 0.14651335934524737
+    },
+    {
+      "source": "feat_l0_p12_f275",
+      "target": "logit_165027",
+      "weight": 0.1459844373872196
+    },
+    {
+      "source": "feat_l0_p12_f375",
+      "target": "logit_165027",
+      "weight": -0.12733156011457533
+    },
+    {
+      "source": "feat_l0_p12_f570",
+      "target": "logit_165027",
+      "weight": -0.12614946397921034
+    },
+    {
+      "source": "feat_l0_p12_f677",
+      "target": "logit_165027",
+      "weight": -0.1167403647590566
+    },
+    {
+      "source": "feat_l0_p12_f799",
+      "target": "logit_165027",
+      "weight": 0.11339644003972818
+    },
+    {
+      "source": "feat_l0_p12_f366",
+      "target": "logit_165027",
+      "weight": -0.10605495842131894
+    },
+    {
+      "source": "feat_l0_p12_f16",
+      "target": "logit_165027",
+      "weight": -0.08254647479258105
+    }
+  ],
+  "qParams": {}
+}

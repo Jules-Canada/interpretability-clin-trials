@@ -1,0 +1,633 @@
+{
+  "metadata": {
+    "prompt_tokens": [
+      "<bos>",
+      "The",
+      " most",
+      " dangerous",
+      " complication",
+      " of",
+      " deep",
+      " vein",
+      " thrombosis",
+      " is",
+      " pulmonary",
+      " what",
+      "?",
+      " Answer",
+      " with",
+      " one",
+      " word",
+      "."
+    ],
+    "scan": "google/medgemma-4b-it",
+    "completeness": 0.333907279655014,
+    "logit_value": 19.25,
+    "target_probability": 0.0047607421875
+  },
+  "nodes": [
+    {
+      "node_id": "logit_214988",
+      "jsNodeId": "logit_214988",
+      "layer": null,
+      "feature": 0,
+      "feature_type": "logit",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "\" embolism\" k(p=0.0048)",
+      "vis_link": "",
+      "isLogit": true
+    },
+    {
+      "node_id": "feat_l0_p17_f16",
+      "jsNodeId": "feat_l0_p17_f16",
+      "layer": 0,
+      "feature": 16,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "L0F16@17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p17_f82",
+      "jsNodeId": "feat_l0_p17_f82",
+      "layer": 0,
+      "feature": 82,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "L0F82@17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p17_f136",
+      "jsNodeId": "feat_l0_p17_f136",
+      "layer": 0,
+      "feature": 136,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "L0F136@17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p17_f169",
+      "jsNodeId": "feat_l0_p17_f169",
+      "layer": 0,
+      "feature": 169,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "L0F169@17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p17_f256",
+      "jsNodeId": "feat_l0_p17_f256",
+      "layer": 0,
+      "feature": 256,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "L0F256@17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p17_f308",
+      "jsNodeId": "feat_l0_p17_f308",
+      "layer": 0,
+      "feature": 308,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "L0F308@17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p17_f363",
+      "jsNodeId": "feat_l0_p17_f363",
+      "layer": 0,
+      "feature": 363,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "L0F363@17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p17_f366",
+      "jsNodeId": "feat_l0_p17_f366",
+      "layer": 0,
+      "feature": 366,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "L0F366@17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p17_f368",
+      "jsNodeId": "feat_l0_p17_f368",
+      "layer": 0,
+      "feature": 368,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "L0F368@17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p17_f375",
+      "jsNodeId": "feat_l0_p17_f375",
+      "layer": 0,
+      "feature": 375,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "L0F375@17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p17_f424",
+      "jsNodeId": "feat_l0_p17_f424",
+      "layer": 0,
+      "feature": 424,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "L0F424@17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p17_f426",
+      "jsNodeId": "feat_l0_p17_f426",
+      "layer": 0,
+      "feature": 426,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "L0F426@17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p17_f503",
+      "jsNodeId": "feat_l0_p17_f503",
+      "layer": 0,
+      "feature": 503,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "L0F503@17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p17_f588",
+      "jsNodeId": "feat_l0_p17_f588",
+      "layer": 0,
+      "feature": 588,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "L0F588@17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p17_f677",
+      "jsNodeId": "feat_l0_p17_f677",
+      "layer": 0,
+      "feature": 677,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "L0F677@17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p17_f725",
+      "jsNodeId": "feat_l0_p17_f725",
+      "layer": 0,
+      "feature": 725,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "L0F725@17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p17_f874",
+      "jsNodeId": "feat_l0_p17_f874",
+      "layer": 0,
+      "feature": 874,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "L0F874@17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p17_f988",
+      "jsNodeId": "feat_l0_p17_f988",
+      "layer": 0,
+      "feature": 988,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "L0F988@17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p17_f1014",
+      "jsNodeId": "feat_l0_p17_f1014",
+      "layer": 0,
+      "feature": 1014,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "L0F1014@17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "embed_p17",
+      "jsNodeId": "embed_p17",
+      "layer": "E",
+      "feature": 0,
+      "feature_type": "embedding",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "embed(\".\"@17)",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l22",
+      "jsNodeId": "error_l22",
+      "layer": 22,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "error L22",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l23",
+      "jsNodeId": "error_l23",
+      "layer": 23,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "error L23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l24",
+      "jsNodeId": "error_l24",
+      "layer": 24,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "error L24",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l25",
+      "jsNodeId": "error_l25",
+      "layer": 25,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "error L25",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l26",
+      "jsNodeId": "error_l26",
+      "layer": 26,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "error L26",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l27",
+      "jsNodeId": "error_l27",
+      "layer": 27,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "error L27",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l28",
+      "jsNodeId": "error_l28",
+      "layer": 28,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "error L28",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l31",
+      "jsNodeId": "error_l31",
+      "layer": 31,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "error L31",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l32",
+      "jsNodeId": "error_l32",
+      "layer": 32,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 17,
+      "probe_location_idx": 17,
+      "clerp": "error L32",
+      "vis_link": "",
+      "isLogit": false
+    }
+  ],
+  "links": [
+    {
+      "source": "embed_p17",
+      "target": "feat_l0_p17_f136",
+      "weight": 9.400101661682129
+    },
+    {
+      "source": "embed_p17",
+      "target": "feat_l0_p17_f308",
+      "weight": 8.064385414123535
+    },
+    {
+      "source": "embed_p17",
+      "target": "feat_l0_p17_f677",
+      "weight": 7.909182071685791
+    },
+    {
+      "source": "embed_p17",
+      "target": "feat_l0_p17_f503",
+      "weight": 7.673699378967285
+    },
+    {
+      "source": "embed_p17",
+      "target": "feat_l0_p17_f988",
+      "weight": 7.599514007568359
+    },
+    {
+      "source": "embed_p17",
+      "target": "feat_l0_p17_f874",
+      "weight": 7.161182403564453
+    },
+    {
+      "source": "embed_p17",
+      "target": "feat_l0_p17_f82",
+      "weight": 6.673238277435303
+    },
+    {
+      "source": "embed_p17",
+      "target": "feat_l0_p17_f363",
+      "weight": 6.289684772491455
+    },
+    {
+      "source": "embed_p17",
+      "target": "feat_l0_p17_f588",
+      "weight": 6.182392120361328
+    },
+    {
+      "source": "embed_p17",
+      "target": "feat_l0_p17_f366",
+      "weight": 6.152362823486328
+    },
+    {
+      "source": "embed_p17",
+      "target": "feat_l0_p17_f256",
+      "weight": 5.414264678955078
+    },
+    {
+      "source": "embed_p17",
+      "target": "feat_l0_p17_f424",
+      "weight": 5.3532538414001465
+    },
+    {
+      "source": "embed_p17",
+      "target": "feat_l0_p17_f368",
+      "weight": 4.699839115142822
+    },
+    {
+      "source": "embed_p17",
+      "target": "feat_l0_p17_f426",
+      "weight": 4.542809009552002
+    },
+    {
+      "source": "embed_p17",
+      "target": "feat_l0_p17_f375",
+      "weight": 4.256699562072754
+    },
+    {
+      "source": "embed_p17",
+      "target": "feat_l0_p17_f16",
+      "weight": 3.5730273723602295
+    },
+    {
+      "source": "embed_p17",
+      "target": "feat_l0_p17_f725",
+      "weight": 3.2805230617523193
+    },
+    {
+      "source": "embed_p17",
+      "target": "feat_l0_p17_f169",
+      "weight": 3.0468595027923584
+    },
+    {
+      "source": "embed_p17",
+      "target": "feat_l0_p17_f1014",
+      "weight": 2.6715755462646484
+    },
+    {
+      "source": "error_l27",
+      "target": "logit_214988",
+      "weight": 1.1824030603317686
+    },
+    {
+      "source": "error_l26",
+      "target": "logit_214988",
+      "weight": 0.9014118445162173
+    },
+    {
+      "source": "error_l31",
+      "target": "logit_214988",
+      "weight": -0.8933957766893279
+    },
+    {
+      "source": "error_l24",
+      "target": "logit_214988",
+      "weight": 0.6679827376745923
+    },
+    {
+      "source": "error_l22",
+      "target": "logit_214988",
+      "weight": 0.6508546852176827
+    },
+    {
+      "source": "error_l25",
+      "target": "logit_214988",
+      "weight": 0.6416584968185426
+    },
+    {
+      "source": "error_l23",
+      "target": "logit_214988",
+      "weight": 0.5419768005233887
+    },
+    {
+      "source": "error_l32",
+      "target": "logit_214988",
+      "weight": 0.46779226703016985
+    },
+    {
+      "source": "feat_l0_p17_f82",
+      "target": "logit_214988",
+      "weight": -0.31792315263738646
+    },
+    {
+      "source": "feat_l0_p17_f363",
+      "target": "logit_214988",
+      "weight": 0.24146515368844468
+    },
+    {
+      "source": "error_l28",
+      "target": "logit_214988",
+      "weight": -0.23570109278519547
+    },
+    {
+      "source": "feat_l0_p17_f874",
+      "target": "logit_214988",
+      "weight": 0.23055461645909126
+    },
+    {
+      "source": "feat_l0_p17_f366",
+      "target": "logit_214988",
+      "weight": -0.22250089296442968
+    },
+    {
+      "source": "feat_l0_p17_f503",
+      "target": "logit_214988",
+      "weight": -0.21257460251868412
+    },
+    {
+      "source": "feat_l0_p17_f677",
+      "target": "logit_214988",
+      "weight": -0.21127752646272802
+    },
+    {
+      "source": "feat_l0_p17_f256",
+      "target": "logit_214988",
+      "weight": -0.20176069596923366
+    },
+    {
+      "source": "feat_l0_p17_f368",
+      "target": "logit_214988",
+      "weight": 0.19636465716139279
+    },
+    {
+      "source": "feat_l0_p17_f308",
+      "target": "logit_214988",
+      "weight": -0.18751943270722785
+    },
+    {
+      "source": "feat_l0_p17_f725",
+      "target": "logit_214988",
+      "weight": 0.1844233405347225
+    },
+    {
+      "source": "feat_l0_p17_f169",
+      "target": "logit_214988",
+      "weight": 0.16990075493927226
+    },
+    {
+      "source": "feat_l0_p17_f424",
+      "target": "logit_214988",
+      "weight": 0.1669304946774015
+    },
+    {
+      "source": "feat_l0_p17_f16",
+      "target": "logit_214988",
+      "weight": -0.15433861884599542
+    },
+    {
+      "source": "feat_l0_p17_f1014",
+      "target": "logit_214988",
+      "weight": 0.14705484238875935
+    },
+    {
+      "source": "feat_l0_p17_f375",
+      "target": "logit_214988",
+      "weight": -0.14463292759432983
+    },
+    {
+      "source": "feat_l0_p17_f588",
+      "target": "logit_214988",
+      "weight": -0.13889301470130566
+    },
+    {
+      "source": "feat_l0_p17_f426",
+      "target": "logit_214988",
+      "weight": 0.13494293813934408
+    },
+    {
+      "source": "feat_l0_p17_f988",
+      "target": "logit_214988",
+      "weight": -0.12035710910447853
+    },
+    {
+      "source": "feat_l0_p17_f136",
+      "target": "logit_214988",
+      "weight": 0.01587154604746766
+    },
+    {
+      "source": "embed_p17",
+      "target": "logit_214988",
+      "weight": 0.0002427364911454788
+    }
+  ],
+  "qParams": {}
+}

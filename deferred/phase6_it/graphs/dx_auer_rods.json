@@ -1,0 +1,729 @@
+{
+  "metadata": {
+    "prompt_tokens": [
+      "<bos>",
+      "A",
+      "uer",
+      " rods",
+      " on",
+      " peripheral",
+      " smear",
+      " are",
+      " path",
+      "ogn",
+      "om",
+      "onic",
+      " for",
+      " acute",
+      " what",
+      " type",
+      " of",
+      " leukemia",
+      "?",
+      " Answer",
+      " with",
+      " one",
+      " word",
+      "."
+    ],
+    "scan": "google/medgemma-4b-it",
+    "completeness": 0.5051801614098372,
+    "logit_value": 16.5,
+    "target_probability": 0.00026702880859375
+  },
+  "nodes": [
+    {
+      "node_id": "logit_114358",
+      "jsNodeId": "logit_114358",
+      "layer": null,
+      "feature": 0,
+      "feature_type": "logit",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "\" myeloid\" k(p=0.0003)",
+      "vis_link": "",
+      "isLogit": true
+    },
+    {
+      "node_id": "feat_l0_p23_f0",
+      "jsNodeId": "feat_l0_p23_f0",
+      "layer": 0,
+      "feature": 0,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "L0F0@23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p23_f189",
+      "jsNodeId": "feat_l0_p23_f189",
+      "layer": 0,
+      "feature": 189,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "L0F189@23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p23_f265",
+      "jsNodeId": "feat_l0_p23_f265",
+      "layer": 0,
+      "feature": 265,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "L0F265@23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p23_f308",
+      "jsNodeId": "feat_l0_p23_f308",
+      "layer": 0,
+      "feature": 308,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "L0F308@23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p23_f363",
+      "jsNodeId": "feat_l0_p23_f363",
+      "layer": 0,
+      "feature": 363,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "L0F363@23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p23_f366",
+      "jsNodeId": "feat_l0_p23_f366",
+      "layer": 0,
+      "feature": 366,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "L0F366@23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p23_f368",
+      "jsNodeId": "feat_l0_p23_f368",
+      "layer": 0,
+      "feature": 368,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "L0F368@23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p23_f375",
+      "jsNodeId": "feat_l0_p23_f375",
+      "layer": 0,
+      "feature": 375,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "L0F375@23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p23_f424",
+      "jsNodeId": "feat_l0_p23_f424",
+      "layer": 0,
+      "feature": 424,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "L0F424@23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p23_f462",
+      "jsNodeId": "feat_l0_p23_f462",
+      "layer": 0,
+      "feature": 462,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "L0F462@23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p23_f503",
+      "jsNodeId": "feat_l0_p23_f503",
+      "layer": 0,
+      "feature": 503,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "L0F503@23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p23_f677",
+      "jsNodeId": "feat_l0_p23_f677",
+      "layer": 0,
+      "feature": 677,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "L0F677@23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p23_f728",
+      "jsNodeId": "feat_l0_p23_f728",
+      "layer": 0,
+      "feature": 728,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "L0F728@23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p23_f874",
+      "jsNodeId": "feat_l0_p23_f874",
+      "layer": 0,
+      "feature": 874,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "L0F874@23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p23_f919",
+      "jsNodeId": "feat_l0_p23_f919",
+      "layer": 0,
+      "feature": 919,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "L0F919@23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p23_f963",
+      "jsNodeId": "feat_l0_p23_f963",
+      "layer": 0,
+      "feature": 963,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "L0F963@23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p23_f977",
+      "jsNodeId": "feat_l0_p23_f977",
+      "layer": 0,
+      "feature": 977,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "L0F977@23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p23_f1023",
+      "jsNodeId": "feat_l0_p23_f1023",
+      "layer": 0,
+      "feature": 1023,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "L0F1023@23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l23_p23_f735",
+      "jsNodeId": "feat_l23_p23_f735",
+      "layer": 23,
+      "feature": 735,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "L23F735@23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "embed_p23",
+      "jsNodeId": "embed_p23",
+      "layer": "E",
+      "feature": 0,
+      "feature_type": "embedding",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "embed(\".\"@23)",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l17",
+      "jsNodeId": "error_l17",
+      "layer": 17,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "error L17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l22",
+      "jsNodeId": "error_l22",
+      "layer": 22,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "error L22",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l24",
+      "jsNodeId": "error_l24",
+      "layer": 24,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "error L24",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l25",
+      "jsNodeId": "error_l25",
+      "layer": 25,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "error L25",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l26",
+      "jsNodeId": "error_l26",
+      "layer": 26,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "error L26",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l27",
+      "jsNodeId": "error_l27",
+      "layer": 27,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "error L27",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l28",
+      "jsNodeId": "error_l28",
+      "layer": 28,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "error L28",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l31",
+      "jsNodeId": "error_l31",
+      "layer": 31,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "error L31",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l32",
+      "jsNodeId": "error_l32",
+      "layer": 32,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 23,
+      "probe_location_idx": 23,
+      "clerp": "error L32",
+      "vis_link": "",
+      "isLogit": false
+    }
+  ],
+  "links": [
+    {
+      "source": "embed_p23",
+      "target": "feat_l0_p23_f265",
+      "weight": 10.938447952270508
+    },
+    {
+      "source": "embed_p23",
+      "target": "feat_l0_p23_f728",
+      "weight": 9.355795860290527
+    },
+    {
+      "source": "embed_p23",
+      "target": "feat_l0_p23_f1023",
+      "weight": 8.70768928527832
+    },
+    {
+      "source": "embed_p23",
+      "target": "feat_l0_p23_f308",
+      "weight": 8.064385414123535
+    },
+    {
+      "source": "embed_p23",
+      "target": "feat_l0_p23_f919",
+      "weight": 7.9439377784729
+    },
+    {
+      "source": "embed_p23",
+      "target": "feat_l0_p23_f677",
+      "weight": 7.909182071685791
+    },
+    {
+      "source": "embed_p23",
+      "target": "feat_l0_p23_f503",
+      "weight": 7.673699378967285
+    },
+    {
+      "source": "embed_p23",
+      "target": "feat_l0_p23_f462",
+      "weight": 7.645771503448486
+    },
+    {
+      "source": "embed_p23",
+      "target": "feat_l0_p23_f874",
+      "weight": 7.161182403564453
+    },
+    {
+      "source": "embed_p23",
+      "target": "feat_l0_p23_f189",
+      "weight": 6.813663005828857
+    },
+    {
+      "source": "embed_p23",
+      "target": "feat_l0_p23_f963",
+      "weight": 6.379709720611572
+    },
+    {
+      "source": "embed_p23",
+      "target": "feat_l0_p23_f363",
+      "weight": 6.289684772491455
+    },
+    {
+      "source": "embed_p23",
+      "target": "feat_l0_p23_f366",
+      "weight": 6.152362823486328
+    },
+    {
+      "source": "embed_p23",
+      "target": "feat_l0_p23_f424",
+      "weight": 5.3532538414001465
+    },
+    {
+      "source": "embed_p23",
+      "target": "feat_l0_p23_f0",
+      "weight": 5.334449768066406
+    },
+    {
+      "source": "embed_p23",
+      "target": "feat_l0_p23_f368",
+      "weight": 4.699839115142822
+    },
+    {
+      "source": "embed_p23",
+      "target": "feat_l0_p23_f375",
+      "weight": 4.256699562072754
+    },
+    {
+      "source": "embed_p23",
+      "target": "feat_l0_p23_f977",
+      "weight": 4.000173091888428
+    },
+    {
+      "source": "error_l25",
+      "target": "logit_114358",
+      "weight": 1.4132393398443903
+    },
+    {
+      "source": "error_l32",
+      "target": "logit_114358",
+      "weight": 1.1827723888651982
+    },
+    {
+      "source": "error_l24",
+      "target": "logit_114358",
+      "weight": 1.1147392060489199
+    },
+    {
+      "source": "error_l26",
+      "target": "logit_114358",
+      "weight": 1.0574918266429718
+    },
+    {
+      "source": "error_l28",
+      "target": "logit_114358",
+      "weight": 0.7123785566396288
+    },
+    {
+      "source": "error_l27",
+      "target": "logit_114358",
+      "weight": 0.6606991165040067
+    },
+    {
+      "source": "error_l31",
+      "target": "logit_114358",
+      "weight": -0.5044045349759477
+    },
+    {
+      "source": "error_l22",
+      "target": "logit_114358",
+      "weight": 0.3720543158576196
+    },
+    {
+      "source": "error_l17",
+      "target": "logit_114358",
+      "weight": 0.34076994746604944
+    },
+    {
+      "source": "feat_l0_p23_f462",
+      "target": "logit_114358",
+      "weight": 0.30121293889432726
+    },
+    {
+      "source": "feat_l0_p23_f308",
+      "target": "feat_l23_p23_f735",
+      "weight": -0.30044591426849365
+    },
+    {
+      "source": "feat_l0_p23_f424",
+      "target": "feat_l23_p23_f735",
+      "weight": 0.29893749952316284
+    },
+    {
+      "source": "feat_l0_p23_f308",
+      "target": "logit_114358",
+      "weight": -0.295923852392885
+    },
+    {
+      "source": "feat_l23_p23_f735",
+      "target": "logit_114358",
+      "weight": 0.28500502835201513
+    },
+    {
+      "source": "feat_l0_p23_f677",
+      "target": "feat_l23_p23_f735",
+      "weight": 0.25700363516807556
+    },
+    {
+      "source": "feat_l0_p23_f874",
+      "target": "feat_l23_p23_f735",
+      "weight": -0.24526561796665192
+    },
+    {
+      "source": "feat_l0_p23_f265",
+      "target": "logit_114358",
+      "weight": -0.23298184557131152
+    },
+    {
+      "source": "feat_l0_p23_f1023",
+      "target": "logit_114358",
+      "weight": 0.21403100548832305
+    },
+    {
+      "source": "feat_l0_p23_f503",
+      "target": "logit_114358",
+      "weight": -0.2087098491871758
+    },
+    {
+      "source": "feat_l0_p23_f977",
+      "target": "feat_l23_p23_f735",
+      "weight": 0.20354922115802765
+    },
+    {
+      "source": "embed_p23",
+      "target": "feat_l23_p23_f735",
+      "weight": 0.19161000847816467
+    },
+    {
+      "source": "feat_l0_p23_f366",
+      "target": "feat_l23_p23_f735",
+      "weight": -0.1886511892080307
+    },
+    {
+      "source": "feat_l0_p23_f977",
+      "target": "logit_114358",
+      "weight": 0.17315461576750232
+    },
+    {
+      "source": "feat_l0_p23_f375",
+      "target": "logit_114358",
+      "weight": -0.16023469889395472
+    },
+    {
+      "source": "feat_l0_p23_f874",
+      "target": "logit_114358",
+      "weight": 0.15893682904427986
+    },
+    {
+      "source": "feat_l0_p23_f363",
+      "target": "feat_l23_p23_f735",
+      "weight": 0.14261771738529205
+    },
+    {
+      "source": "feat_l0_p23_f728",
+      "target": "logit_114358",
+      "weight": 0.13767597255455707
+    },
+    {
+      "source": "feat_l0_p23_f424",
+      "target": "logit_114358",
+      "weight": 0.13345763211630368
+    },
+    {
+      "source": "feat_l0_p23_f919",
+      "target": "feat_l23_p23_f735",
+      "weight": -0.13215740025043488
+    },
+    {
+      "source": "feat_l0_p23_f368",
+      "target": "logit_114358",
+      "weight": 0.12229273224378287
+    },
+    {
+      "source": "feat_l0_p23_f462",
+      "target": "feat_l23_p23_f735",
+      "weight": -0.11840959638357162
+    },
+    {
+      "source": "feat_l0_p23_f265",
+      "target": "feat_l23_p23_f735",
+      "weight": 0.094089575111866
+    },
+    {
+      "source": "feat_l0_p23_f366",
+      "target": "logit_114358",
+      "weight": -0.07839031549262446
+    },
+    {
+      "source": "feat_l0_p23_f1023",
+      "target": "feat_l23_p23_f735",
+      "weight": -0.07730423659086227
+    },
+    {
+      "source": "feat_l0_p23_f919",
+      "target": "logit_114358",
+      "weight": 0.07443794830867624
+    },
+    {
+      "source": "feat_l0_p23_f363",
+      "target": "logit_114358",
+      "weight": -0.07437880816733972
+    },
+    {
+      "source": "feat_l0_p23_f0",
+      "target": "logit_114358",
+      "weight": -0.07232628246918447
+    },
+    {
+      "source": "feat_l0_p23_f503",
+      "target": "feat_l23_p23_f735",
+      "weight": -0.06557116657495499
+    },
+    {
+      "source": "feat_l0_p23_f963",
+      "target": "feat_l23_p23_f735",
+      "weight": 0.06524515897035599
+    },
+    {
+      "source": "feat_l0_p23_f963",
+      "target": "logit_114358",
+      "weight": 0.055735657707364966
+    },
+    {
+      "source": "feat_l0_p23_f375",
+      "target": "feat_l23_p23_f735",
+      "weight": -0.03685200214385986
+    },
+    {
+      "source": "feat_l0_p23_f189",
+      "target": "feat_l23_p23_f735",
+      "weight": -0.03336431086063385
+    },
+    {
+      "source": "feat_l0_p23_f368",
+      "target": "feat_l23_p23_f735",
+      "weight": 0.029874302446842194
+    },
+    {
+      "source": "feat_l0_p23_f189",
+      "target": "logit_114358",
+      "weight": -0.028464646116114968
+    },
+    {
+      "source": "feat_l0_p23_f0",
+      "target": "feat_l23_p23_f735",
+      "weight": 0.014932817779481411
+    },
+    {
+      "source": "feat_l0_p23_f728",
+      "target": "feat_l23_p23_f735",
+      "weight": 0.013584427535533905
+    },
+    {
+      "source": "feat_l0_p23_f677",
+      "target": "logit_114358",
+      "weight": -0.01254520861045091
+    },
+    {
+      "source": "embed_p23",
+      "target": "logit_114358",
+      "weight": 0.008132356783335126
+    }
+  ],
+  "qParams": {}
+}
