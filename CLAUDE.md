@@ -371,11 +371,10 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
 
 ### What works
 
-- **14 PT clinical graphs** in `frontend/graph_data/` — completeness 0.55–0.81 (12/12
-  clinical prompts above the 0.5 threshold; france_capital 0.47, water_boil 0.71).
-  Generated on MedGemma-4B-pt with the autograd attribution pipeline.
-- **148 features extracted**, 358 labels in `data/feature_labels.jsonl`, 2960 top-activation
-  examples in `data/feature_activations.jsonl`. All from the 14 PT clinical graphs.
+- **Autograd attribution pipeline validated** on MedGemma-4B-pt: 14 answer-telegraphing
+  prompts achieved completeness 0.55–0.81, and 7 Track B medical-factual prompts achieved
+  0.76–0.90. Phase 4 graphs + feature data moved to `deferred/phase4_telegraphing/`
+  (scientifically weak — prompts telegraph the answer). Track B graphs need regeneration.
 - **Autograd attribution pipeline** (`graphs/build.py`) — architecture-agnostic, handles
   Gemma 3 post-norms. Tested on Pythia-70m (0.90) and MedGemma-4B (0.55–0.81).
   Regression-locked in `tests/test_attribution_completeness.py`.

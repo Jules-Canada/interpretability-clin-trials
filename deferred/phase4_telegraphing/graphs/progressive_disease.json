@@ -1,0 +1,883 @@
+{
+  "metadata": {
+    "prompt_tokens": [
+      "<bos>",
+      "New",
+      " lesions",
+      " were",
+      " detected",
+      " on",
+      " imaging",
+      ",",
+      " consistent",
+      " with",
+      " progressive"
+    ],
+    "scan": "google/medgemma-4b-pt"
+  },
+  "nodes": [
+    {
+      "node_id": "logit_5933",
+      "jsNodeId": "logit_5933",
+      "layer": null,
+      "feature": 0,
+      "feature_type": "logit",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "\" disease\" k(p=0.4277)",
+      "vis_link": "",
+      "isLogit": true
+    },
+    {
+      "node_id": "feat_l0_p10_f67",
+      "jsNodeId": "feat_l0_p10_f67",
+      "layer": 0,
+      "feature": 67,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "L0F67@10",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p10_f108",
+      "jsNodeId": "feat_l0_p10_f108",
+      "layer": 0,
+      "feature": 108,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "L0F108@10",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p10_f237",
+      "jsNodeId": "feat_l0_p10_f237",
+      "layer": 0,
+      "feature": 237,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "L0F237@10",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p10_f340",
+      "jsNodeId": "feat_l0_p10_f340",
+      "layer": 0,
+      "feature": 340,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "L0F340@10",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p10_f545",
+      "jsNodeId": "feat_l0_p10_f545",
+      "layer": 0,
+      "feature": 545,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "L0F545@10",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p10_f651",
+      "jsNodeId": "feat_l0_p10_f651",
+      "layer": 0,
+      "feature": 651,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "L0F651@10",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p10_f723",
+      "jsNodeId": "feat_l0_p10_f723",
+      "layer": 0,
+      "feature": 723,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "L0F723@10",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p10_f734",
+      "jsNodeId": "feat_l0_p10_f734",
+      "layer": 0,
+      "feature": 734,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "L0F734@10",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p10_f841",
+      "jsNodeId": "feat_l0_p10_f841",
+      "layer": 0,
+      "feature": 841,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "L0F841@10",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p10_f878",
+      "jsNodeId": "feat_l0_p10_f878",
+      "layer": 0,
+      "feature": 878,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "L0F878@10",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p10_f938",
+      "jsNodeId": "feat_l0_p10_f938",
+      "layer": 0,
+      "feature": 938,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "L0F938@10",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p10_f1015",
+      "jsNodeId": "feat_l0_p10_f1015",
+      "layer": 0,
+      "feature": 1015,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "L0F1015@10",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l2_p10_f1021",
+      "jsNodeId": "feat_l2_p10_f1021",
+      "layer": 2,
+      "feature": 1021,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "L2F1021@10",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l5_p10_f423",
+      "jsNodeId": "feat_l5_p10_f423",
+      "layer": 5,
+      "feature": 423,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "L5F423@10",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l7_p10_f79",
+      "jsNodeId": "feat_l7_p10_f79",
+      "layer": 7,
+      "feature": 79,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "L7F79@10",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l7_p10_f497",
+      "jsNodeId": "feat_l7_p10_f497",
+      "layer": 7,
+      "feature": 497,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "L7F497@10",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l16_p10_f405",
+      "jsNodeId": "feat_l16_p10_f405",
+      "layer": 16,
+      "feature": 405,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "L16F405@10",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "embed_p10",
+      "jsNodeId": "embed_p10",
+      "layer": "E",
+      "feature": 0,
+      "feature_type": "embedding",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "embed(\" progressive\"@10)",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l19",
+      "jsNodeId": "error_l19",
+      "layer": 19,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "error L19",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l20",
+      "jsNodeId": "error_l20",
+      "layer": 20,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "error L20",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l22",
+      "jsNodeId": "error_l22",
+      "layer": 22,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "error L22",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l23",
+      "jsNodeId": "error_l23",
+      "layer": 23,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "error L23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l24",
+      "jsNodeId": "error_l24",
+      "layer": 24,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "error L24",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l26",
+      "jsNodeId": "error_l26",
+      "layer": 26,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "error L26",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l28",
+      "jsNodeId": "error_l28",
+      "layer": 28,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "error L28",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l30",
+      "jsNodeId": "error_l30",
+      "layer": 30,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "error L30",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l31",
+      "jsNodeId": "error_l31",
+      "layer": 31,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "error L31",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l32",
+      "jsNodeId": "error_l32",
+      "layer": 32,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "error L32",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l33",
+      "jsNodeId": "error_l33",
+      "layer": 33,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 10,
+      "probe_location_idx": 10,
+      "clerp": "error L33",
+      "vis_link": "",
+      "isLogit": false
+    }
+  ],
+  "links": [
+    {
+      "source": "embed_p10",
+      "target": "feat_l0_p10_f1015",
+      "weight": 6.884195327758789
+    },
+    {
+      "source": "embed_p10",
+      "target": "feat_l7_p10_f497",
+      "weight": -5.741091728210449
+    },
+    {
+      "source": "embed_p10",
+      "target": "feat_l0_p10_f237",
+      "weight": 5.540958404541016
+    },
+    {
+      "source": "embed_p10",
+      "target": "feat_l2_p10_f1021",
+      "weight": 5.416712760925293
+    },
+    {
+      "source": "embed_p10",
+      "target": "feat_l0_p10_f841",
+      "weight": 4.791069984436035
+    },
+    {
+      "source": "embed_p10",
+      "target": "feat_l0_p10_f878",
+      "weight": 4.738826274871826
+    },
+    {
+      "source": "error_l33",
+      "target": "logit_5933",
+      "weight": -4.213463060387473
+    },
+    {
+      "source": "embed_p10",
+      "target": "feat_l0_p10_f545",
+      "weight": 4.183285236358643
+    },
+    {
+      "source": "embed_p10",
+      "target": "feat_l0_p10_f340",
+      "weight": 4.168217182159424
+    },
+    {
+      "source": "embed_p10",
+      "target": "feat_l0_p10_f734",
+      "weight": 3.827691078186035
+    },
+    {
+      "source": "embed_p10",
+      "target": "feat_l16_p10_f405",
+      "weight": 3.338035821914673
+    },
+    {
+      "source": "embed_p10",
+      "target": "feat_l0_p10_f938",
+      "weight": 3.239853620529175
+    },
+    {
+      "source": "embed_p10",
+      "target": "feat_l0_p10_f651",
+      "weight": 3.2217326164245605
+    },
+    {
+      "source": "embed_p10",
+      "target": "feat_l0_p10_f67",
+      "weight": 2.727651357650757
+    },
+    {
+      "source": "embed_p10",
+      "target": "feat_l5_p10_f423",
+      "weight": 2.638275623321533
+    },
+    {
+      "source": "embed_p10",
+      "target": "feat_l0_p10_f108",
+      "weight": 2.5548415184020996
+    },
+    {
+      "source": "error_l24",
+      "target": "logit_5933",
+      "weight": 2.0927714439758023
+    },
+    {
+      "source": "embed_p10",
+      "target": "feat_l0_p10_f723",
+      "weight": 1.9559829235076904
+    },
+    {
+      "source": "error_l26",
+      "target": "logit_5933",
+      "weight": 0.7330231853031766
+    },
+    {
+      "source": "embed_p10",
+      "target": "feat_l7_p10_f79",
+      "weight": 0.6887854337692261
+    },
+    {
+      "source": "error_l30",
+      "target": "logit_5933",
+      "weight": 0.5987788826168958
+    },
+    {
+      "source": "error_l22",
+      "target": "logit_5933",
+      "weight": -0.5670550030752075
+    },
+    {
+      "source": "error_l28",
+      "target": "logit_5933",
+      "weight": 0.5068793380935166
+    },
+    {
+      "source": "feat_l0_p10_f340",
+      "target": "logit_5933",
+      "weight": 0.42926394517580946
+    },
+    {
+      "source": "feat_l7_p10_f79",
+      "target": "logit_5933",
+      "weight": 0.4157032429495198
+    },
+    {
+      "source": "error_l19",
+      "target": "logit_5933",
+      "weight": 0.39639666401422674
+    },
+    {
+      "source": "error_l32",
+      "target": "logit_5933",
+      "weight": -0.38603991082658656
+    },
+    {
+      "source": "feat_l0_p10_f237",
+      "target": "feat_l16_p10_f405",
+      "weight": -0.3847147822380066
+    },
+    {
+      "source": "error_l31",
+      "target": "logit_5933",
+      "weight": 0.37870385232948744
+    },
+    {
+      "source": "error_l23",
+      "target": "logit_5933",
+      "weight": 0.36187071390687314
+    },
+    {
+      "source": "error_l20",
+      "target": "logit_5933",
+      "weight": 0.3476207653791591
+    },
+    {
+      "source": "feat_l0_p10_f545",
+      "target": "logit_5933",
+      "weight": 0.3106465811800934
+    },
+    {
+      "source": "feat_l2_p10_f1021",
+      "target": "logit_5933",
+      "weight": 0.30617060615293934
+    },
+    {
+      "source": "feat_l2_p10_f1021",
+      "target": "feat_l7_p10_f497",
+      "weight": 0.3026029169559479
+    },
+    {
+      "source": "feat_l0_p10_f878",
+      "target": "feat_l2_p10_f1021",
+      "weight": 0.28655239939689636
+    },
+    {
+      "source": "feat_l0_p10_f1015",
+      "target": "feat_l7_p10_f79",
+      "weight": 0.28437650203704834
+    },
+    {
+      "source": "feat_l2_p10_f1021",
+      "target": "feat_l7_p10_f79",
+      "weight": 0.2777133584022522
+    },
+    {
+      "source": "feat_l0_p10_f938",
+      "target": "logit_5933",
+      "weight": 0.26499429659491325
+    },
+    {
+      "source": "feat_l0_p10_f545",
+      "target": "feat_l7_p10_f497",
+      "weight": 0.26310908794403076
+    },
+    {
+      "source": "feat_l0_p10_f340",
+      "target": "feat_l2_p10_f1021",
+      "weight": 0.2612006366252899
+    },
+    {
+      "source": "feat_l0_p10_f237",
+      "target": "feat_l5_p10_f423",
+      "weight": -0.25956180691719055
+    },
+    {
+      "source": "feat_l0_p10_f545",
+      "target": "feat_l7_p10_f79",
+      "weight": 0.25369226932525635
+    },
+    {
+      "source": "feat_l7_p10_f497",
+      "target": "logit_5933",
+      "weight": 0.23080948511249932
+    },
+    {
+      "source": "feat_l0_p10_f841",
+      "target": "feat_l7_p10_f497",
+      "weight": 0.2252473086118698
+    },
+    {
+      "source": "feat_l0_p10_f841",
+      "target": "feat_l2_p10_f1021",
+      "weight": 0.21653668582439423
+    },
+    {
+      "source": "feat_l16_p10_f405",
+      "target": "logit_5933",
+      "weight": 0.2133272124990785
+    },
+    {
+      "source": "feat_l5_p10_f423",
+      "target": "logit_5933",
+      "weight": 0.20595350956419103
+    },
+    {
+      "source": "feat_l0_p10_f878",
+      "target": "feat_l7_p10_f497",
+      "weight": -0.20522919297218323
+    },
+    {
+      "source": "feat_l0_p10_f545",
+      "target": "feat_l2_p10_f1021",
+      "weight": 0.20373539626598358
+    },
+    {
+      "source": "feat_l0_p10_f340",
+      "target": "feat_l5_p10_f423",
+      "weight": -0.20278595387935638
+    },
+    {
+      "source": "feat_l0_p10_f67",
+      "target": "feat_l5_p10_f423",
+      "weight": 0.2021520584821701
+    },
+    {
+      "source": "feat_l0_p10_f67",
+      "target": "feat_l16_p10_f405",
+      "weight": 0.19950415194034576
+    },
+    {
+      "source": "feat_l0_p10_f651",
+      "target": "feat_l7_p10_f79",
+      "weight": 0.19602426886558533
+    },
+    {
+      "source": "feat_l0_p10_f545",
+      "target": "feat_l5_p10_f423",
+      "weight": 0.19109193980693817
+    },
+    {
+      "source": "feat_l0_p10_f545",
+      "target": "feat_l16_p10_f405",
+      "weight": 0.19037213921546936
+    },
+    {
+      "source": "feat_l0_p10_f1015",
+      "target": "feat_l7_p10_f497",
+      "weight": -0.17749546468257904
+    },
+    {
+      "source": "feat_l0_p10_f723",
+      "target": "feat_l2_p10_f1021",
+      "weight": 0.1708681881427765
+    },
+    {
+      "source": "feat_l0_p10_f734",
+      "target": "feat_l7_p10_f497",
+      "weight": 0.17067880928516388
+    },
+    {
+      "source": "feat_l0_p10_f651",
+      "target": "logit_5933",
+      "weight": 0.16713683412975663
+    },
+    {
+      "source": "feat_l0_p10_f878",
+      "target": "feat_l16_p10_f405",
+      "weight": 0.152549609541893
+    },
+    {
+      "source": "feat_l2_p10_f1021",
+      "target": "feat_l16_p10_f405",
+      "weight": 0.1445511132478714
+    },
+    {
+      "source": "feat_l7_p10_f497",
+      "target": "feat_l16_p10_f405",
+      "weight": 0.13714171946048737
+    },
+    {
+      "source": "feat_l0_p10_f938",
+      "target": "feat_l16_p10_f405",
+      "weight": -0.13519273698329926
+    },
+    {
+      "source": "feat_l0_p10_f108",
+      "target": "feat_l7_p10_f79",
+      "weight": 0.13497138023376465
+    },
+    {
+      "source": "feat_l0_p10_f67",
+      "target": "feat_l7_p10_f497",
+      "weight": 0.13380804657936096
+    },
+    {
+      "source": "feat_l0_p10_f878",
+      "target": "feat_l7_p10_f79",
+      "weight": 0.1336214691400528
+    },
+    {
+      "source": "feat_l5_p10_f423",
+      "target": "feat_l16_p10_f405",
+      "weight": 0.1318361759185791
+    },
+    {
+      "source": "feat_l0_p10_f723",
+      "target": "feat_l5_p10_f423",
+      "weight": 0.1246761605143547
+    },
+    {
+      "source": "feat_l0_p10_f1015",
+      "target": "logit_5933",
+      "weight": 0.12083810077731064
+    },
+    {
+      "source": "feat_l0_p10_f1015",
+      "target": "feat_l16_p10_f405",
+      "weight": 0.11583723872900009
+    },
+    {
+      "source": "feat_l0_p10_f237",
+      "target": "feat_l7_p10_f497",
+      "weight": 0.11574450880289078
+    },
+    {
+      "source": "feat_l2_p10_f1021",
+      "target": "feat_l5_p10_f423",
+      "weight": -0.11372584849596024
+    },
+    {
+      "source": "feat_l0_p10_f67",
+      "target": "logit_5933",
+      "weight": 0.10248556232206943
+    },
+    {
+      "source": "feat_l0_p10_f734",
+      "target": "logit_5933",
+      "weight": 0.10119279126885576
+    },
+    {
+      "source": "feat_l0_p10_f734",
+      "target": "feat_l5_p10_f423",
+      "weight": -0.09571974724531174
+    },
+    {
+      "source": "feat_l0_p10_f938",
+      "target": "feat_l7_p10_f79",
+      "weight": 0.09511708468198776
+    },
+    {
+      "source": "feat_l0_p10_f878",
+      "target": "logit_5933",
+      "weight": 0.0891896960549373
+    },
+    {
+      "source": "feat_l0_p10_f651",
+      "target": "feat_l5_p10_f423",
+      "weight": -0.08774339407682419
+    },
+    {
+      "source": "feat_l0_p10_f67",
+      "target": "feat_l7_p10_f79",
+      "weight": 0.07848560810089111
+    },
+    {
+      "source": "feat_l0_p10_f108",
+      "target": "feat_l2_p10_f1021",
+      "weight": -0.07836289703845978
+    },
+    {
+      "source": "feat_l0_p10_f938",
+      "target": "feat_l2_p10_f1021",
+      "weight": 0.07586067169904709
+    },
+    {
+      "source": "feat_l0_p10_f237",
+      "target": "feat_l7_p10_f79",
+      "weight": 0.07423919439315796
+    },
+    {
+      "source": "feat_l5_p10_f423",
+      "target": "feat_l7_p10_f79",
+      "weight": 0.06953650712966919
+    },
+    {
+      "source": "feat_l0_p10_f723",
+      "target": "feat_l16_p10_f405",
+      "weight": 0.06795722991228104
+    },
+    {
+      "source": "feat_l0_p10_f841",
+      "target": "feat_l7_p10_f79",
+      "weight": 0.06674407422542572
+    },
+    {
+      "source": "feat_l5_p10_f423",
+      "target": "feat_l7_p10_f497",
+      "weight": 0.06466865539550781
+    },
+    {
+      "source": "feat_l0_p10_f841",
+      "target": "feat_l16_p10_f405",
+      "weight": -0.0644354522228241
+    },
+    {
+      "source": "feat_l0_p10_f841",
+      "target": "logit_5933",
+      "weight": 0.062048061650400305
+    },
+    {
+      "source": "feat_l0_p10_f340",
+      "target": "feat_l16_p10_f405",
+      "weight": -0.060076240450143814
+    },
+    {
+      "source": "feat_l0_p10_f1015",
+      "target": "feat_l2_p10_f1021",
+      "weight": 0.05528309568762779
+    },
+    {
+      "source": "feat_l0_p10_f651",
+      "target": "feat_l2_p10_f1021",
+      "weight": 0.0492766834795475
+    },
+    {
+      "source": "feat_l0_p10_f108",
+      "target": "logit_5933",
+      "weight": 0.04746354556182348
+    },
+    {
+      "source": "feat_l0_p10_f108",
+      "target": "feat_l5_p10_f423",
+      "weight": 0.046167705208063126
+    },
+    {
+      "source": "feat_l7_p10_f79",
+      "target": "feat_l16_p10_f405",
+      "weight": 0.044503387063741684
+    },
+    {
+      "source": "feat_l0_p10_f734",
+      "target": "feat_l16_p10_f405",
+      "weight": -0.04397687315940857
+    },
+    {
+      "source": "feat_l0_p10_f723",
+      "target": "feat_l7_p10_f79",
+      "weight": 0.04368683323264122
+    },
+    {
+      "source": "feat_l0_p10_f67",
+      "target": "feat_l2_p10_f1021",
+      "weight": 0.04155757650732994
+    },
+    {
+      "source": "feat_l0_p10_f237",
+      "target": "logit_5933",
+      "weight": 0.04144270127408063
+    },
+    {
+      "source": "feat_l0_p10_f108",
+      "target": "feat_l7_p10_f497",
+      "weight": 0.04089793935418129
+    },
+    {
+      "source": "feat_l0_p10_f938",
+      "target": "feat_l5_p10_f423",
+      "weight": 0.039274346083402634
+    }
+  ],
+  "qParams": {}
+}

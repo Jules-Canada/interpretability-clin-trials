@@ -1,0 +1,859 @@
+{
+  "metadata": {
+    "prompt_tokens": [
+      "<bos>",
+      "Liver",
+      " enzyme",
+      " levels",
+      " were",
+      " three",
+      " times",
+      " the",
+      " upper",
+      " limit",
+      " of",
+      " normal",
+      ",",
+      " suggesting",
+      " the",
+      " drug",
+      " is"
+    ],
+    "scan": "google/medgemma-4b-pt"
+  },
+  "nodes": [
+    {
+      "node_id": "logit_20213",
+      "jsNodeId": "logit_20213",
+      "layer": null,
+      "feature": 0,
+      "feature_type": "logit",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "\" toxic\" k(p=0.0933)",
+      "vis_link": "",
+      "isLogit": true
+    },
+    {
+      "node_id": "feat_l0_p16_f175",
+      "jsNodeId": "feat_l0_p16_f175",
+      "layer": 0,
+      "feature": 175,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "L0F175@16",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p16_f265",
+      "jsNodeId": "feat_l0_p16_f265",
+      "layer": 0,
+      "feature": 265,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "L0F265@16",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p16_f444",
+      "jsNodeId": "feat_l0_p16_f444",
+      "layer": 0,
+      "feature": 444,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "L0F444@16",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p16_f458",
+      "jsNodeId": "feat_l0_p16_f458",
+      "layer": 0,
+      "feature": 458,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "L0F458@16",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p16_f512",
+      "jsNodeId": "feat_l0_p16_f512",
+      "layer": 0,
+      "feature": 512,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "L0F512@16",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p16_f548",
+      "jsNodeId": "feat_l0_p16_f548",
+      "layer": 0,
+      "feature": 548,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "L0F548@16",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p16_f755",
+      "jsNodeId": "feat_l0_p16_f755",
+      "layer": 0,
+      "feature": 755,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "L0F755@16",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p16_f772",
+      "jsNodeId": "feat_l0_p16_f772",
+      "layer": 0,
+      "feature": 772,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "L0F772@16",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p16_f863",
+      "jsNodeId": "feat_l0_p16_f863",
+      "layer": 0,
+      "feature": 863,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "L0F863@16",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p16_f870",
+      "jsNodeId": "feat_l0_p16_f870",
+      "layer": 0,
+      "feature": 870,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "L0F870@16",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p16_f946",
+      "jsNodeId": "feat_l0_p16_f946",
+      "layer": 0,
+      "feature": 946,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "L0F946@16",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l5_p16_f423",
+      "jsNodeId": "feat_l5_p16_f423",
+      "layer": 5,
+      "feature": 423,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "L5F423@16",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l7_p16_f487",
+      "jsNodeId": "feat_l7_p16_f487",
+      "layer": 7,
+      "feature": 487,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "L7F487@16",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l16_p16_f405",
+      "jsNodeId": "feat_l16_p16_f405",
+      "layer": 16,
+      "feature": 405,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "L16F405@16",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l24_p16_f258",
+      "jsNodeId": "feat_l24_p16_f258",
+      "layer": 24,
+      "feature": 258,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "L24F258@16",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "embed_p16",
+      "jsNodeId": "embed_p16",
+      "layer": "E",
+      "feature": 0,
+      "feature_type": "embedding",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "embed(\" is\"@16)",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l19",
+      "jsNodeId": "error_l19",
+      "layer": 19,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "error L19",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l20",
+      "jsNodeId": "error_l20",
+      "layer": 20,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "error L20",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l21",
+      "jsNodeId": "error_l21",
+      "layer": 21,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "error L21",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l22",
+      "jsNodeId": "error_l22",
+      "layer": 22,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "error L22",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l23",
+      "jsNodeId": "error_l23",
+      "layer": 23,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "error L23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l24",
+      "jsNodeId": "error_l24",
+      "layer": 24,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "error L24",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l25",
+      "jsNodeId": "error_l25",
+      "layer": 25,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "error L25",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l26",
+      "jsNodeId": "error_l26",
+      "layer": 26,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "error L26",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l27",
+      "jsNodeId": "error_l27",
+      "layer": 27,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "error L27",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l28",
+      "jsNodeId": "error_l28",
+      "layer": 28,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "error L28",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l30",
+      "jsNodeId": "error_l30",
+      "layer": 30,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "error L30",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l31",
+      "jsNodeId": "error_l31",
+      "layer": 31,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "error L31",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l33",
+      "jsNodeId": "error_l33",
+      "layer": 33,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 16,
+      "probe_location_idx": 16,
+      "clerp": "error L33",
+      "vis_link": "",
+      "isLogit": false
+    }
+  ],
+  "links": [
+    {
+      "source": "embed_p16",
+      "target": "feat_l0_p16_f265",
+      "weight": 6.405765533447266
+    },
+    {
+      "source": "embed_p16",
+      "target": "feat_l0_p16_f458",
+      "weight": 6.004121780395508
+    },
+    {
+      "source": "embed_p16",
+      "target": "feat_l0_p16_f548",
+      "weight": 5.195109844207764
+    },
+    {
+      "source": "embed_p16",
+      "target": "feat_l0_p16_f772",
+      "weight": 5.125274658203125
+    },
+    {
+      "source": "embed_p16",
+      "target": "feat_l0_p16_f512",
+      "weight": 4.803030967712402
+    },
+    {
+      "source": "embed_p16",
+      "target": "feat_l0_p16_f175",
+      "weight": 4.288101673126221
+    },
+    {
+      "source": "embed_p16",
+      "target": "feat_l0_p16_f444",
+      "weight": 4.20365047454834
+    },
+    {
+      "source": "embed_p16",
+      "target": "feat_l16_p16_f405",
+      "weight": -4.120391845703125
+    },
+    {
+      "source": "embed_p16",
+      "target": "feat_l0_p16_f946",
+      "weight": 4.096023082733154
+    },
+    {
+      "source": "embed_p16",
+      "target": "feat_l0_p16_f863",
+      "weight": 4.081925392150879
+    },
+    {
+      "source": "embed_p16",
+      "target": "feat_l0_p16_f755",
+      "weight": 4.0763163566589355
+    },
+    {
+      "source": "embed_p16",
+      "target": "feat_l0_p16_f870",
+      "weight": 3.691312789916992
+    },
+    {
+      "source": "error_l33",
+      "target": "logit_20213",
+      "weight": -2.0401880753394606
+    },
+    {
+      "source": "error_l26",
+      "target": "logit_20213",
+      "weight": 1.4581936819230863
+    },
+    {
+      "source": "embed_p16",
+      "target": "feat_l24_p16_f258",
+      "weight": -1.197610855102539
+    },
+    {
+      "source": "error_l24",
+      "target": "logit_20213",
+      "weight": 1.1805271943224955
+    },
+    {
+      "source": "error_l23",
+      "target": "logit_20213",
+      "weight": 0.907033951270528
+    },
+    {
+      "source": "error_l22",
+      "target": "logit_20213",
+      "weight": 0.8825668044415778
+    },
+    {
+      "source": "error_l30",
+      "target": "logit_20213",
+      "weight": 0.840147951309457
+    },
+    {
+      "source": "embed_p16",
+      "target": "feat_l7_p16_f487",
+      "weight": -0.7839486598968506
+    },
+    {
+      "source": "error_l25",
+      "target": "logit_20213",
+      "weight": 0.7080442986093035
+    },
+    {
+      "source": "error_l27",
+      "target": "logit_20213",
+      "weight": 0.5701437158173992
+    },
+    {
+      "source": "embed_p16",
+      "target": "feat_l5_p16_f423",
+      "weight": 0.4681243300437927
+    },
+    {
+      "source": "feat_l0_p16_f548",
+      "target": "feat_l5_p16_f423",
+      "weight": -0.447584331035614
+    },
+    {
+      "source": "feat_l0_p16_f946",
+      "target": "feat_l5_p16_f423",
+      "weight": -0.4368641674518585
+    },
+    {
+      "source": "feat_l0_p16_f946",
+      "target": "feat_l16_p16_f405",
+      "weight": -0.40468209981918335
+    },
+    {
+      "source": "feat_l0_p16_f772",
+      "target": "feat_l24_p16_f258",
+      "weight": 0.3943352997303009
+    },
+    {
+      "source": "feat_l24_p16_f258",
+      "target": "logit_20213",
+      "weight": 0.39426603694615436
+    },
+    {
+      "source": "error_l20",
+      "target": "logit_20213",
+      "weight": 0.3588248672107117
+    },
+    {
+      "source": "feat_l0_p16_f175",
+      "target": "feat_l16_p16_f405",
+      "weight": -0.3391534090042114
+    },
+    {
+      "source": "error_l21",
+      "target": "logit_20213",
+      "weight": 0.3226105164463613
+    },
+    {
+      "source": "error_l31",
+      "target": "logit_20213",
+      "weight": -0.31715745181124605
+    },
+    {
+      "source": "error_l19",
+      "target": "logit_20213",
+      "weight": 0.3118228558897238
+    },
+    {
+      "source": "feat_l0_p16_f772",
+      "target": "feat_l16_p16_f405",
+      "weight": -0.2977999746799469
+    },
+    {
+      "source": "feat_l0_p16_f946",
+      "target": "feat_l24_p16_f258",
+      "weight": -0.29710960388183594
+    },
+    {
+      "source": "error_l28",
+      "target": "logit_20213",
+      "weight": 0.28921846141949464
+    },
+    {
+      "source": "feat_l16_p16_f405",
+      "target": "feat_l24_p16_f258",
+      "weight": 0.286452978849411
+    },
+    {
+      "source": "feat_l0_p16_f265",
+      "target": "feat_l24_p16_f258",
+      "weight": -0.27923184633255005
+    },
+    {
+      "source": "feat_l7_p16_f487",
+      "target": "logit_20213",
+      "weight": 0.26948512125332186
+    },
+    {
+      "source": "feat_l0_p16_f444",
+      "target": "feat_l24_p16_f258",
+      "weight": 0.24534037709236145
+    },
+    {
+      "source": "feat_l0_p16_f458",
+      "target": "logit_20213",
+      "weight": 0.2320484329932212
+    },
+    {
+      "source": "feat_l0_p16_f512",
+      "target": "feat_l7_p16_f487",
+      "weight": 0.22800298035144806
+    },
+    {
+      "source": "feat_l0_p16_f755",
+      "target": "feat_l24_p16_f258",
+      "weight": 0.22574280202388763
+    },
+    {
+      "source": "feat_l0_p16_f870",
+      "target": "feat_l24_p16_f258",
+      "weight": -0.19805674254894257
+    },
+    {
+      "source": "feat_l0_p16_f175",
+      "target": "logit_20213",
+      "weight": -0.18791568212170018
+    },
+    {
+      "source": "feat_l16_p16_f405",
+      "target": "logit_20213",
+      "weight": 0.18482205086241837
+    },
+    {
+      "source": "feat_l0_p16_f458",
+      "target": "feat_l16_p16_f405",
+      "weight": -0.1808534413576126
+    },
+    {
+      "source": "feat_l0_p16_f548",
+      "target": "feat_l24_p16_f258",
+      "weight": -0.17720861732959747
+    },
+    {
+      "source": "feat_l5_p16_f423",
+      "target": "logit_20213",
+      "weight": 0.1771444969389192
+    },
+    {
+      "source": "feat_l0_p16_f863",
+      "target": "feat_l24_p16_f258",
+      "weight": 0.1721787303686142
+    },
+    {
+      "source": "feat_l0_p16_f772",
+      "target": "feat_l7_p16_f487",
+      "weight": -0.16222155094146729
+    },
+    {
+      "source": "feat_l0_p16_f870",
+      "target": "feat_l5_p16_f423",
+      "weight": -0.15246368944644928
+    },
+    {
+      "source": "feat_l0_p16_f512",
+      "target": "logit_20213",
+      "weight": 0.14903060799820325
+    },
+    {
+      "source": "feat_l0_p16_f512",
+      "target": "feat_l16_p16_f405",
+      "weight": -0.14789944887161255
+    },
+    {
+      "source": "feat_l0_p16_f444",
+      "target": "feat_l16_p16_f405",
+      "weight": 0.1365179568529129
+    },
+    {
+      "source": "feat_l5_p16_f423",
+      "target": "feat_l16_p16_f405",
+      "weight": 0.12808473408222198
+    },
+    {
+      "source": "feat_l0_p16_f755",
+      "target": "feat_l16_p16_f405",
+      "weight": 0.12787310779094696
+    },
+    {
+      "source": "feat_l0_p16_f512",
+      "target": "feat_l24_p16_f258",
+      "weight": 0.12434636801481247
+    },
+    {
+      "source": "feat_l0_p16_f265",
+      "target": "logit_20213",
+      "weight": -0.12033654937237381
+    },
+    {
+      "source": "feat_l0_p16_f265",
+      "target": "feat_l5_p16_f423",
+      "weight": 0.11889414489269257
+    },
+    {
+      "source": "feat_l5_p16_f423",
+      "target": "feat_l24_p16_f258",
+      "weight": 0.11318082362413406
+    },
+    {
+      "source": "feat_l0_p16_f863",
+      "target": "feat_l16_p16_f405",
+      "weight": 0.10278742760419846
+    },
+    {
+      "source": "feat_l0_p16_f870",
+      "target": "feat_l16_p16_f405",
+      "weight": -0.1002497747540474
+    },
+    {
+      "source": "feat_l0_p16_f265",
+      "target": "feat_l16_p16_f405",
+      "weight": -0.09892389923334122
+    },
+    {
+      "source": "feat_l7_p16_f487",
+      "target": "feat_l16_p16_f405",
+      "weight": 0.09811592102050781
+    },
+    {
+      "source": "feat_l0_p16_f175",
+      "target": "feat_l24_p16_f258",
+      "weight": -0.08261372894048691
+    },
+    {
+      "source": "feat_l0_p16_f755",
+      "target": "feat_l5_p16_f423",
+      "weight": 0.07856439054012299
+    },
+    {
+      "source": "feat_l0_p16_f870",
+      "target": "logit_20213",
+      "weight": -0.07743424119300633
+    },
+    {
+      "source": "feat_l0_p16_f458",
+      "target": "feat_l5_p16_f423",
+      "weight": 0.07386629283428192
+    },
+    {
+      "source": "feat_l0_p16_f175",
+      "target": "feat_l7_p16_f487",
+      "weight": -0.07154454290866852
+    },
+    {
+      "source": "feat_l0_p16_f512",
+      "target": "feat_l5_p16_f423",
+      "weight": -0.06860195100307465
+    },
+    {
+      "source": "feat_l0_p16_f863",
+      "target": "feat_l5_p16_f423",
+      "weight": 0.06752535700798035
+    },
+    {
+      "source": "feat_l0_p16_f548",
+      "target": "logit_20213",
+      "weight": 0.06431887859688994
+    },
+    {
+      "source": "feat_l0_p16_f444",
+      "target": "logit_20213",
+      "weight": 0.061805816880930974
+    },
+    {
+      "source": "feat_l0_p16_f175",
+      "target": "feat_l5_p16_f423",
+      "weight": 0.061486296355724335
+    },
+    {
+      "source": "feat_l0_p16_f863",
+      "target": "feat_l7_p16_f487",
+      "weight": -0.060426872223615646
+    },
+    {
+      "source": "feat_l0_p16_f863",
+      "target": "logit_20213",
+      "weight": 0.059505667423798585
+    },
+    {
+      "source": "feat_l0_p16_f458",
+      "target": "feat_l24_p16_f258",
+      "weight": -0.0496302954852581
+    },
+    {
+      "source": "feat_l0_p16_f548",
+      "target": "feat_l7_p16_f487",
+      "weight": 0.04843450337648392
+    },
+    {
+      "source": "feat_l0_p16_f755",
+      "target": "logit_20213",
+      "weight": 0.03841456083328702
+    },
+    {
+      "source": "feat_l0_p16_f265",
+      "target": "feat_l7_p16_f487",
+      "weight": 0.03736265376210213
+    },
+    {
+      "source": "feat_l0_p16_f444",
+      "target": "feat_l5_p16_f423",
+      "weight": -0.03679303079843521
+    },
+    {
+      "source": "feat_l0_p16_f946",
+      "target": "logit_20213",
+      "weight": 0.03199213383289403
+    },
+    {
+      "source": "feat_l0_p16_f548",
+      "target": "feat_l16_p16_f405",
+      "weight": 0.02728087268769741
+    },
+    {
+      "source": "feat_l0_p16_f870",
+      "target": "feat_l7_p16_f487",
+      "weight": 0.02662757970392704
+    },
+    {
+      "source": "feat_l0_p16_f755",
+      "target": "feat_l7_p16_f487",
+      "weight": -0.026569055393338203
+    },
+    {
+      "source": "feat_l0_p16_f458",
+      "target": "feat_l7_p16_f487",
+      "weight": -0.025483153760433197
+    },
+    {
+      "source": "feat_l0_p16_f946",
+      "target": "feat_l7_p16_f487",
+      "weight": 0.025298133492469788
+    },
+    {
+      "source": "feat_l5_p16_f423",
+      "target": "feat_l7_p16_f487",
+      "weight": 0.012453577481210232
+    },
+    {
+      "source": "embed_p16",
+      "target": "logit_20213",
+      "weight": 0.010987841763380857
+    },
+    {
+      "source": "feat_l0_p16_f772",
+      "target": "feat_l5_p16_f423",
+      "weight": -0.009207299910485744
+    },
+    {
+      "source": "feat_l7_p16_f487",
+      "target": "feat_l24_p16_f258",
+      "weight": 0.008496704511344433
+    },
+    {
+      "source": "feat_l0_p16_f772",
+      "target": "logit_20213",
+      "weight": 0.003422891293175551
+    },
+    {
+      "source": "feat_l0_p16_f444",
+      "target": "feat_l7_p16_f487",
+      "weight": 0.0018886412726715207
+    }
+  ],
+  "qParams": {}
+}

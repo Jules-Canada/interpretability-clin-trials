@@ -1,0 +1,796 @@
+{
+  "metadata": {
+    "prompt_tokens": [
+      "<bos>",
+      "Due",
+      " to",
+      " severe",
+      " adverse",
+      " events",
+      ",",
+      " treatment",
+      " was"
+    ],
+    "scan": "google/medgemma-4b-pt"
+  },
+  "nodes": [
+    {
+      "node_id": "logit_63730",
+      "jsNodeId": "logit_63730",
+      "layer": null,
+      "feature": 0,
+      "feature_type": "logit",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "\" discontinued\" k(p=0.3145)",
+      "vis_link": "",
+      "isLogit": true
+    },
+    {
+      "node_id": "feat_l0_p8_f29",
+      "jsNodeId": "feat_l0_p8_f29",
+      "layer": 0,
+      "feature": 29,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "L0F29@8",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p8_f429",
+      "jsNodeId": "feat_l0_p8_f429",
+      "layer": 0,
+      "feature": 429,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "L0F429@8",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p8_f528",
+      "jsNodeId": "feat_l0_p8_f528",
+      "layer": 0,
+      "feature": 528,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "L0F528@8",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p8_f755",
+      "jsNodeId": "feat_l0_p8_f755",
+      "layer": 0,
+      "feature": 755,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "L0F755@8",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p8_f772",
+      "jsNodeId": "feat_l0_p8_f772",
+      "layer": 0,
+      "feature": 772,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "L0F772@8",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p8_f775",
+      "jsNodeId": "feat_l0_p8_f775",
+      "layer": 0,
+      "feature": 775,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "L0F775@8",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p8_f790",
+      "jsNodeId": "feat_l0_p8_f790",
+      "layer": 0,
+      "feature": 790,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "L0F790@8",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p8_f878",
+      "jsNodeId": "feat_l0_p8_f878",
+      "layer": 0,
+      "feature": 878,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "L0F878@8",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p8_f946",
+      "jsNodeId": "feat_l0_p8_f946",
+      "layer": 0,
+      "feature": 946,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "L0F946@8",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l16_p8_f405",
+      "jsNodeId": "feat_l16_p8_f405",
+      "layer": 16,
+      "feature": 405,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "L16F405@8",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l16_p8_f1023",
+      "jsNodeId": "feat_l16_p8_f1023",
+      "layer": 16,
+      "feature": 1023,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "L16F1023@8",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l23_p8_f553",
+      "jsNodeId": "feat_l23_p8_f553",
+      "layer": 23,
+      "feature": 553,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "L23F553@8",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l24_p8_f258",
+      "jsNodeId": "feat_l24_p8_f258",
+      "layer": 24,
+      "feature": 258,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "L24F258@8",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "embed_p8",
+      "jsNodeId": "embed_p8",
+      "layer": "E",
+      "feature": 0,
+      "feature_type": "embedding",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "embed(\" was\"@8)",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l16",
+      "jsNodeId": "error_l16",
+      "layer": 16,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "error L16",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l17",
+      "jsNodeId": "error_l17",
+      "layer": 17,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "error L17",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l20",
+      "jsNodeId": "error_l20",
+      "layer": 20,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "error L20",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l21",
+      "jsNodeId": "error_l21",
+      "layer": 21,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "error L21",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l22",
+      "jsNodeId": "error_l22",
+      "layer": 22,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "error L22",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l23",
+      "jsNodeId": "error_l23",
+      "layer": 23,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "error L23",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l24",
+      "jsNodeId": "error_l24",
+      "layer": 24,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "error L24",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l25",
+      "jsNodeId": "error_l25",
+      "layer": 25,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "error L25",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l26",
+      "jsNodeId": "error_l26",
+      "layer": 26,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "error L26",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l27",
+      "jsNodeId": "error_l27",
+      "layer": 27,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "error L27",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l28",
+      "jsNodeId": "error_l28",
+      "layer": 28,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "error L28",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l29",
+      "jsNodeId": "error_l29",
+      "layer": 29,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "error L29",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l30",
+      "jsNodeId": "error_l30",
+      "layer": 30,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "error L30",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l31",
+      "jsNodeId": "error_l31",
+      "layer": 31,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "error L31",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l32",
+      "jsNodeId": "error_l32",
+      "layer": 32,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 8,
+      "probe_location_idx": 8,
+      "clerp": "error L32",
+      "vis_link": "",
+      "isLogit": false
+    }
+  ],
+  "links": [
+    {
+      "source": "embed_p8",
+      "target": "feat_l16_p8_f405",
+      "weight": -6.712444305419922
+    },
+    {
+      "source": "embed_p8",
+      "target": "feat_l0_p8_f790",
+      "weight": 6.443467140197754
+    },
+    {
+      "source": "embed_p8",
+      "target": "feat_l0_p8_f772",
+      "weight": 6.315635681152344
+    },
+    {
+      "source": "embed_p8",
+      "target": "feat_l0_p8_f755",
+      "weight": 5.571291923522949
+    },
+    {
+      "source": "embed_p8",
+      "target": "feat_l0_p8_f528",
+      "weight": 5.411466598510742
+    },
+    {
+      "source": "embed_p8",
+      "target": "feat_l0_p8_f29",
+      "weight": 4.444927215576172
+    },
+    {
+      "source": "embed_p8",
+      "target": "feat_l0_p8_f775",
+      "weight": 3.8363420963287354
+    },
+    {
+      "source": "embed_p8",
+      "target": "feat_l0_p8_f946",
+      "weight": 3.326794147491455
+    },
+    {
+      "source": "embed_p8",
+      "target": "feat_l0_p8_f429",
+      "weight": 3.00675892829895
+    },
+    {
+      "source": "embed_p8",
+      "target": "feat_l0_p8_f878",
+      "weight": 2.9623467922210693
+    },
+    {
+      "source": "error_l25",
+      "target": "logit_63730",
+      "weight": 2.7395321764652216
+    },
+    {
+      "source": "embed_p8",
+      "target": "feat_l24_p8_f258",
+      "weight": -1.620102882385254
+    },
+    {
+      "source": "error_l23",
+      "target": "logit_63730",
+      "weight": 1.5747295211746786
+    },
+    {
+      "source": "error_l27",
+      "target": "logit_63730",
+      "weight": 1.235686396655489
+    },
+    {
+      "source": "error_l30",
+      "target": "logit_63730",
+      "weight": -1.2060445870104783
+    },
+    {
+      "source": "error_l20",
+      "target": "logit_63730",
+      "weight": 0.8742996167848428
+    },
+    {
+      "source": "error_l22",
+      "target": "logit_63730",
+      "weight": 0.8684382675325877
+    },
+    {
+      "source": "embed_p8",
+      "target": "feat_l23_p8_f553",
+      "weight": -0.806043267250061
+    },
+    {
+      "source": "error_l26",
+      "target": "logit_63730",
+      "weight": 0.7045689217057927
+    },
+    {
+      "source": "error_l29",
+      "target": "logit_63730",
+      "weight": 0.703383946249829
+    },
+    {
+      "source": "error_l16",
+      "target": "logit_63730",
+      "weight": 0.6560939087326975
+    },
+    {
+      "source": "feat_l24_p8_f258",
+      "target": "logit_63730",
+      "weight": 0.5860515993226026
+    },
+    {
+      "source": "error_l28",
+      "target": "logit_63730",
+      "weight": -0.5612057867766712
+    },
+    {
+      "source": "feat_l0_p8_f772",
+      "target": "feat_l24_p8_f258",
+      "weight": 0.48683369159698486
+    },
+    {
+      "source": "feat_l0_p8_f528",
+      "target": "feat_l16_p8_f405",
+      "weight": -0.4278389513492584
+    },
+    {
+      "source": "feat_l23_p8_f553",
+      "target": "logit_63730",
+      "weight": 0.4197783427547077
+    },
+    {
+      "source": "error_l24",
+      "target": "logit_63730",
+      "weight": 0.39840359491020677
+    },
+    {
+      "source": "feat_l0_p8_f755",
+      "target": "feat_l23_p8_f553",
+      "weight": 0.39694711565971375
+    },
+    {
+      "source": "feat_l0_p8_f29",
+      "target": "feat_l16_p8_f405",
+      "weight": 0.38035842776298523
+    },
+    {
+      "source": "error_l17",
+      "target": "logit_63730",
+      "weight": 0.37160353545244945
+    },
+    {
+      "source": "feat_l0_p8_f772",
+      "target": "feat_l16_p8_f405",
+      "weight": -0.3676542639732361
+    },
+    {
+      "source": "error_l32",
+      "target": "logit_63730",
+      "weight": 0.36606704597954604
+    },
+    {
+      "source": "error_l21",
+      "target": "logit_63730",
+      "weight": 0.3579325549567106
+    },
+    {
+      "source": "feat_l0_p8_f429",
+      "target": "feat_l24_p8_f258",
+      "weight": 0.3486347198486328
+    },
+    {
+      "source": "error_l31",
+      "target": "logit_63730",
+      "weight": -0.34550055435463556
+    },
+    {
+      "source": "feat_l0_p8_f878",
+      "target": "feat_l23_p8_f553",
+      "weight": 0.33427590131759644
+    },
+    {
+      "source": "feat_l0_p8_f946",
+      "target": "feat_l16_p8_f405",
+      "weight": -0.3299715518951416
+    },
+    {
+      "source": "feat_l0_p8_f755",
+      "target": "feat_l24_p8_f258",
+      "weight": 0.307990163564682
+    },
+    {
+      "source": "feat_l16_p8_f405",
+      "target": "feat_l24_p8_f258",
+      "weight": 0.2999187111854553
+    },
+    {
+      "source": "feat_l0_p8_f29",
+      "target": "feat_l24_p8_f258",
+      "weight": 0.29742431640625
+    },
+    {
+      "source": "embed_p8",
+      "target": "feat_l16_p8_f1023",
+      "weight": -0.28581130504608154
+    },
+    {
+      "source": "feat_l0_p8_f528",
+      "target": "feat_l16_p8_f1023",
+      "weight": -0.2779709994792938
+    },
+    {
+      "source": "feat_l0_p8_f878",
+      "target": "feat_l24_p8_f258",
+      "weight": 0.2750900685787201
+    },
+    {
+      "source": "feat_l16_p8_f405",
+      "target": "feat_l23_p8_f553",
+      "weight": 0.26620185375213623
+    },
+    {
+      "source": "feat_l0_p8_f790",
+      "target": "feat_l24_p8_f258",
+      "weight": 0.2519792914390564
+    },
+    {
+      "source": "feat_l0_p8_f946",
+      "target": "feat_l24_p8_f258",
+      "weight": -0.24225859344005585
+    },
+    {
+      "source": "feat_l0_p8_f528",
+      "target": "feat_l24_p8_f258",
+      "weight": -0.21969673037528992
+    },
+    {
+      "source": "feat_l0_p8_f755",
+      "target": "feat_l16_p8_f1023",
+      "weight": 0.21832770109176636
+    },
+    {
+      "source": "feat_l0_p8_f29",
+      "target": "feat_l16_p8_f1023",
+      "weight": 0.2017001062631607
+    },
+    {
+      "source": "feat_l0_p8_f429",
+      "target": "feat_l16_p8_f1023",
+      "weight": -0.2004096657037735
+    },
+    {
+      "source": "feat_l0_p8_f790",
+      "target": "feat_l23_p8_f553",
+      "weight": -0.1994764506816864
+    },
+    {
+      "source": "feat_l0_p8_f772",
+      "target": "feat_l23_p8_f553",
+      "weight": 0.18759874999523163
+    },
+    {
+      "source": "feat_l0_p8_f755",
+      "target": "feat_l16_p8_f405",
+      "weight": 0.17446252703666687
+    },
+    {
+      "source": "feat_l0_p8_f528",
+      "target": "feat_l23_p8_f553",
+      "weight": -0.16401958465576172
+    },
+    {
+      "source": "feat_l0_p8_f790",
+      "target": "logit_63730",
+      "weight": 0.16016859765747027
+    },
+    {
+      "source": "feat_l0_p8_f775",
+      "target": "feat_l16_p8_f405",
+      "weight": -0.15650488436222076
+    },
+    {
+      "source": "feat_l16_p8_f1023",
+      "target": "feat_l23_p8_f553",
+      "weight": 0.15055571496486664
+    },
+    {
+      "source": "feat_l0_p8_f429",
+      "target": "feat_l16_p8_f405",
+      "weight": 0.14821010828018188
+    },
+    {
+      "source": "feat_l0_p8_f528",
+      "target": "logit_63730",
+      "weight": 0.14492558483519502
+    },
+    {
+      "source": "feat_l0_p8_f775",
+      "target": "feat_l16_p8_f1023",
+      "weight": -0.1441451907157898
+    },
+    {
+      "source": "feat_l0_p8_f790",
+      "target": "feat_l16_p8_f405",
+      "weight": -0.1429276466369629
+    },
+    {
+      "source": "feat_l23_p8_f553",
+      "target": "feat_l24_p8_f258",
+      "weight": 0.13910658657550812
+    },
+    {
+      "source": "feat_l16_p8_f1023",
+      "target": "feat_l24_p8_f258",
+      "weight": -0.13076257705688477
+    },
+    {
+      "source": "feat_l0_p8_f755",
+      "target": "logit_63730",
+      "weight": 0.12896569063058047
+    },
+    {
+      "source": "feat_l0_p8_f790",
+      "target": "feat_l16_p8_f1023",
+      "weight": 0.1209886223077774
+    },
+    {
+      "source": "feat_l0_p8_f878",
+      "target": "feat_l16_p8_f1023",
+      "weight": 0.11974814534187317
+    },
+    {
+      "source": "feat_l16_p8_f1023",
+      "target": "logit_63730",
+      "weight": 0.11753105193423416
+    },
+    {
+      "source": "feat_l0_p8_f878",
+      "target": "feat_l16_p8_f405",
+      "weight": 0.09610625356435776
+    },
+    {
+      "source": "feat_l0_p8_f946",
+      "target": "feat_l23_p8_f553",
+      "weight": -0.09154970198869705
+    },
+    {
+      "source": "feat_l16_p8_f405",
+      "target": "logit_63730",
+      "weight": 0.09049525558862817
+    },
+    {
+      "source": "feat_l0_p8_f429",
+      "target": "feat_l23_p8_f553",
+      "weight": 0.08612226694822311
+    },
+    {
+      "source": "feat_l0_p8_f772",
+      "target": "feat_l16_p8_f1023",
+      "weight": -0.08422128111124039
+    },
+    {
+      "source": "feat_l0_p8_f775",
+      "target": "feat_l23_p8_f553",
+      "weight": 0.049519650638103485
+    },
+    {
+      "source": "feat_l0_p8_f878",
+      "target": "logit_63730",
+      "weight": 0.04138371846288244
+    },
+    {
+      "source": "feat_l0_p8_f29",
+      "target": "logit_63730",
+      "weight": -0.03662313001684199
+    },
+    {
+      "source": "feat_l0_p8_f29",
+      "target": "feat_l23_p8_f553",
+      "weight": -0.032740551978349686
+    },
+    {
+      "source": "feat_l0_p8_f946",
+      "target": "feat_l16_p8_f1023",
+      "weight": -0.021151714026927948
+    },
+    {
+      "source": "feat_l0_p8_f772",
+      "target": "logit_63730",
+      "weight": 0.01724867348442481
+    },
+    {
+      "source": "feat_l0_p8_f429",
+      "target": "logit_63730",
+      "weight": 0.014866225125700062
+    },
+    {
+      "source": "feat_l0_p8_f775",
+      "target": "logit_63730",
+      "weight": -0.012322063394109493
+    },
+    {
+      "source": "feat_l0_p8_f775",
+      "target": "feat_l24_p8_f258",
+      "weight": 0.010339771397411823
+    },
+    {
+      "source": "feat_l0_p8_f946",
+      "target": "logit_63730",
+      "weight": 0.007861714660784494
+    },
+    {
+      "source": "embed_p8",
+      "target": "logit_63730",
+      "weight": 0.00460795208800846
+    }
+  ],
+  "qParams": {}
+}
