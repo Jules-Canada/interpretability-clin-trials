@@ -1,0 +1,802 @@
+{
+  "metadata": {
+    "prompt_tokens": [
+      "<bos>",
+      "The",
+      " left",
+      " anterior",
+      " descending",
+      " artery",
+      " supplies",
+      " the",
+      " anterior",
+      " wall",
+      " of",
+      " the"
+    ],
+    "scan": "google/medgemma-4b-pt",
+    "completeness": 0.5487994822081408,
+    "logit_value": 25.0,
+    "target_probability": 0.76953125
+  },
+  "nodes": [
+    {
+      "node_id": "logit_3710",
+      "jsNodeId": "logit_3710",
+      "layer": null,
+      "feature": 0,
+      "feature_type": "logit",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "\" heart\" k(p=0.7695)",
+      "vis_link": "",
+      "isLogit": true
+    },
+    {
+      "node_id": "feat_l0_p11_f106",
+      "jsNodeId": "feat_l0_p11_f106",
+      "layer": 0,
+      "feature": 106,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "L0F106@11",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p11_f114",
+      "jsNodeId": "feat_l0_p11_f114",
+      "layer": 0,
+      "feature": 114,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "L0F114@11",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p11_f183",
+      "jsNodeId": "feat_l0_p11_f183",
+      "layer": 0,
+      "feature": 183,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "L0F183@11",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p11_f214",
+      "jsNodeId": "feat_l0_p11_f214",
+      "layer": 0,
+      "feature": 214,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "L0F214@11",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p11_f239",
+      "jsNodeId": "feat_l0_p11_f239",
+      "layer": 0,
+      "feature": 239,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "L0F239@11",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p11_f263",
+      "jsNodeId": "feat_l0_p11_f263",
+      "layer": 0,
+      "feature": 263,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "L0F263@11",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p11_f395",
+      "jsNodeId": "feat_l0_p11_f395",
+      "layer": 0,
+      "feature": 395,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "L0F395@11",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p11_f405",
+      "jsNodeId": "feat_l0_p11_f405",
+      "layer": 0,
+      "feature": 405,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "L0F405@11",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p11_f453",
+      "jsNodeId": "feat_l0_p11_f453",
+      "layer": 0,
+      "feature": 453,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "L0F453@11",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p11_f610",
+      "jsNodeId": "feat_l0_p11_f610",
+      "layer": 0,
+      "feature": 610,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "L0F610@11",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p11_f686",
+      "jsNodeId": "feat_l0_p11_f686",
+      "layer": 0,
+      "feature": 686,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "L0F686@11",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p11_f700",
+      "jsNodeId": "feat_l0_p11_f700",
+      "layer": 0,
+      "feature": 700,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "L0F700@11",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p11_f708",
+      "jsNodeId": "feat_l0_p11_f708",
+      "layer": 0,
+      "feature": 708,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "L0F708@11",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p11_f740",
+      "jsNodeId": "feat_l0_p11_f740",
+      "layer": 0,
+      "feature": 740,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "L0F740@11",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p11_f806",
+      "jsNodeId": "feat_l0_p11_f806",
+      "layer": 0,
+      "feature": 806,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "L0F806@11",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p11_f840",
+      "jsNodeId": "feat_l0_p11_f840",
+      "layer": 0,
+      "feature": 840,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "L0F840@11",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l0_p11_f977",
+      "jsNodeId": "feat_l0_p11_f977",
+      "layer": 0,
+      "feature": 977,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "L0F977@11",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l7_p11_f497",
+      "jsNodeId": "feat_l7_p11_f497",
+      "layer": 7,
+      "feature": 497,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "L7F497@11",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "feat_l23_p11_f806",
+      "jsNodeId": "feat_l23_p11_f806",
+      "layer": 23,
+      "feature": 806,
+      "feature_type": "cross layer transcoder",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "L23F806@11",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "embed_p11",
+      "jsNodeId": "embed_p11",
+      "layer": "E",
+      "feature": 0,
+      "feature_type": "embedding",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "embed(\" the\"@11)",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l21",
+      "jsNodeId": "error_l21",
+      "layer": 21,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "error L21",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l22",
+      "jsNodeId": "error_l22",
+      "layer": 22,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "error L22",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l25",
+      "jsNodeId": "error_l25",
+      "layer": 25,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "error L25",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l27",
+      "jsNodeId": "error_l27",
+      "layer": 27,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "error L27",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l28",
+      "jsNodeId": "error_l28",
+      "layer": 28,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "error L28",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l30",
+      "jsNodeId": "error_l30",
+      "layer": 30,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "error L30",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l31",
+      "jsNodeId": "error_l31",
+      "layer": 31,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "error L31",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l32",
+      "jsNodeId": "error_l32",
+      "layer": 32,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "error L32",
+      "vis_link": "",
+      "isLogit": false
+    },
+    {
+      "node_id": "error_l33",
+      "jsNodeId": "error_l33",
+      "layer": 33,
+      "feature": 0,
+      "feature_type": "mlp reconstruction error",
+      "ctx_idx": 11,
+      "probe_location_idx": 11,
+      "clerp": "error L33",
+      "vis_link": "",
+      "isLogit": false
+    }
+  ],
+  "links": [
+    {
+      "source": "embed_p11",
+      "target": "feat_l0_p11_f239",
+      "weight": 8.220283508300781
+    },
+    {
+      "source": "embed_p11",
+      "target": "feat_l0_p11_f214",
+      "weight": 7.274138927459717
+    },
+    {
+      "source": "embed_p11",
+      "target": "feat_l0_p11_f610",
+      "weight": 5.6734795570373535
+    },
+    {
+      "source": "embed_p11",
+      "target": "feat_l0_p11_f405",
+      "weight": 5.631258964538574
+    },
+    {
+      "source": "embed_p11",
+      "target": "feat_l0_p11_f395",
+      "weight": 5.500450134277344
+    },
+    {
+      "source": "embed_p11",
+      "target": "feat_l0_p11_f708",
+      "weight": 5.302443981170654
+    },
+    {
+      "source": "embed_p11",
+      "target": "feat_l0_p11_f263",
+      "weight": 5.237808704376221
+    },
+    {
+      "source": "error_l25",
+      "target": "logit_3710",
+      "weight": 5.073561860470931
+    },
+    {
+      "source": "embed_p11",
+      "target": "feat_l0_p11_f700",
+      "weight": 4.9764275550842285
+    },
+    {
+      "source": "embed_p11",
+      "target": "feat_l0_p11_f840",
+      "weight": 4.802720069885254
+    },
+    {
+      "source": "embed_p11",
+      "target": "feat_l0_p11_f686",
+      "weight": 4.663014888763428
+    },
+    {
+      "source": "embed_p11",
+      "target": "feat_l0_p11_f740",
+      "weight": 4.364150047302246
+    },
+    {
+      "source": "embed_p11",
+      "target": "feat_l0_p11_f806",
+      "weight": 4.2047953605651855
+    },
+    {
+      "source": "embed_p11",
+      "target": "feat_l0_p11_f183",
+      "weight": 4.045139312744141
+    },
+    {
+      "source": "embed_p11",
+      "target": "feat_l0_p11_f977",
+      "weight": 3.9938602447509766
+    },
+    {
+      "source": "embed_p11",
+      "target": "feat_l0_p11_f114",
+      "weight": 3.8919920921325684
+    },
+    {
+      "source": "embed_p11",
+      "target": "feat_l0_p11_f106",
+      "weight": 3.6047511100769043
+    },
+    {
+      "source": "embed_p11",
+      "target": "feat_l0_p11_f453",
+      "weight": 3.5386321544647217
+    },
+    {
+      "source": "error_l22",
+      "target": "logit_3710",
+      "weight": 2.594686113082898
+    },
+    {
+      "source": "error_l30",
+      "target": "logit_3710",
+      "weight": -1.2240258548221192
+    },
+    {
+      "source": "embed_p11",
+      "target": "feat_l7_p11_f497",
+      "weight": 1.0738558769226074
+    },
+    {
+      "source": "error_l33",
+      "target": "logit_3710",
+      "weight": -0.9723891948798661
+    },
+    {
+      "source": "error_l27",
+      "target": "logit_3710",
+      "weight": 0.9576109970751602
+    },
+    {
+      "source": "error_l32",
+      "target": "logit_3710",
+      "weight": 0.6365191583584743
+    },
+    {
+      "source": "error_l28",
+      "target": "logit_3710",
+      "weight": -0.6038546687787315
+    },
+    {
+      "source": "error_l31",
+      "target": "logit_3710",
+      "weight": -0.5811672307342839
+    },
+    {
+      "source": "embed_p11",
+      "target": "feat_l23_p11_f806",
+      "weight": 0.48352664709091187
+    },
+    {
+      "source": "feat_l0_p11_f263",
+      "target": "feat_l7_p11_f497",
+      "weight": -0.42290040850639343
+    },
+    {
+      "source": "error_l21",
+      "target": "logit_3710",
+      "weight": 0.35925399698435206
+    },
+    {
+      "source": "feat_l0_p11_f405",
+      "target": "feat_l7_p11_f497",
+      "weight": 0.32972022891044617
+    },
+    {
+      "source": "feat_l0_p11_f114",
+      "target": "feat_l7_p11_f497",
+      "weight": 0.30902329087257385
+    },
+    {
+      "source": "feat_l0_p11_f395",
+      "target": "feat_l7_p11_f497",
+      "weight": -0.30142471194267273
+    },
+    {
+      "source": "feat_l7_p11_f497",
+      "target": "logit_3710",
+      "weight": 0.2928684191703575
+    },
+    {
+      "source": "feat_l23_p11_f806",
+      "target": "logit_3710",
+      "weight": 0.27773399970765733
+    },
+    {
+      "source": "feat_l0_p11_f239",
+      "target": "logit_3710",
+      "weight": 0.25609066557774635
+    },
+    {
+      "source": "feat_l0_p11_f700",
+      "target": "logit_3710",
+      "weight": 0.23949734838108216
+    },
+    {
+      "source": "feat_l0_p11_f453",
+      "target": "feat_l7_p11_f497",
+      "weight": 0.23787201941013336
+    },
+    {
+      "source": "feat_l0_p11_f395",
+      "target": "logit_3710",
+      "weight": -0.23675116733080454
+    },
+    {
+      "source": "feat_l0_p11_f977",
+      "target": "feat_l7_p11_f497",
+      "weight": 0.23373214900493622
+    },
+    {
+      "source": "feat_l0_p11_f183",
+      "target": "logit_3710",
+      "weight": 0.22587366324321567
+    },
+    {
+      "source": "feat_l0_p11_f610",
+      "target": "logit_3710",
+      "weight": 0.20282897861543814
+    },
+    {
+      "source": "feat_l0_p11_f214",
+      "target": "feat_l23_p11_f806",
+      "weight": 0.20063573122024536
+    },
+    {
+      "source": "feat_l0_p11_f395",
+      "target": "feat_l23_p11_f806",
+      "weight": -0.19368700683116913
+    },
+    {
+      "source": "feat_l0_p11_f700",
+      "target": "feat_l23_p11_f806",
+      "weight": 0.17588099837303162
+    },
+    {
+      "source": "feat_l0_p11_f700",
+      "target": "feat_l7_p11_f497",
+      "weight": 0.17569829523563385
+    },
+    {
+      "source": "feat_l0_p11_f708",
+      "target": "feat_l23_p11_f806",
+      "weight": -0.17103926837444305
+    },
+    {
+      "source": "feat_l0_p11_f183",
+      "target": "feat_l23_p11_f806",
+      "weight": 0.1678088903427124
+    },
+    {
+      "source": "feat_l0_p11_f686",
+      "target": "logit_3710",
+      "weight": 0.16657503818637956
+    },
+    {
+      "source": "feat_l0_p11_f806",
+      "target": "feat_l23_p11_f806",
+      "weight": -0.1610637605190277
+    },
+    {
+      "source": "feat_l0_p11_f114",
+      "target": "feat_l23_p11_f806",
+      "weight": 0.15965992212295532
+    },
+    {
+      "source": "feat_l0_p11_f405",
+      "target": "logit_3710",
+      "weight": 0.14752967883595142
+    },
+    {
+      "source": "feat_l0_p11_f686",
+      "target": "feat_l23_p11_f806",
+      "weight": 0.14595550298690796
+    },
+    {
+      "source": "feat_l0_p11_f106",
+      "target": "feat_l7_p11_f497",
+      "weight": -0.1447387933731079
+    },
+    {
+      "source": "feat_l0_p11_f708",
+      "target": "feat_l7_p11_f497",
+      "weight": -0.13949374854564667
+    },
+    {
+      "source": "feat_l0_p11_f263",
+      "target": "logit_3710",
+      "weight": -0.13948053781443365
+    },
+    {
+      "source": "feat_l0_p11_f708",
+      "target": "logit_3710",
+      "weight": -0.1350781274989099
+    },
+    {
+      "source": "feat_l0_p11_f806",
+      "target": "feat_l7_p11_f497",
+      "weight": -0.13402365148067474
+    },
+    {
+      "source": "feat_l0_p11_f610",
+      "target": "feat_l7_p11_f497",
+      "weight": -0.13335630297660828
+    },
+    {
+      "source": "feat_l0_p11_f610",
+      "target": "feat_l23_p11_f806",
+      "weight": -0.09278099238872528
+    },
+    {
+      "source": "feat_l0_p11_f740",
+      "target": "feat_l23_p11_f806",
+      "weight": 0.09184345602989197
+    },
+    {
+      "source": "feat_l0_p11_f214",
+      "target": "feat_l7_p11_f497",
+      "weight": 0.09043107181787491
+    },
+    {
+      "source": "feat_l0_p11_f840",
+      "target": "logit_3710",
+      "weight": 0.08919408384607785
+    },
+    {
+      "source": "feat_l0_p11_f840",
+      "target": "feat_l7_p11_f497",
+      "weight": 0.08629141002893448
+    },
+    {
+      "source": "feat_l0_p11_f453",
+      "target": "feat_l23_p11_f806",
+      "weight": 0.08319778740406036
+    },
+    {
+      "source": "feat_l0_p11_f977",
+      "target": "logit_3710",
+      "weight": 0.07942994390686985
+    },
+    {
+      "source": "feat_l0_p11_f106",
+      "target": "feat_l23_p11_f806",
+      "weight": -0.07519201934337616
+    },
+    {
+      "source": "feat_l0_p11_f106",
+      "target": "logit_3710",
+      "weight": -0.07369741538806264
+    },
+    {
+      "source": "feat_l0_p11_f214",
+      "target": "logit_3710",
+      "weight": 0.06718626947257963
+    },
+    {
+      "source": "feat_l0_p11_f239",
+      "target": "feat_l23_p11_f806",
+      "weight": -0.06496308743953705
+    },
+    {
+      "source": "feat_l7_p11_f497",
+      "target": "feat_l23_p11_f806",
+      "weight": 0.059288524091243744
+    },
+    {
+      "source": "feat_l0_p11_f740",
+      "target": "feat_l7_p11_f497",
+      "weight": 0.05674247443675995
+    },
+    {
+      "source": "feat_l0_p11_f806",
+      "target": "logit_3710",
+      "weight": -0.04512985848030539
+    },
+    {
+      "source": "feat_l0_p11_f453",
+      "target": "logit_3710",
+      "weight": 0.04478550641879992
+    },
+    {
+      "source": "feat_l0_p11_f977",
+      "target": "feat_l23_p11_f806",
+      "weight": 0.03715332970023155
+    },
+    {
+      "source": "feat_l0_p11_f740",
+      "target": "logit_3710",
+      "weight": -0.025054428661631142
+    },
+    {
+      "source": "embed_p11",
+      "target": "logit_3710",
+      "weight": 0.024511319273642584
+    },
+    {
+      "source": "feat_l0_p11_f686",
+      "target": "feat_l7_p11_f497",
+      "weight": 0.022208107635378838
+    },
+    {
+      "source": "feat_l0_p11_f405",
+      "target": "feat_l23_p11_f806",
+      "weight": -0.017796320840716362
+    },
+    {
+      "source": "feat_l0_p11_f840",
+      "target": "feat_l23_p11_f806",
+      "weight": -0.011305108666419983
+    },
+    {
+      "source": "feat_l0_p11_f114",
+      "target": "logit_3710",
+      "weight": 0.004672488930092926
+    },
+    {
+      "source": "feat_l0_p11_f263",
+      "target": "feat_l23_p11_f806",
+      "weight": 0.004029375500977039
+    },
+    {
+      "source": "feat_l0_p11_f239",
+      "target": "feat_l7_p11_f497",
+      "weight": -0.0008962122956290841
+    },
+    {
+      "source": "feat_l0_p11_f183",
+      "target": "feat_l7_p11_f497",
+      "weight": 0.0007889978587627411
+    }
+  ],
+  "qParams": {}
+}
