@@ -507,6 +507,16 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
   warns + falls back to per-prompt only if a checkpoint predates this change. **TODO**:
   update `clt/train.py:_save_checkpoint` to bundle scales automatically so future training
   runs (e.g. the planned L0~20-30 retrain) don't recreate this gap.
+- **`find_top_activations.py` missing RMS normalization (fixed 2026-06-01).** The script
+  loaded the CLT state dict but never called `clt.load_scales_from_checkpoint(ckpt)`, and
+  fed raw (unnormalized) HDF5 residuals into `clt.encode()`. The CLT was trained on
+  RMS-normalized inputs, so every pre-activation was off-scale → JumpReLU gated all
+  features to zero → 0 activations for all 110 graph features. Symptom: `label_features.py`
+  produced plausible-sounding labels ("table of contents dots", "section numbers") from
+  empty activation lists — the LLM hallucinated labels with no grounding data. Fix: (1)
+  call `load_scales_from_checkpoint` in `load_clt()`, (2) divide each residual batch by
+  `clt.resid_scales[l]` before encoding. Any script that calls `clt.encode()` on raw HDF5
+  data must normalize first — `graphs/build.py` already does this correctly.
 - **Contrastive readout for binary decisions (2026-05-16).** `graphs/build.py` now accepts
   a `contrastive=(pos_ids, neg_ids)` parameter. Target becomes
   `mean(logit[pos_ids]) − mean(logit[neg_ids])` — same autograd backward, same completeness

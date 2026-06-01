@@ -111,9 +111,14 @@ def load_clt(args, device) -> CrossLayerTranscoder:
     clt = CrossLayerTranscoder(cfg)
     ckpt = torch.load(args.checkpoint, map_location=device, weights_only=True)
     clt.load_state_dict(ckpt["model_state_dict"])
+    clt.load_scales_from_checkpoint(ckpt)
     clt = clt.to(device)
     clt.eval()
     print(f"Loaded CLT from step {ckpt['step']}")
+    if clt.has_scales():
+        print(f"  RMS scales loaded ({clt.cfg.n_layers} layers)")
+    elif clt.cfg.normalize_activations:
+        print("  WARNING: normalize_activations=True but no scales in checkpoint")
     return clt
 
 
@@ -153,6 +158,13 @@ def collect_top_activations(
                     torch.from_numpy(f[f"resid_pre_{l}"][idx].astype("float32")).to(device)
                     for l in range(clt.cfg.n_layers)
                 ]
+
+                # Normalize by saved RMS scales (must match training-time normalization)
+                if clt.cfg.normalize_activations and clt.has_scales():
+                    resid_batch = [
+                        r / clt.resid_scales[l].to(r.device).clamp(min=1e-8)
+                        for l, r in enumerate(resid_batch)
+                    ]
 
                 with torch.no_grad():
                     # encode() expects list of (batch, d_model) — HDF5 is already flat tokens
