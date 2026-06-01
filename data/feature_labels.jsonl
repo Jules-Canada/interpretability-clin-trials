@@ -1,0 +1,110 @@
+{"layer": 0, "feature": 8, "label": "Tokens of \"sign\" in informed consent and agreement contexts", "raw_response": "Tokens of \"sign\" in informed consent and agreement contexts"}
+{"layer": 0, "feature": 14, "label": "Transition word introducing supplementary or additional information in formal academic writing", "raw_response": "Transition word introducing supplementary or additional information in formal academic writing"}
+{"layer": 0, "feature": 66, "label": "Morpheme \"bic\" or \"ivo\" in pharmaceutical, medical, or software terms", "raw_response": "Morpheme \"bic\" or \"ivo\" in pharmaceutical, medical, or software terms"}
+{"layer": 0, "feature": 85, "label": "Medical role noun in clinical procedure descriptions", "raw_response": "Medical role noun in clinical procedure descriptions"}
+{"layer": 0, "feature": 100, "label": "Section headers and procedural statement initiators in clinical trial documents", "raw_response": "Section headers and procedural statement initiators in clinical trial documents"}
+{"layer": 0, "feature": 106, "label": "Forward slash punctuation in URLs and date separators", "raw_response": "Forward slash punctuation in URLs and date separators"}
+{"layer": 0, "feature": 114, "label": "Dots or periods separating document section numbers and titles", "raw_response": "Dots or periods separating document section numbers and titles"}
+{"layer": 0, "feature": 116, "label": "Month name token in date expressions and temporal ranges", "raw_response": "Month name token in date expressions and temporal ranges"}
+{"layer": 0, "feature": 120, "label": "Document section numbers and hierarchical numbering patterns in structured text", "raw_response": "Document section numbers and hierarchical numbering patterns in structured text"}
+{"layer": 0, "feature": 150, "label": "Medical terminology tokens in clinical research documents", "raw_response": "Medical terminology tokens in clinical research documents"}
+{"layer": 0, "feature": 169, "label": "Anatomical term \"tracheal\" in medical procedure contexts", "raw_response": "Anatomical term \"tracheal\" in medical procedure contexts"}
+{"layer": 0, "feature": 172, "label": "Newline or section break tokens in clinical trial inclusion/exclusion criteria lists", "raw_response": "Newline or section break tokens in clinical trial inclusion/exclusion criteria lists"}
+{"layer": 0, "feature": 174, "label": "Medical or healthcare professionals, particularly therapists and specialists", "raw_response": "Medical or healthcare professionals, particularly therapists and specialists"}
+{"layer": 0, "feature": 179, "label": "Dots or ellipses preceding page numbers in table of contents", "raw_response": "Dots or ellipses preceding page numbers in table of contents"}
+{"layer": 0, "feature": 183, "label": "Verb \"agreeing\" in consent and study participation contexts", "raw_response": "Verb \"agreeing\" in consent and study participation contexts"}
+{"layer": 0, "feature": 199, "label": "Medical/scientific terminology in anatomical and clinical contexts", "raw_response": "Medical/scientific terminology in anatomical and clinical contexts"}
+{"layer": 0, "feature": 214, "label": "Adjective modifying drug-related nouns in medical contexts", "raw_response": "Adjective modifying drug-related nouns in medical contexts"}
+{"layer": 0, "feature": 237, "label": "Study design descriptor \"Prospective\" in clinical research titles", "raw_response": "Study design descriptor \"Prospective\" in clinical research titles"}
+{"layer": 0, "feature": 239, "label": "Closing parenthesis in academic citations and enumerated lists", "raw_response": "Closing parenthesis in academic citations and enumerated lists"}
+{"layer": 0, "feature": 263, "label": "Possessive pronoun \"its\" following \"and\" in compound phrases", "raw_response": "Possessive pronoun \"its\" following \"and\" in compound phrases"}
+{"layer": 0, "feature": 270, "label": "Section header \"Secondary\" in clinical trial documents", "raw_response": "Section header \"Secondary\" in clinical trial documents"}
+{"layer": 0, "feature": 288, "label": "Medical terminology token: breast in clinical and anatomical contexts", "raw_response": "Medical terminology token: breast in clinical and anatomical contexts"}
+{"layer": 0, "feature": 294, "label": "Medical/procedural adjectives modifying noun phrases in clinical contexts", "raw_response": "Medical/procedural adjectives modifying noun phrases in clinical contexts"}
+{"layer": 0, "feature": 304, "label": "Ordinal temporal markers indicating initial occurrence or sequence position", "raw_response": "Ordinal temporal markers indicating initial occurrence or sequence position"}
+{"layer": 0, "feature": 305, "label": "Existential \"there\" introducing predicates with copulas or existential verbs", "raw_response": "Existential \"there\" introducing predicates with copulas or existential verbs"}
+{"layer": 0, "feature": 317, "label": "Table\" label token in document table of contents listings", "raw_response": "\"Table\" label token in document table of contents listings"}
+{"layer": 0, "feature": 335, "label": "Abbreviation or prefix \"Co\" in company names and academic citations", "raw_response": "Abbreviation or prefix \"Co\" in company names and academic citations"}
+{"layer": 0, "feature": 340, "label": "Baseline measurement time point in clinical trial protocols", "raw_response": "Baseline measurement time point in clinical trial protocols"}
+{"layer": 0, "feature": 341, "label": "Medical/pharmaceutical substance names and clinical trial procedure timing descriptors", "raw_response": "Medical/pharmaceutical substance names and clinical trial procedure timing descriptors"}
+{"layer": 0, "feature": 363, "label": "Newline or section break tokens in clinical trial inclusion/exclusion criteria lists", "raw_response": "Newline or section break tokens in clinical trial inclusion/exclusion criteria lists"}
+{"layer": 0, "feature": 377, "label": "Horizontal line or dash separator tokens in structured documents", "raw_response": "Horizontal line or dash separator tokens in structured documents"}
+{"layer": 0, "feature": 379, "label": "Adverb modifying measurement, assessment, or evaluation verbs", "raw_response": "Adverb modifying measurement, assessment, or evaluation verbs"}
+{"layer": 0, "feature": 395, "label": "Horizontal separator lines and table formatting elements in documents", "raw_response": "Horizontal separator lines and table formatting elements in documents"}
+{"layer": 0, "feature": 405, "label": "Dots or ellipses following section headers in clinical documents", "raw_response": "Dots or ellipses following section headers in clinical documents"}
+{"layer": 0, "feature": 410, "label": "Verbs establishing or clarifying study definitions and eligibility criteria", "raw_response": "Verbs establishing or clarifying study definitions and eligibility criteria"}
+{"layer": 0, "feature": 414, "label": "Medical or clinical conditions used as exclusion criteria or limitations", "raw_response": "Medical or clinical conditions used as exclusion criteria or limitations"}
+{"layer": 0, "feature": 424, "label": "Newline or section break tokens in clinical trial inclusion/exclusion criteria lists", "raw_response": "Newline or section break tokens in clinical trial inclusion/exclusion criteria lists"}
+{"layer": 0, "feature": 427, "label": "Relative pronoun introducing restrictive clauses about subjects", "raw_response": "Relative pronoun introducing restrictive clauses about subjects"}
+{"layer": 0, "feature": 433, "label": "First names or middle names in author citations and personnel lists", "raw_response": "First names or middle names in author citations and personnel lists"}
+{"layer": 0, "feature": 444, "label": "The word \"study\" in clinical trial protocol documents", "raw_response": "The word \"study\" in clinical trial protocol documents"}
+{"layer": 0, "feature": 446, "label": "Garbled or encoded text tokens with cipher-like patterns", "raw_response": "Garbled or encoded text tokens with cipher-like patterns"}
+{"layer": 0, "feature": 453, "label": "Verb \"consists\" introducing compositional structure or components", "raw_response": "Verb \"consists\" introducing compositional structure or components"}
+{"layer": 0, "feature": 471, "label": "Multiple whitespace tokens preceding section headers in documents", "raw_response": "Multiple whitespace tokens preceding section headers in documents"}
+{"layer": 0, "feature": 473, "label": "Possessive apostrophe-s marking noun possession or attribution", "raw_response": "Possessive apostrophe-s marking noun possession or attribution"}
+{"layer": 0, "feature": 512, "label": "Medical/clinical passive voice verbs in past participle form", "raw_response": "Medical/clinical passive voice verbs in past participle form"}
+{"layer": 0, "feature": 528, "label": "Noun tokens ending in \"-mission\" across medical/administrative contexts", "raw_response": "Noun tokens ending in \"-mission\" across medical/administrative contexts"}
+{"layer": 0, "feature": 530, "label": "Medical and radiological terms beginning with \"Radi", "raw_response": "Medical and radiological terms beginning with \"Radi\""}
+{"layer": 0, "feature": 545, "label": "Adverbs describing degree or severity in medical contexts", "raw_response": "Adverbs describing degree or severity in medical contexts"}
+{"layer": 0, "feature": 548, "label": "Word \"approximately\" introducing estimated quantities or timeframes", "raw_response": "Word \"approximately\" introducing estimated quantities or timeframes"}
+{"layer": 0, "feature": 569, "label": "Words appearing in formal document section headings and table of contents entries", "raw_response": "Words appearing in formal document section headings and table of contents entries"}
+{"layer": 0, "feature": 595, "label": "Tokens \"defined\" in formal definitions or specifications of medical/technical terms", "raw_response": "Tokens \"defined\" in formal definitions or specifications of medical/technical terms"}
+{"layer": 0, "feature": 599, "label": "Word \"centers\" in clinical trial and medical facility contexts", "raw_response": "Word \"centers\" in clinical trial and medical facility contexts"}
+{"layer": 0, "feature": 610, "label": "Table of contents section headers and numbering separators", "raw_response": "Table of contents section headers and numbering separators"}
+{"layer": 0, "feature": 630, "label": "Adjectives describing medical/scientific prevention and inhibition mechanisms", "raw_response": "Adjectives describing medical/scientific prevention and inhibition mechanisms"}
+{"layer": 0, "feature": 634, "label": "Acronyms and abbreviations in organizational or medical contexts", "raw_response": "Acronyms and abbreviations in organizational or medical contexts"}
+{"layer": 0, "feature": 639, "label": "Punctuation and symbols separating table of contents entries from page numbers", "raw_response": "Punctuation and symbols separating table of contents entries from page numbers"}
+{"layer": 0, "feature": 646, "label": "Dots or periods used as page number fillers in table of contents", "raw_response": "Dots or periods used as page number fillers in table of contents"}
+{"layer": 0, "feature": 650, "label": "Dosage amounts in medical/pharmaceutical dosing schedules", "raw_response": "Dosage amounts in medical/pharmaceutical dosing schedules"}
+{"layer": 0, "feature": 651, "label": "Dots or periods in table of contents formatting between section titles and page numbers", "raw_response": "Dots or periods in table of contents formatting between section titles and page numbers"}
+{"layer": 0, "feature": 669, "label": "The word \"definition\" in formal/technical documentation contexts", "raw_response": "The word \"definition\" in formal/technical documentation contexts"}
+{"layer": 0, "feature": 686, "label": "Dot sequences or ellipsis representing page breaks and section dividers", "raw_response": "Dot sequences or ellipsis representing page breaks and section dividers"}
+{"layer": 0, "feature": 700, "label": "En-dash token separating ranges or inclusive intervals", "raw_response": "En-dash token separating ranges or inclusive intervals"}
+{"layer": 0, "feature": 703, "label": "Adjective \"confidential\" in legal/document disclosure contexts", "raw_response": "Adjective \"confidential\" in legal/document disclosure contexts"}
+{"layer": 0, "feature": 708, "label": "Dots or periods filling space between section titles and page numbers in document tables of contents", "raw_response": "Dots or periods filling space between section titles and page numbers in document tables of contents"}
+{"layer": 0, "feature": 709, "label": "Institution names ending with \"Centre\" in medical/academic contexts", "raw_response": "Institution names ending with \"Centre\" in medical/academic contexts"}
+{"layer": 0, "feature": 710, "label": "Period token following section/table titles in technical documents", "raw_response": "Period token following section/table titles in technical documents"}
+{"layer": 0, "feature": 740, "label": "Month name token appearing in date expressions and temporal ranges", "raw_response": "Month name token appearing in date expressions and temporal ranges"}
+{"layer": 0, "feature": 741, "label": "Page numbers or section numbers in table of contents formatting", "raw_response": "Page numbers or section numbers in table of contents formatting"}
+{"layer": 0, "feature": 754, "label": "Medical and scientific abbreviations in clinical/biomedical contexts", "raw_response": "Medical and scientific abbreviations in clinical/biomedical contexts"}
+{"layer": 0, "feature": 756, "label": "Closing parenthesis followed by numbering or section headers", "raw_response": "Closing parenthesis followed by numbering or section headers"}
+{"layer": 0, "feature": 767, "label": "Medical degree abbreviation in author or investigator credentials", "raw_response": "Medical degree abbreviation in author or investigator credentials"}
+{"layer": 0, "feature": 773, "label": "Acronyms and abbreviations in medical/scientific text", "raw_response": "Acronyms and abbreviations in medical/scientific text"}
+{"layer": 0, "feature": 779, "label": "Adjective \"primary\" in clinical/research study contexts", "raw_response": "Adjective \"primary\" in clinical/research study contexts"}
+{"layer": 0, "feature": 790, "label": "Whitespace preceding numbered section headers or list items in clinical documents", "raw_response": "Whitespace preceding numbered section headers or list items in clinical documents"}
+{"layer": 0, "feature": 806, "label": "Newline or section break tokens in clinical trial inclusion/exclusion criteria documents", "raw_response": "Newline or section break tokens in clinical trial inclusion/exclusion criteria documents"}
+{"layer": 0, "feature": 813, "label": "Punctuation commas or medical/scientific abbreviations in formatted text", "raw_response": "Punctuation commas or medical/scientific abbreviations in formatted text"}
+{"layer": 0, "feature": 824, "label": "Capitalized \"Sites\" as clinical trial section header keyword", "raw_response": "Capitalized \"Sites\" as clinical trial section header keyword"}
+{"layer": 0, "feature": 831, "label": "Closing parenthesis in clinical study acronym definitions", "raw_response": "Closing parenthesis in clinical study acronym definitions"}
+{"layer": 0, "feature": 840, "label": "Beginning of pharmaceutical terminology words in clinical trial documents", "raw_response": "Beginning of pharmaceutical terminology words in clinical trial documents"}
+{"layer": 0, "feature": 864, "label": "Words containing \"form\" in medical/research documentation contexts", "raw_response": "Words containing \"form\" in medical/research documentation contexts"}
+{"layer": 0, "feature": 867, "label": "Document header token \"OPTIMIZE\" in clinical study protocol", "raw_response": "Document header token \"OPTIMIZE\" in clinical study protocol"}
+{"layer": 0, "feature": 870, "label": "Purpose phrase \"in order to\" expressing intent or necessity", "raw_response": "Purpose phrase \"in order to\" expressing intent or necessity"}
+{"layer": 0, "feature": 878, "label": "Adjective \"inappropriate\" in clinical/medical contexts", "raw_response": "Adjective \"inappropriate\" in clinical/medical contexts"}
+{"layer": 0, "feature": 907, "label": "Prefix \"un-\" in medical/clinical terminology contexts", "raw_response": "Prefix \"un-\" in medical/clinical terminology contexts"}
+{"layer": 0, "feature": 938, "label": "Adjective \"physiologic\" describing medical/biological measurements and processes", "raw_response": "Adjective \"physiologic\" describing medical/biological measurements and processes"}
+{"layer": 0, "feature": 942, "label": "Medical diagnostic test term appearing in clinical trial documentation", "raw_response": "Medical diagnostic test term appearing in clinical trial documentation"}
+{"layer": 0, "feature": 946, "label": "Period token following table/appendix titles in document structure", "raw_response": "Period token following table/appendix titles in document structure"}
+{"layer": 0, "feature": 953, "label": "Medical organ terminology in clinical and research contexts", "raw_response": "Medical organ terminology in clinical and research contexts"}
+{"layer": 0, "feature": 958, "label": "Blank line or underscores in form field templates", "raw_response": "Blank line or underscores in form field templates"}
+{"layer": 0, "feature": 959, "label": "Passive voice \"evaluated\" in clinical trial documentation", "raw_response": "Passive voice \"evaluated\" in clinical trial documentation"}
+{"layer": 0, "feature": 966, "label": "Token \"effectiveness\" in technical/medical evaluation contexts", "raw_response": "Token \"effectiveness\" in technical/medical evaluation contexts"}
+{"layer": 0, "feature": 977, "label": "Dollar sign token in corrupted or malformed text contexts", "raw_response": "Dollar sign token in corrupted or malformed text contexts"}
+{"layer": 2, "feature": 721, "label": "Medical and scientific abbreviations or drug names at word boundaries", "raw_response": "Medical and scientific abbreviations or drug names at word boundaries"}
+{"layer": 2, "feature": 1021, "label": "Adjectives describing intervention types and program characteristics", "raw_response": "Adjectives describing intervention types and program characteristics"}
+{"layer": 3, "feature": 452, "label": "Medical and scientific technical terms in clinical trial documentation", "raw_response": "Medical and scientific technical terms in clinical trial documentation"}
+{"layer": 5, "feature": 142, "label": "Subclavian vein access for cardiac device lead implantation", "raw_response": "Subclavian vein access for cardiac device lead implantation"}
+{"layer": 5, "feature": 423, "label": "Clinical/pharmaceutical document metadata and pagination markers", "raw_response": "Clinical/pharmaceutical document metadata and pagination markers"}
+{"layer": 7, "feature": 79, "label": "Clinical disease manifestations, presentations, and symptomatic progression in medical literature", "raw_response": "Clinical disease manifestations, presentations, and symptomatic progression in medical literature"}
+{"layer": 7, "feature": 497, "label": "Invasive cardiac and surgical procedural techniques in clinical research", "raw_response": "Invasive cardiac and surgical procedural techniques in clinical research"}
+{"layer": 7, "feature": 915, "label": "Squamous cell carcinoma of head, neck, and oral cavity cancer contexts", "raw_response": "Squamous cell carcinoma of head, neck, and oral cavity cancer contexts"}
+{"layer": 15, "feature": 663, "label": "Intracellular signaling pathways regulating cell survival and inflammation", "raw_response": "Intracellular signaling pathways regulating cell survival and inflammation"}
+{"layer": 16, "feature": 405, "label": "Whitespace or line breaks in clinical/research protocol documents", "raw_response": "Whitespace or line breaks in clinical/research protocol documents"}
+{"layer": 16, "feature": 1023, "label": "Clinical trial and medical treatment protocol terminology", "raw_response": "Clinical trial and medical treatment protocol terminology"}
+{"layer": 21, "feature": 784, "label": "Clinical adverse events, complications, and medical risk outcomes", "raw_response": "Clinical adverse events, complications, and medical risk outcomes"}
+{"layer": 23, "feature": 247, "label": "Clinical trial descriptions of targeted therapy drug combinations", "raw_response": "Clinical trial descriptions of targeted therapy drug combinations"}
+{"layer": 23, "feature": 450, "label": "Diabetes diagnostic biomarkers including HbA1c, fasting glucose, and oral glucose tolerance tests", "raw_response": "Diabetes diagnostic biomarkers including HbA1c, fasting glucose, and oral glucose tolerance tests"}
+{"layer": 23, "feature": 735, "label": "Oncology and cancer treatment contexts in medical literature", "raw_response": "Oncology and cancer treatment contexts in medical literature"}
+{"layer": 23, "feature": 806, "label": "Cardiac dysfunction metrics including ventricular dilation and systolic function impairment", "raw_response": "Cardiac dysfunction metrics including ventricular dilation and systolic function impairment"}
+{"layer": 24, "feature": 258, "label": "Clinical trial study design and drug efficacy evaluation language", "raw_response": "Clinical trial study design and drug efficacy evaluation language"}
+{"layer": 25, "feature": 974, "label": "Clinical trial protocol document structure and methodology", "raw_response": "Clinical trial protocol document structure and methodology"}

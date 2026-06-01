@@ -43,15 +43,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
-SYSTEM_PROMPT = """\
+SYSTEM_PROMPT_EARLY = """\
 You are an expert in mechanistic interpretability of language models. \
 Your job is to identify what pattern or concept a neural network feature \
 detects, based on the tokens that most activate it.
 
 You will be shown the top activating token contexts for a single feature. \
 Each context shows a short token window, with the activating token marked \
-with >>> ... <<<. Token strings may include special prefixes like Ġ (space) \
-or Ċ (newline).
+with >>> ... <<<. Token strings may include special prefixes like ▁ (space).
 
 Write a concise natural-language label (5–12 words) describing:
 - What type of token or context pattern activates this feature
@@ -62,6 +61,30 @@ Be specific. Prefer "tokens following 'and' in list enumerations" over \
 "unclear pattern" rather than guessing.
 
 Respond with ONLY the label — no explanation, no bullet points, no quotes."""
+
+SYSTEM_PROMPT_LATE = """\
+You are an expert in mechanistic interpretability of language models. \
+Your job is to identify what concept or knowledge a neural network feature \
+encodes, based on the contexts that most activate it.
+
+You will be shown the top activating token contexts for a feature in a \
+LATE layer of the model. Late-layer features often encode abstract concepts, \
+domain knowledge, or semantic relationships — not just token-level patterns. \
+Each context shows a short token window, with the activating token marked \
+with >>> ... <<<. Token strings may include special prefixes like ▁ (space).
+
+Write a concise natural-language label (5–15 words) describing:
+- What concept, knowledge, or semantic pattern this feature detects
+- Look BEYOND the surface tokens — what do the contexts have in common \
+conceptually? (e.g. "diabetes diagnostic markers" not "conjunction tokens")
+
+Be specific and conceptual. If all contexts involve a medical topic, name \
+the topic. If the pattern is unclear from the examples, write \
+"unclear pattern" rather than guessing.
+
+Respond with ONLY the label — no explanation, no bullet points, no quotes."""
+
+LATE_LAYER_THRESHOLD = 5
 
 
 def format_context(example: dict) -> str:
@@ -97,15 +120,19 @@ def label_one(
     feature: int,
     top_examples: list[dict],
     model: str,
+    model_late: str,
 ) -> tuple[str, str]:
     """
     Returns (label, raw_response).
     """
+    is_late = layer >= LATE_LAYER_THRESHOLD
+    system_prompt = SYSTEM_PROMPT_LATE if is_late else SYSTEM_PROMPT_EARLY
+    use_model = model_late if is_late else model
     user_prompt = build_user_prompt(layer, feature, top_examples)
     message = client.messages.create(
-        model=model,
+        model=use_model,
         max_tokens=64,
-        system=SYSTEM_PROMPT,
+        system=system_prompt,
         messages=[{"role": "user", "content": user_prompt}],
     )
     raw = message.content[0].text.strip()
@@ -121,7 +148,9 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--output_path",      type=str, default="data/feature_labels.jsonl",
                    help="Where to write labels (appended, not overwritten)")
     p.add_argument("--model",            type=str, default="claude-haiku-4-5-20251001",
-                   help="Claude model to use for labeling")
+                   help="Claude model for early-layer features (L0–4)")
+    p.add_argument("--model_late",       type=str, default="claude-sonnet-4-6",
+                   help="Claude model for late-layer features (L5+)")
     p.add_argument("--rate_limit_rps",   type=float, default=4.0,
                    help="Requests per second to stay under API rate limits")
     p.add_argument("--dry_run",          action="store_true",
@@ -215,8 +244,11 @@ def main() -> None:
         e for e in entries
         if (int(e["layer"]), int(e["feature"])) not in already_done
     ]
-    print(f"Labeling {len(to_label)} features with {args.model} ...")
-    print(f"Estimated cost: ${len(to_label) * 0.0004:.2f}  (~$0.0004/feature at Haiku rates)\n")
+    n_early = sum(1 for e in to_label if int(e["layer"]) < LATE_LAYER_THRESHOLD)
+    n_late = len(to_label) - n_early
+    print(f"Labeling {len(to_label)} features ({n_early} early → {args.model}, {n_late} late → {args.model_late})")
+    est_cost = n_early * 0.0004 + n_late * 0.003
+    print(f"Estimated cost: ${est_cost:.2f}\n")
 
     min_interval = 1.0 / args.rate_limit_rps
     n_ok = 0
@@ -229,7 +261,7 @@ def main() -> None:
             t0 = time.time()
 
             try:
-                label, raw = label_one(client, layer, feat, entry["top_examples"], args.model)
+                label, raw = label_one(client, layer, feat, entry["top_examples"], args.model, args.model_late)
                 record = {
                     "layer":        layer,
                     "feature":      feat,

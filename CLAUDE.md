@@ -394,23 +394,35 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
 - **IT model CLT** — trained on raw corpus activations, OOD at inference on short prompts.
   Completeness 0.20–0.47 (all below threshold). Artifacts moved to `deferred/phase6_it/`.
   IT path is not ruled out methodologically but needs format-matched training data.
-- **Track B PT graphs** (7 medical-factual cloze, completeness 0.76–0.90) — were generated
-  on a pod but overwritten locally by the IT experiment. Need regeneration (~$6 pod, ~1hr).
-- **Notebook 03** — exists but references `_compute_readout_vector` (deleted in autograd
-  cutover). Needs rewrite after Track B graphs are available.
+- **Track B PT graphs regenerated (2026-05-30)** — 8 medical-factual cloze prompts,
+  completeness 0.55–0.90. Graphs + labeled features in repo.
+- **Feature labeling pipeline validated (2026-06-01)** — `find_top_activations` bug fixed
+  (missing RMS normalization), 110 features labeled. Late-layer prompt (Sonnet, concept-level)
+  produces much better labels than early-layer prompt (Haiku, token-level).
+- **Graph layer distribution problem:** 92/110 features are L0 (structural/formatting).
+  Only 15 features at L5+, which is where medical concepts live. Cross-layer circuits
+  (the paper's key contribution) are not visible in current graphs. Root cause: L0~91
+  sparsity floods the pruner budget with weakly-contributing L0 features.
+- **Notebook 03** — needs rewrite to use current labeled graphs.
 
-### Next steps (pick one path)
+### Next steps
 
-1. **Finish what we have (no new CLT, ~$6 compute):**
-   Regenerate Track B PT graphs on pod → run `find_top_activations` for new features →
-   `label_features.py --resume` → write notebook 03 → push toward publication.
-   Paper scope: "CLT attribution on a medical model, architecture-agnostic pipeline,
-   feature labeling on medical-factual cloze prompts."
+1. **Sparsity/corpus experiment (~$10-20 diagnostic, ~$100 full):**
+   Train short CLT runs (5k steps) varying sparsity (L0~91 vs L0~20-30) and corpus
+   (protocol JSONL vs medical content corpus like PubMed abstracts). Check whether
+   layer distribution shifts — do more late-layer features appear at higher sparsity?
+   Does a less formatting-heavy corpus reduce structural L0 features?
+   Cost estimates are GPU time only — budget 2-3× for setup, SCP, debugging, failures.
+   Pod sessions typically take 2-3hrs wall time including overhead.
 
-2. **Retrain sparser CLT first (~$50 compute, ~10hrs):**
-   Retrain at L0~20-30 → regenerate all graphs (14 clinical + 7 Track B) with sparser CLT →
-   retry contrastive graphs on the 13 separating categorical pairs → then label + notebook.
-   Paper scope: adds contrastive eligibility analysis if it works.
+2. **Visual abstract for non-ML audience:** Create a figure explaining the pipeline
+   (model → CLT → features → attribution graph → labeled circuit) in plain language.
+   Target audience: clinicians, clinical trialists, non-ML collaborators. Needed for
+   paper submission and any public-facing communication.
+
+3. **Notebook 03 + paper draft:** Write up current results (8 graphs, 110 labeled features,
+   layer distribution finding, prompt engineering for feature labeling). Publishable as-is
+   as a methods/negative-result contribution even without sparser CLT.
 
 ### Completed milestones (detail in git history)
 
@@ -541,3 +553,19 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
 - **Gemma tokenizer splits many medical terms** (imatinib, trastuzumab, protamine, Hodgkin,
   troponin) into multi-token sequences. Single-token medical targets that work: metformin,
   pancreas, heart, embolism, plexus, gallbladder, K. Design prompts around these.
+- **Feature labeling prompt matters enormously for late-layer features (2026-06-01).**
+  Token-level prompt ("what token pattern?") + Haiku labeled L23F450 as "conjunction and
+  preposition tokens in medical test enumeration." Concept-level prompt ("what concept does
+  this encode?") + Sonnet labeled the same feature as "diabetes diagnostic biomarkers
+  including HbA1c, fasting glucose, and oral glucose tolerance tests." The activation data
+  was identical — only the prompt and model changed. Late-layer features encode abstract
+  concepts that require semantic interpretation, not token-pattern matching.
+  `label_features.py` now uses Haiku+token-prompt for L0-4, Sonnet+concept-prompt for L5+.
+- **L0 features dominate graphs at L0~91 sparsity.** 92/110 graph features are Layer 0,
+  almost all structural (TOC dots, section numbering, consent language, whitespace). Only
+  15 features at L5+ across all 8 graphs. Cross-layer feature→feature circuits (the
+  paper's central contribution) are invisible. Two possible causes: (1) L0~91 floods the
+  pruner, (2) the protocol corpus is formatting-heavy. Experiment needed to disentangle.
+- **Pod cost estimates must include overhead.** GPU-time estimates are routinely 2-3× too
+  low. Real pod session = setup (~20min) + SCP (~15min each way for 12GB checkpoint) +
+  compute + debugging disk/driver issues. Budget 2-3hrs wall time per session.
