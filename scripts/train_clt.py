@@ -84,6 +84,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--wandb_group",   type=str, default="",               help="W&B run group (e.g. 'pythia-410m')")
     p.add_argument("--log_every",     type=int, default=50,               help="Log metrics every N steps")
 
+    # Data loading
+    p.add_argument("--buffer_tokens", type=int, default=100_000,
+                   help="Tokens to buffer in RAM per fill. Set to 0 to load entire HDF5.")
+
     # Resume
     p.add_argument("--resume",      action="store_true",  help="Resume from latest checkpoint in checkpoint_dir")
     p.add_argument("--resume_from", type=str, default=None, help="Resume from a specific checkpoint file path")
@@ -124,7 +128,9 @@ def main() -> None:
     print()
 
     clt = CrossLayerTranscoder(clt_cfg).to(device).to(torch.bfloat16)
-    loader = HDF5ActivationLoader(args.activation_path, clt_cfg, train_cfg, device)
+    buf = args.buffer_tokens if args.buffer_tokens > 0 else 10_000_000  # 0 = load entire file
+    loader = HDF5ActivationLoader(args.activation_path, clt_cfg, train_cfg, device,
+                                  buffer_tokens=buf)
 
     # Resolve checkpoint to resume from
     resume_from = args.resume_from

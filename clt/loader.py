@@ -212,6 +212,7 @@ class HDF5ActivationLoader:
         clt_cfg: CLTConfig,
         train_cfg: TrainConfig,
         device: torch.device,
+        buffer_tokens: int | None = None,
     ):
         import h5py
 
@@ -219,6 +220,8 @@ class HDF5ActivationLoader:
         self.clt_cfg = clt_cfg
         self.train_cfg = train_cfg
         self.device = device
+        if buffer_tokens is not None:
+            self._RAM_BUFFER_TOKENS = buffer_tokens
 
         # Pre-compute RMS scales if normalization is requested
         self._resid_scales: Tensor | None = None
@@ -251,9 +254,6 @@ class HDF5ActivationLoader:
         self._resid_scales = _rms_scale(resid_list, dim=cfg.d_model).to(self.device)
         self._mlp_scales = _rms_scale(mlp_list, dim=cfg.d_mlp).to(self.device)
 
-    # Tokens to load into CPU RAM per buffer fill.
-    # 100k tokens ≈ 85GB for 34-layer MedGemma (resid+mlp, float16).
-    # Gives ~195 steps per fill at batch_size=512, reducing I/O stalls ~5×.
     _RAM_BUFFER_TOKENS = 100_000
     # Parallel HDF5 readers per fill — saturates network bandwidth on NFS-backed storage
     _FILL_WORKERS = 8
