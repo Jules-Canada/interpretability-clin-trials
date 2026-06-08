@@ -205,10 +205,10 @@ def train(
             _log(step, train_cfg.n_steps, metrics, wandb_run)
 
         if step % train_cfg.save_every == 0 and step > 0:
-            _save_checkpoint(clt, optimizer, step, train_cfg)
+            _save_checkpoint(clt, optimizer, step, train_cfg, loader=loader)
 
     # step is always the last actually-trained step
-    _save_checkpoint(clt, optimizer, step, train_cfg, tag="final")
+    _save_checkpoint(clt, optimizer, step, train_cfg, tag="final", loader=loader)
 
 
 # ---------------------------------------------------------------------------
@@ -261,6 +261,7 @@ def _save_checkpoint(
     step: int,
     train_cfg: TrainConfig,
     tag: str | None = None,
+    loader: ActivationLoader | None = None,
 ) -> None:
     """Save model and optimizer state to disk.
 
@@ -271,17 +272,26 @@ def _save_checkpoint(
     final_path = os.path.join(train_cfg.checkpoint_dir, name)
     os.makedirs(train_cfg.checkpoint_dir, exist_ok=True)
 
+    ckpt: dict = {
+        "step": step,
+        "model_state_dict": clt.state_dict(),
+        "optimizer_state_dict": optimizer.state_dict(),
+    }
+    if loader is not None:
+        resid = getattr(loader, "_resid_scales", None)
+        mlp = getattr(loader, "_mlp_scales", None)
+        if resid is not None:
+            ckpt["resid_scales"] = resid.cpu()
+        if mlp is not None:
+            ckpt["mlp_scales"] = mlp.cpu()
+
     # Write to a temp file on the same filesystem as the final path, then rename.
     # This avoids partial-write corruption and avoids filling a small root /tmp.
     with tempfile.NamedTemporaryFile(dir=train_cfg.checkpoint_dir, suffix=".pt.tmp", delete=False) as tmp:
         tmp_path = tmp.name
 
     try:
-        torch.save({
-            "step": step,
-            "model_state_dict": clt.state_dict(),
-            "optimizer_state_dict": optimizer.state_dict(),
-        }, tmp_path)
+        torch.save(ckpt, tmp_path)
         shutil.move(tmp_path, final_path)
     except Exception:
         if os.path.exists(tmp_path):

@@ -516,9 +516,9 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
   over a 100k-token sample, and writes `resid_scales` + `mlp_scales` into the existing
   checkpoint. `clt/model.py` registers non-persistent buffers populated post-load via
   `clt.load_scales_from_checkpoint(ckpt)`. `graphs/build.py` prefers saved scales and
-  warns + falls back to per-prompt only if a checkpoint predates this change. **TODO**:
-  update `clt/train.py:_save_checkpoint` to bundle scales automatically so future training
-  runs (e.g. the planned L0~20-30 retrain) don't recreate this gap.
+  warns + falls back to per-prompt only if a checkpoint predates this change.
+  **DONE (2026-06-07):** `_save_checkpoint` now bundles `resid_scales` and `mlp_scales`
+  from the loader into the checkpoint dict. No more post-hoc `compute_clt_scales.py` step.
 - **`find_top_activations.py` missing RMS normalization (fixed 2026-06-01).** The script
   loaded the CLT state dict but never called `clt.load_scales_from_checkpoint(ckpt)`, and
   fed raw (unnormalized) HDF5 residuals into `clt.encode()`. The CLT was trained on
