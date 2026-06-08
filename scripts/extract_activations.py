@@ -206,7 +206,7 @@ class HDF5Writer:
     """
 
     def __init__(self, path: str, n_layers: int, d_model: int, d_mlp: int,
-                 model_name: str, resid_only: bool = False, dtype: str = "float32"):
+                 model_name: str, corpus: str = "", resid_only: bool = False, dtype: str = "float32"):
         Path(path).parent.mkdir(parents=True, exist_ok=True)
 
         self.n_layers   = n_layers
@@ -218,6 +218,7 @@ class HDF5Writer:
         # MUST match this model. find_top_activations.py reads this attr so the
         # tokenizer provably follows the data and can never silently mismatch.
         self.f.attrs["model_name"] = model_name
+        self.f.attrs["corpus"] = corpus
 
         # Create resizable datasets — initial size 0, unlimited on axis 0
         for l in range(n_layers):
@@ -364,8 +365,9 @@ def extract(args: argparse.Namespace) -> None:
     if args.resid_only:
         print("Mode: resid_only — skipping mlp_post (for find_top_activations, not CLT training)")
 
+    corpus_source = args.local_dataset or args.dataset
     writer = HDF5Writer(args.output_path, n_layers, d_model, d_mlp,
-                        model_name=args.model_name,
+                        model_name=args.model_name, corpus=corpus_source,
                         resid_only=args.resid_only, dtype=args.dtype)
 
     batches = token_batches(

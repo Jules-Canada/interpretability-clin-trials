@@ -251,8 +251,10 @@ class HDF5ActivationLoader:
         self._resid_scales = _rms_scale(resid_list, dim=cfg.d_model).to(self.device)
         self._mlp_scales = _rms_scale(mlp_list, dim=cfg.d_mlp).to(self.device)
 
-    # Tokens to load into CPU RAM per buffer fill (~17 GB at float16, 34 layers)
-    _RAM_BUFFER_TOKENS = 20_000
+    # Tokens to load into CPU RAM per buffer fill.
+    # 100k tokens ≈ 85GB for 34-layer MedGemma (resid+mlp, float16).
+    # Gives ~195 steps per fill at batch_size=512, reducing I/O stalls ~5×.
+    _RAM_BUFFER_TOKENS = 100_000
     # Parallel HDF5 readers per fill — saturates network bandwidth on NFS-backed storage
     _FILL_WORKERS = 8
 
