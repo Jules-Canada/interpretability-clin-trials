@@ -3,6 +3,7 @@ from prompts.eligibility import (
     ELIGIBILITY_PROMPTS,
     ContrastivePrompt,
     TrialPrompt,
+    to_chat,
     to_gemma_chat,
 )
 from prompts.adverse_events import ADVERSE_EVENT_PROMPTS
@@ -17,6 +18,7 @@ __all__ = [
     "ContrastivePrompt",
     "ELIGIBILITY_PROMPTS",
     "ELIGIBILITY_PAIRS",
+    "to_chat",
     "to_gemma_chat",
     "ADVERSE_EVENT_PROMPTS",
     "ENDPOINT_PROMPTS",

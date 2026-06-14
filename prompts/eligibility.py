@@ -47,10 +47,17 @@ class ContrastivePrompt(TypedDict):
     domain_tags: list[str]
 
 
-# Contrastive target tokens (leading space = mid-sequence Gemma tokenization).
-# Stage-0 check: confirm these are single clean tokens in the Gemma-3 tokenizer
-# before relying on them.
-POS_TOKEN = " Yes"
+# Contrastive target tokens. Verified single clean tokens in the Gemma-3
+# tokenizer (2026-06-13, scripts/stage0_tokenizer_check.py); chat template
+# verified byte-identical to apply_chat_template the same day.
+#   " Yes" -> 8438 (▁Yes) | "Yes" -> 10784 | " No" -> 2301 (▁No) | "No" -> 3771
+# The space-prefixed and bare variants are DIFFERENT tokens, and which one the
+# model emits at the generation site (after "<start_of_turn>model\n") is only
+# knowable from a forward pass. So the contrastive readout should average over
+# BOTH variants per side rather than guess:
+POS_TOKEN_IDS = [8438, 10784]   # " Yes", "Yes"
+NEG_TOKEN_IDS = [2301, 3771]    # " No", "No"
+POS_TOKEN = " Yes"              # convenience single-token (prefer the *_IDS sets)
 NEG_TOKEN = " No"
 
 INSTRUCTION = "You are screening a patient for a clinical trial."
@@ -67,10 +74,28 @@ def build_body(p: ContrastivePrompt) -> str:
     )
 
 
+def to_chat(tokenizer, p: ContrastivePrompt) -> str:
+    """Canonical Gemma-3 IT chat string via the tokenizer's own template.
+
+    Source of truth — prefer this whenever a tokenizer is available. The
+    returned string already includes <bos>, so tokenize it with
+    add_special_tokens=False to avoid a doubled BOS.
+    """
+    return tokenizer.apply_chat_template(
+        [{"role": "user", "content": build_body(p)}],
+        tokenize=False,
+        add_generation_prompt=True,
+    )
+
+
 def to_gemma_chat(p: ContrastivePrompt) -> str:
-    """Wrap in the Gemma-3 IT chat template. BOS is added by the tokenizer."""
+    """Tokenizer-free Gemma-3 IT chat string. Verified byte-identical to
+    tokenizer.apply_chat_template(add_generation_prompt=True) on
+    google/gemma-3-4b-it (2026-06-13). Includes the leading <bos>, so tokenize
+    with add_special_tokens=False. Prefer to_chat() when a tokenizer is loaded.
+    """
     body = build_body(p)
-    return f"<start_of_turn>user\n{body}<end_of_turn>\n<start_of_turn>model\n"
+    return f"<bos><start_of_turn>user\n{body}<end_of_turn>\n<start_of_turn>model\n"
 
 
 # --- Active path: matched contrastive eligibility pairs ----------------------
