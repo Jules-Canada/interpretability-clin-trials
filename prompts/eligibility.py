@@ -1,7 +1,28 @@
 """
 prompts/eligibility.py
 
-Clinical trial eligibility prompts — NSCLC, performance status, prior therapy.
+Clinical trial eligibility prompts.
+
+Two sets live here:
+
+1. ELIGIBILITY_PROMPTS — LEGACY single-token completion prompts from the PT /
+   MedGemma path. Kept only for backward compatibility (imported into
+   prompts.ALL_PROMPTS). Do NOT use for the active path: they telegraph the
+   answer and use inconsistent targets (eligible / excluded / yes).
+
+2. ELIGIBILITY_PAIRS — matched contrastive pairs for the ACTIVE path
+   (Gemma-3-4B-IT + circuit-tracer; chosen 2026-06-13). Each pair shares a
+   skeleton and flips ONE deciding fact across the eligibility threshold, so the
+   pair difference isolates the comparison/decision circuit and scaffold cancels.
+   Target is the Yes-vs-No contrast: logit(" Yes") - logit(" No").
+
+   Render with to_gemma_chat() so the IT chat template is applied consistently.
+   Rule (CLAUDE.md): IT model -> IT transcoders -> chat template. Feeding raw
+   text to IT transcoders reintroduces the Phase 6 OOD failure.
+
+   Convention: "Yes" == eligible across every pair (for exclusion criteria, the
+   eligible/Yes member is the one WITHOUT the excluded feature). Keeping Yes=eligible
+   uniform makes the contrastive readout comparable across pairs.
 """
 
 from __future__ import annotations
@@ -16,6 +37,149 @@ class TrialPrompt(TypedDict):
     domain_tags: list[str]
 
 
+class ContrastivePrompt(TypedDict):
+    id: str                 # unique, e.g. "elig_age_pos"
+    pair_id: str            # links the matched pair, e.g. "age"
+    criterion: str          # the inclusion/exclusion line shown to the model
+    patient: str            # the patient description (the only thing that flips)
+    expected: str           # ground truth: "Yes" (eligible) or "No" (ineligible)
+    requires: str           # the inference the decision actually demands
+    domain_tags: list[str]
+
+
+# Contrastive target tokens (leading space = mid-sequence Gemma tokenization).
+# Stage-0 check: confirm these are single clean tokens in the Gemma-3 tokenizer
+# before relying on them.
+POS_TOKEN = " Yes"
+NEG_TOKEN = " No"
+
+INSTRUCTION = "You are screening a patient for a clinical trial."
+QUESTION = "Is the patient eligible for the trial? Answer Yes or No."
+
+
+def build_body(p: ContrastivePrompt) -> str:
+    """The user-turn content, before chat-template wrapping."""
+    return (
+        f"{INSTRUCTION}\n"
+        f"{p['criterion']}\n"
+        f"Patient: {p['patient']}\n"
+        f"{QUESTION}"
+    )
+
+
+def to_gemma_chat(p: ContrastivePrompt) -> str:
+    """Wrap in the Gemma-3 IT chat template. BOS is added by the tokenizer."""
+    body = build_body(p)
+    return f"<start_of_turn>user\n{body}<end_of_turn>\n<start_of_turn>model\n"
+
+
+# --- Active path: matched contrastive eligibility pairs ----------------------
+# Ranked easy -> scientifically interesting. Pairs 1-3 are near-boundary
+# controls (is there a real threshold-comparison feature?). Pairs 4-5 require
+# retrieving world knowledge (pembrolizumab is anti-PD-1; stage IV = metastatic)
+# rather than string-matching the criterion — where a genuine cross-layer
+# concept->decision circuit would show up.
+
+ELIGIBILITY_PAIRS: list[ContrastivePrompt] = [
+    # Pair 1 — numeric age threshold
+    {
+        "id": "elig_age_pos",
+        "pair_id": "age",
+        "criterion": "Inclusion: age 18-75 years.",
+        "patient": "73-year-old with stage IIIA non-small cell lung cancer.",
+        "expected": "Yes",
+        "requires": "numeric threshold comparison",
+        "domain_tags": ["eligibility", "age", "control"],
+    },
+    {
+        "id": "elig_age_neg",
+        "pair_id": "age",
+        "criterion": "Inclusion: age 18-75 years.",
+        "patient": "78-year-old with stage IIIA non-small cell lung cancer.",
+        "expected": "No",
+        "requires": "numeric threshold comparison",
+        "domain_tags": ["eligibility", "age", "control"],
+    },
+    # Pair 2 — ordinal performance status
+    {
+        "id": "elig_ecog_pos",
+        "pair_id": "ecog",
+        "criterion": "Inclusion: ECOG performance status 0 or 1.",
+        "patient": "62-year-old with colorectal cancer, ECOG performance status 1.",
+        "expected": "Yes",
+        "requires": "ordinal performance-status comparison",
+        "domain_tags": ["eligibility", "performance_status", "control"],
+    },
+    {
+        "id": "elig_ecog_neg",
+        "pair_id": "ecog",
+        "criterion": "Inclusion: ECOG performance status 0 or 1.",
+        "patient": "62-year-old with colorectal cancer, ECOG performance status 2.",
+        "expected": "No",
+        "requires": "ordinal performance-status comparison",
+        "domain_tags": ["eligibility", "performance_status", "control"],
+    },
+    # Pair 3 — lab-value cutoff with direction
+    {
+        "id": "elig_anc_pos",
+        "pair_id": "anc",
+        "criterion": "Inclusion: absolute neutrophil count at least 1,500 cells/uL.",
+        "patient": "54-year-old with breast cancer; absolute neutrophil count 2,200 cells/uL.",
+        "expected": "Yes",
+        "requires": "lab-value cutoff with direction",
+        "domain_tags": ["eligibility", "lab", "control"],
+    },
+    {
+        "id": "elig_anc_neg",
+        "pair_id": "anc",
+        "criterion": "Inclusion: absolute neutrophil count at least 1,500 cells/uL.",
+        "patient": "54-year-old with breast cancer; absolute neutrophil count 1,100 cells/uL.",
+        "expected": "No",
+        "requires": "lab-value cutoff with direction",
+        "domain_tags": ["eligibility", "lab", "control"],
+    },
+    # Pair 4 — drug -> class knowledge (no verbatim match with the criterion)
+    {
+        "id": "elig_priortx_pos",
+        "pair_id": "prior_tx",
+        "criterion": "Exclusion: prior treatment with a PD-1 or PD-L1 inhibitor.",
+        "patient": "60-year-old with NSCLC who previously received carboplatin and pemetrexed.",
+        "expected": "Yes",
+        "requires": "drug-to-class knowledge (chemotherapy is not a checkpoint inhibitor)",
+        "domain_tags": ["eligibility", "prior_therapy", "knowledge"],
+    },
+    {
+        "id": "elig_priortx_neg",
+        "pair_id": "prior_tx",
+        "criterion": "Exclusion: prior treatment with a PD-1 or PD-L1 inhibitor.",
+        "patient": "60-year-old with NSCLC who previously received pembrolizumab.",
+        "expected": "No",
+        "requires": "drug-to-class knowledge (pembrolizumab is an anti-PD-1 inhibitor)",
+        "domain_tags": ["eligibility", "prior_therapy", "knowledge"],
+    },
+    # Pair 5 — staging -> metastatic knowledge
+    {
+        "id": "elig_stage_pos",
+        "pair_id": "stage",
+        "criterion": "Exclusion: metastatic (stage IV) disease.",
+        "patient": "57-year-old with stage IIIA non-small cell lung cancer.",
+        "expected": "Yes",
+        "requires": "staging knowledge (stage IIIA is not metastatic)",
+        "domain_tags": ["eligibility", "staging", "knowledge"],
+    },
+    {
+        "id": "elig_stage_neg",
+        "pair_id": "stage",
+        "criterion": "Exclusion: metastatic (stage IV) disease.",
+        "patient": "57-year-old with stage IV non-small cell lung cancer and hepatic metastases.",
+        "expected": "No",
+        "requires": "staging knowledge (stage IV = metastatic)",
+        "domain_tags": ["eligibility", "staging", "knowledge"],
+    },
+]
+
+
+# --- Legacy: single-token PT-path prompts (do not use on the active path) -----
 ELIGIBILITY_PROMPTS: list[TrialPrompt] = [
     {
         "id": "eligible_inclusion",

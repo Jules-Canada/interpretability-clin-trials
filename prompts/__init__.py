@@ -1,4 +1,10 @@
-from prompts.eligibility import ELIGIBILITY_PROMPTS, TrialPrompt
+from prompts.eligibility import (
+    ELIGIBILITY_PAIRS,
+    ELIGIBILITY_PROMPTS,
+    ContrastivePrompt,
+    TrialPrompt,
+    to_gemma_chat,
+)
 from prompts.adverse_events import ADVERSE_EVENT_PROMPTS
 from prompts.endpoints import ENDPOINT_PROMPTS
 
@@ -8,7 +14,10 @@ ALL_PROMPTS: list[TrialPrompt] = (
 
 __all__ = [
     "TrialPrompt",
+    "ContrastivePrompt",
     "ELIGIBILITY_PROMPTS",
+    "ELIGIBILITY_PAIRS",
+    "to_gemma_chat",
     "ADVERSE_EVENT_PROMPTS",
     "ENDPOINT_PROMPTS",
     "ALL_PROMPTS",

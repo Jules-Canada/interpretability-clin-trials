@@ -16,9 +16,9 @@ in reasoning about eligibility criteria, adverse events, and endpoint inference.
 
 2. **Scale to MedGemma + MIMIC-IV** — apply CLT to a medically-trained model on real clinical
    notes. Requires PhysioNet credentialing (long-lead item — start early).
-   **Active path: fix `graphs/build.py` with frozen autograd backward pass (handles Gemma 3
-   post-norms), then use our trained CLT on MedGemma-4B-pt. Gemma Scope 2 CLTs only cover
-   270M and 1B — no 4B CLT available. See Phase 2 Models section for full plan.**
+   **Active path (revised 2026-06-09): use circuit-tracer (nnsight backend) + Gemma Scope 2
+   per-layer transcoders for Gemma 3 4B. This retires `graphs/build.py` and from-scratch CLT
+   training. Custom CLT is deferred, not killed. See Phase 2 Models section for full plan.**
 
 3. **Find cross-trial generalisable features** — which features fire consistently across
    trial types vs. which are condition-specific? This is the core scientific question.
@@ -39,62 +39,79 @@ clinical domain, and building a public portfolio for a career pivot into clinica
 - CLT: n_features=2048, 50k steps, H100
 - Key finding: syntactic features, not clinical — expected for a general model
 
-### Phase 2 — Medical domain (active path: fix attribution code + use our trained CLT)
+### Phase 2 — Medical domain (active path: circuit-tracer + Gemma Scope 2 per-layer transcoders)
 
-**Decision (2026-04-28): Fix `graphs/build.py` to use frozen autograd backward passes, then use
-our existing trained CLT on MedGemma. Do NOT wait for Gemma Scope 2 CLTs.**
+**Decision (revised 2026-06-09): Generate attribution graphs on MedGemma directly using
+Anthropic's `circuit-tracer` (v0.3.1+, nnsight backend) + Gemma Scope 2's pretrained Gemma 3 4B
+per-layer transcoders (PLTs). Do NOT train a CLT from scratch as the starting point. Spend effort
+on a causally-validated clinical finding, not on transcoder engineering. Method = instrument;
+finding = paper.**
 
-**Why not Gemma Scope 2 CLTs:**
-Gemma Scope 2 (Sep 2025 technical report, McDougall et al.) only trains CLTs for Gemma 3 270M
-and 1B. Gemma 3 4B, 12B, and 27B have single-layer transcoders and crosscoders only — no CLT.
-Single-layer transcoders cannot model cross-layer feature→feature edges, which Anthropic's paper
-shows are essential for sparse, interpretable graphs. We need a CLT.
+**Why this path only became viable Dec 2025–Jan 2026:**
+- `circuit-tracer` open-sourced 29 May 2025 — supported Gemma-2-2b / Llama-3.2-1b only.
+- Gemma Scope 2 (Gemma 3 transcoders incl. 4B) released ~Dec 2025.
+- `circuit-tracer` v0.3.1 (~Jan 2026) added an nnsight backend → works on *any* Transformers
+  model, including Gemma 3 PLTs (PT & IT) for 270M–27B.
+Building from scratch was reasonable before that window. It is not the right starting point now.
 
-**Why not Gemma Scope 2 single-layer transcoders:**
-They reconstruct MLP outputs AFTER the post-MLP RMSNorm (i.e. what actually enters the residual),
-whereas our CLT reconstructs `mlp_post` (pre-W_out). Different target space, different decoder
-semantics — incompatible with our attribution pipeline without a significant rewrite. Also no
-cross-layer edges.
+**Decode target resolved:** Gemma Scope 2 transcoders reconstruct the MLP **output** (`d_model`)
+with affine skip connections — the canonical choice. This moots the old `d_mlp`-vs-`d_model`
+debate (our old CLT used the non-standard `d_mlp` / pre-W_out target). Our old `graphs/build.py`
+is *incompatible* with skip-transcoders (no skip term, wrong decode target) — the library
+replaces it.
 
-**Root cause of completeness failure (diagnosed 2026-04-28):**
-Gemma 3 uses post-norms — RMSNorm applied after attention output AND after MLP output before
-adding to the residual. The circuit tracing paper used Claude 3 Sonnet (pre-norm only) and never
-encountered this. Our manual `_compute_attention_propagated_v` + `_compute_corrected_logit_transfer`
-correctly handles attention self-loops but silently skips the post-attention and post-MLP RMSNorm
-Jacobians. Result: completeness ≈ −0.002.
+**PLT, not CLT, at 4B:** no pretrained 4B CLT exists (Gemma Scope 2 CLTs stop at 1B). Expect
+longer attribution paths / more features than a CLT would give. Fine for a first paper; "a CLT
+tightens this" is the future-work hook.
 
-**The fix — frozen autograd backward pass (paper's actual method):**
-The circuit tracing paper never manually propagates v layer-by-layer. Their "backward Jacobian"
-is a PyTorch autograd backward pass with cached values substituted for all nonlinearities:
-- `detach(attn_pattern)` — frozen attention weights
-- `detach(ln_scale)` — frozen denominator for every LN/RMSNorm including post-norms
-- `detach(mlp_gate)` — frozen GeGLU gate values
+**Width / expansion (d_model=2560):** 16k = 6.4×, 64k = 25× (recommended), 256k = 100×. Our old
+1024 = 0.4× (undercomplete — not credible). 4096 = 1.6× — still below the smallest width Google
+shipped for this family.
 
-This is architecture-agnostic: post-norms flow through automatically via frozen-denominator
-Jacobians. No manual derivation. One backward pass per target node gives all source edge weights.
+**Off-distribution caveat:** Gemma Scope 2 transcoders were trained on base/IT Gemma 3, not
+MedGemma. Running on the medical fine-tune degrades fidelity on exactly the medical-specific
+features. The *size* of that gap is itself a publishable finding.
 
-Implementation: delete `_compute_attention_propagated_v` and `_compute_corrected_logit_transfer`,
-replace with a single function that uses TransformerLens hooks to freeze cached nonlinear values,
-then calls `loss.backward()` where `loss = (v_detached · r_L)`. Read off `.grad` at each
-layer's residual and mlp_post tensors. Also fix the logit node input vector:
-  current (wrong for Gemma): `v = W_U[:,tok] * ln_w / hook_scale`
-  correct:                   `v = (W_U[:,tok] - W_U.mean(dim=1)) * ln_w / hook_scale`
-  (subtract mean gradient over vocabulary = ∇(logit_tok − mean_logit) as the paper specifies)
+**Staged plan (cheap → expensive):**
+- **Stage 0** — hours, ~free. Run `circuit-tracer` on base Gemma 3 4B-IT (hosted Neuronpedia is
+  fine). Reproduce a known graph, push 2–3 clinical prompts through. Validates prompt format +
+  target-token setup with zero custom code.
+- **Stage 1** — a weekend, 1× H100, ~$10–30. Self-host `circuit-tracer` + nnsight, load
+  MedGemma-4B, apply Gemma Scope 2 4B PLTs (16k or 64k fits alongside the ~8 GB model on one
+  80 GB card). Run the prompt set. Deliverable: first MedGemma graphs + a measured
+  off-distribution completeness gap. **Decision gate.**
+- **Stage 2** — days, 1–2× H100, *only if* Stage 1 buries the medical computation in error nodes.
+  Warm-start the Gemma Scope 2 transcoder, lightly domain-adapt on existing medical tokens
+  (adaptation, not from-scratch). Rebuild graphs.
 
-**Cost estimate:**
-- Engineering: ~2–3 days to implement + test frozen backward pass
-- Compute (minimum path, use existing CLT): ~$6 for graph generation on RunPod H100
-- Compute (retrain CLT with better sparsity, L0~20–30 vs current L0~91): ~$50
-- Existing CLT checkpoint at `checkpoints/medgemma-4b-1024/clt_inference.pt` is usable
-  for initial validation; retrain only if graphs are too noisy for feature labeling.
+**On training our own CLT — deferred, not infeasible (verified 2026-06-09):**
+"Can't" was wrong. We *can* train one; it is the expensive corner, not the next step:
+- No warm-start at 4B → necessarily from-scratch (Gemma Scope 2's warm-start code is unreleased).
+- Credible width from-scratch needs compute + tokens: ~26B params at ≥16k / `d_model` decode
+  (8×H100-class node, cf. CLT-Forge for Llama-1B at expansion 32) and ~1–5B training tokens.
+  We're at ~120M — the token gap is the real bind, forcing a corpus build first.
+- CLT-on-Gemma-3 attribution is unproven in `circuit-tracer` (CLT support exists but not
+  validated on Gemma 3 post-norms).
+- It's a refinement, not a prerequisite — buys tighter graphs over the PLT, not graphs per se.
+Revisit when (a) Stage 1/2 confirm a finding worth tightening, or (b) the CLT itself becomes the
+contribution (a "MedScope" open-artifact play). Sequenced to a later stage, not killed.
+
+**IT/PT axis (resolved):** the old IT-vs-PT dilemma was an artifact of training one home-grown
+CLT. Gemma Scope 2 ships *both* PT and IT transcoder suites (IT finetuned on chat rollouts —
+OpenAssistant/oasst1, LMSYS-Chat-1M). Rule: **IT model → IT transcoders → chat template,
+consistently** (feeding raw text to IT transcoders reintroduces the Phase 6 OOD failure).
+Sequence Gemma-3-4B-IT first (in-distribution, de-risks the method), then MedGemma-4B as point #2;
+the delta between them is itself a publishable finding.
 
 **google/medgemma-4b-pt** (Gemma 3 4B, 34 layers, d_model=2560, d_mlp=10240 GeGLU)
 - Confirmed base model: `google/gemma-3-4b-pt` (verified via HuggingFace model tree)
 - Gated model — requires HuggingFace terms acceptance before downloading
-- Our trained CLT: `checkpoints/medgemma-4b-1024/clt_inference.pt` (n_features=1024, L0~91)
+- Our old trained CLT: `checkpoints/medgemma-4b-1024/clt_inference.pt` (n_features=1024, L0~91)
+  — deferred artifact, not used on the active path.
 
-Use TransformerLens for hooking into residual streams and MLP outputs.
-Do NOT switch models mid-project without updating this file.
+See `docs/ignis_approach_handoff.md` for the full handoff. The autograd `graphs/build.py`
+pipeline (documented in "Attribution Graph Facts" below) is **superseded background** on this
+path — kept for regression-test history and any future custom-CLT work.
 
 ---
 
@@ -193,48 +210,11 @@ From the paper (§ Building an Interpretable Replacement Model):
 - Export format must match `anthropics/attribution-graphs-frontend` JSON schema.
   Check `frontend/README.md` for the schema spec before writing `graphs/export.py`.
 
-### How `graphs/build.py` computes attribution gradients
-
-ONE `torch.autograd.grad` backward pass through a frozen-nonlinearity forward
-gives every per-layer gradient the edge formulas need. Implementation lives in
-`_compute_attribution_gradients`. The forward installs TransformerLens hooks that:
-
-1. **Replace every `attn.hook_pattern`** with its cached `.detach()` value.
-2. **Replace every LN/RMSNorm `hook_scale`** with its cached `.detach()` value —
-   `ln1`, `ln2`, `ln_final` on every architecture; `ln1_post`, `ln2_post` on
-   Gemma 3. Anything new (e.g. `ln3` on a future arch) flows through automatically:
-   we freeze every `*.hook_scale` that exists in the cache.
-3. **Detach `hook_mlp_out`** at every layer. This severs autograd's path back
-   through the MLP so `∂logit/∂hook_resid_pre[l]` flows along skip + attention
-   only — matches the paper's linearised replacement model where MLPs are
-   replaced by CLT decoder outputs.
-
-After backward, three gradient signals are available for the edge formulas:
-
-- `grad['resid_pre'][l]` for `l ∈ [0, L]` — direct from autograd. Used for
-  embedding → logit edges (`embed · grad_at_resid_pre[0]`).
-- `grad['attn_out'][l]` for `l ∈ [0, L-1]` — direct from autograd. Used for
-  cross-position attention → logit edges (`cross_attn[h] · grad_at_attn_out[l]`).
-  The post-attn-norm Jacobian is baked in for free on Gemma 3 because `ln1_post`
-  is in the autograd graph with frozen scale.
-- `grad['mlp_post'][l]` for `l ∈ [0, L-1]` — derived after autograd as
-  `W_out.T @ ((γ_post/scale_post).detach() * grad_at_resid_pre[l+1])`. The
-  manual derivation is needed because the `hook_mlp_out` detach severs
-  autograd's path to `mlp_post`. Used for feature → logit and error → logit edges.
-
-Why architecture-agnostic: post-norms, GeGLU, RoPE, GQA all flow through the
-chain rule for free. Adding a new model = no new Jacobian code, just
-`HookedTransformer.from_pretrained(...)`.
-
-Sanity check: `grad_at_resid_pre[L] · resid_post[L-1] == logit - b_U` exactly
-under the frozen `ln_final` scale. The build prints both numbers as
-`v·r_L=... decomposable=...` — they should match to several digits.
-
-Verified completeness on Pythia-70m at rewrite time: 0.8996 (recorded in
-`docs/phase1_autograd.json`). Regression-tested in
-`tests/test_attribution_completeness.py`. See `docs/autograd_plan.md` and
-`docs/diagnostics_log.md` for the rewrite history and the diagnostic chain
-that led to it.
+> **Superseded background.** The autograd `graphs/build.py` pipeline (one frozen-nonlinearity
+> backward pass for all edge gradients, architecture-agnostic post-norm handling, the
+> `v·r_L == logit−b_U` sanity check, Pythia-70m completeness 0.8996) is retired on the active
+> path — `circuit-tracer` replaces it. Full write-up moved to `docs/clt_era_archive.md`.
+> Regression test still lives in `tests/test_attribution_completeness.py`.
 
 ---
 
@@ -407,22 +387,30 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
 
 ### Next steps
 
-1. **Sparsity/corpus experiment (~$10-20 diagnostic, ~$100 full):**
-   Train short CLT runs (5k steps) varying sparsity (L0~91 vs L0~20-30) and corpus
-   (protocol JSONL vs medical content corpus like PubMed abstracts). Check whether
-   layer distribution shifts — do more late-layer features appear at higher sparsity?
-   Does a less formatting-heavy corpus reduce structural L0 features?
-   Cost estimates are GPU time only — budget 2-3× for setup, SCP, debugging, failures.
-   Pod sessions typically take 2-3hrs wall time including overhead.
+1. **Sparsity/corpus experiment — DONE (negative result).** Short CLT runs varying sparsity
+   (L0~91 vs L0~20-30) and corpus (protocol JSONL vs PubMed) did not meaningfully shift the
+   layer distribution; structural L0 features still dominate. Reinforced the decision to stop
+   investing in from-scratch CLT training. See `scripts/compare_layer_distribution.py`.
 
-2. **Visual abstract for non-ML audience:** Create a figure explaining the pipeline
-   (model → CLT → features → attribution graph → labeled circuit) in plain language.
+2. **circuit-tracer Stage 0 → Stage 1 (active path):** Stage 0 — run `circuit-tracer` on hosted
+   Gemma 3 4B-IT (Neuronpedia), reproduce a known graph + push 2–3 clinical prompts (zero custom
+   code). Stage 1 — self-host on 1× H100, load MedGemma-4B + Gemma Scope 2 4B PLTs, run the
+   prompt set, measure the off-distribution completeness gap. Decision gate. See Phase 2 Models.
+
+3. **First behavior CHOSEN (2026-06-13): clinical-trial eligibility yes/no**, traced
+   contrastively as `logit(Yes) − logit(No)`. Julie is the domain authority on correct answers;
+   cleanest binary framing. Next: spec a clean contrastive eligibility prompt set for the
+   Gemma-3-4B-**IT** target (chat template, consistent Yes/No target, matched pairs, minimal
+   telegraphing). Existing `prompts/eligibility.py` (4 prompts) needs a redesign pass — see below.
+
+4. **Visual abstract for non-ML audience:** Create a figure explaining the pipeline
+   (model → transcoder → features → attribution graph → labeled circuit) in plain language.
    Target audience: clinicians, clinical trialists, non-ML collaborators. Needed for
    paper submission and any public-facing communication.
 
-3. **Notebook 03 + paper draft:** Write up current results (8 graphs, 110 labeled features,
-   layer distribution finding, prompt engineering for feature labeling). Publishable as-is
-   as a methods/negative-result contribution even without sparser CLT.
+5. **Notebook 03 + paper draft:** Write up results (graphs, labeled features, layer distribution
+   finding, prompt engineering for feature labeling). Publishable as a methods/negative-result
+   contribution; the MedGemma off-distribution gap (Stage 1) strengthens it.
 
 ### Completed milestones (detail in git history)
 
@@ -434,114 +422,39 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
 
 ## Findings So Far
 
+- **CLT feasibility re-verified (2026-06-09).** Training a credible CLT for Gemma 3 4B is not
+  infeasible but is the expensive corner: no 4B warm-start (Gemma Scope 2 CLTs stop at 1B; their
+  warm-start code is unreleased) → from-scratch only, ~26B params at ≥16k/`d_model` decode
+  (8×H100-class), ~1–5B tokens (we have ~120M — the token gap is the real bind), and
+  CLT-on-Gemma-3 attribution is unproven in `circuit-tracer`. Conclusion: PLT-first via
+  circuit-tracer + Gemma Scope 2 is the right next step; custom CLT is a later refinement, not a
+  prerequisite. See Phase 2 Models + `docs/ignis_approach_handoff.md`.
 - **The circuit tracing paper used an instruction-tuned model (Claude 3 Sonnet), not a base model.**
   IT models are valid targets, but the CLT training data must match the inference format.
   Anthropic trained on the same distribution Claude processes at inference. Our IT attempt
   (Phase 6) failed because the CLT was trained on raw corpus activations, which are OOD for
   short QA prompts. PT models don't have this problem: raw text IS the inference format.
-- `sparsity_coeff=2e-4` is too weak — reconstruction dominates and L0 saturates near n_features.
-  Updated default to `1e-2`. L0 still high at 500 steps on 50k tokens; expect improvement at scale.
-- Activation extraction uses `monology/pile-uncopyrighted` streamed from HuggingFace.
-  Requires `zstandard` for decompression. Default slice: 50k tokens for dev.
-- Training loop is model-agnostic via `ActivationLoader` protocol — switching models
-  only requires a new loader, not changes to `clt/train.py`.
-- CLT must always be moved to the same device as the model it's paired with.
-  Call `clt.to(next(model.parameters()).device)` at entry points (`build_attribution_graph`,
-  test fixtures). Never scatter `.to(device)` calls on individual tensors inside helpers.
-- Attribution graph completeness must include attention paths: an MLP-only T matrix
-  gives ~0.001 because attention dominates logit prediction in both Pythia and MedGemma.
-  The current `graphs/build.py` handles this correctly via the autograd backward pass
-  through the linearised model — see "Attribution Graph Facts" above. Phase 1 Pythia
-  graphs (pre-autograd) have the MLP-only bug and must NOT be cited as valid; rebuild
-  if needed. Pythia-70m baseline under the autograd build is 0.8996.
-- H100 training speed: ~1.37 steps/s with batch_size=512, n_features=2048, 24 layers. 50k steps ≈ 10hrs.
-  n_features=4096 exceeded H100 VRAM (81GB needed vs 79GB available) — settled on 2048.
-- steps/sec timing added to `_log()` in `clt/train.py` (elapsed, eta, steps/s).
-- HDF5 random sampling caused 0% GPU utilization (512 random seeks per step). Fixed by sampling
-  contiguous blocks instead — critical when chunk size is 1024 tokens.
-- HDF5 now stores `token_ids` dataset (int32) for feature labeling context reconstruction.
-  Old HDF5 files without this field need to be re-extracted before running label_features.py.
-- HDF5 is self-describing: `extract_activations.py` stamps `attrs["model_name"]`.
-  `find_top_activations.py` / `fix_feature_activations_tokenizer.py` read it via
-  `scripts/_tokenizer_resolve.py` and pick the decode tokenizer from it — **normally
-  do NOT pass `--model_name`**. Passing it asserts against the attr (mismatch = hard
-  error; this is how a wrong tokenizer is caught now, not just an omitted one).
-  `--model_name` is required only for pre-attr legacy HDF5s (e.g. the Phase 4
-  MedGemma dump) — those have no recorded truth so a wrong value there is still
-  silent; pass the matching model explicitly. Root-caused from the Phase 4 bug
-  where a Pythia default tokenizer silently decoded MedGemma ids into garbage.
-- flush_every default changed 500→5 to prevent ~200GB RAM accumulation before first disk write.
 - torchvision/torchaudio conflict on pods: pins torch==2.5.1, incompatible with torch 2.11.0.
   Removed from setup_pod.sh; uninstall manually on existing instances.
-- HDF5 size for 5M tokens, 24 layers: ~2.5TB (resid + mlp_post, float32) or ~491GB (resid only).
-  The "~20GB" estimate was wrong. A10 instances have 1.4TB disk — only fits resid_only. Use
-  `--resid_only` flag for find_top_activations runs; full extraction needs H100 or dedicated storage.
-- Gemma Scope 2 (released Dec 2025) includes cross-layer transcoders for all Gemma 3 sizes
-  (270M–27B), SAEs for every layer, and chatbot-tuned model variants. Available on HuggingFace
-  and Neuronpedia. Verify MedGemma base model version (likely Gemma 3) before training CLT
-  from scratch — may be able to skip the training step entirely.
 - `frontend/` is tracked as a gitlink (embedded repo), not a proper submodule. Contents won't
   clone with the outer repo. Convert with `git submodule add` if needed.
 - Frontend util.js rewrites all absolute paths to transformer-circuits.pub — added localhost
   check to skip rewrite for local development.
-- MedGemma-4B-pt CLT config: n_features=1024 chosen to fit H100 VRAM (34 layers, d_mlp=10240
-  GeGLU, decoder matrix is O(L*(L+1)/2 × n_features × d_mlp)). float16 storage reduces HDF5
-  to ~400GB for 2M tokens (resid + mlp_post, 34 layers). Use 1TB pod volume.
 - Clinical trial protocol corpus: 49,002 docs from ClinicalTrials.gov, avg ~26k tokens/doc,
   JSONL with `full_text` field. Use --text_field full_text with extract_activations.py.
   2M tokens covers ~77 documents — sufficient for a proof-of-concept CLT run.
   Local copy on Julie's Mac: `/Users/juliecannon/Desktop/protocol_corpus/ct_corpus/protocols.jsonl`
   (6.0 GB). Not in the repo — scp this up to `data/protocols.jsonl` on every fresh pod.
-- **Gemma Scope 2 (McDougall et al., Sep 2025) CLTs only cover Gemma 3 270M and 1B** — not 4B,
-  12B, or 27B. O(layers²) cost made larger CLTs impractical. 4B has single-layer skip transcoders
-  on all layers, but these lack cross-layer edges and target a different space (post-MLP-norm output,
-  not mlp_post). Cannot be dropped into our pipeline without significant rework. Our own trained
-  CLT (`checkpoints/medgemma-4b-1024/`) remains the right artifact to use.
-- **Gemma 3 post-norms break attribution completeness.** With our MedGemma CLT, v·r_L = 21.5
-  (v is correct) but completeness ≈ −0.002. Root cause: Gemma 3 applies RMSNorm after each
-  attention and MLP output before the residual addition. The method's effective_readout[l] =
-  W_out[l] @ v_{l+1} is wrong — it must pass through the frozen post-norm Jacobian. The
-  circuit tracing paper used Claude 3 Sonnet (pre-norm only) and never hit this. Pythia (also
-  pre-norm) works fine at 0.91. Fix: port post-norm handling from Gemma Scope 2's attribution
-  tooling, or use their pre-trained CLTs which were built knowing the architecture.
-- **RMS scale persistence (2026-04-30).** The CLT trains with dataset-level per-layer RMS
-  scales computed once at loader init from a 4096-token sample of the HDF5
-  (`clt/loader.py:_compute_scales`). Until 2026-04-30 these scales were never persisted —
-  `_save_checkpoint` wrote only `model_state_dict` + `optimizer_state_dict`. At inference
-  `graphs/build.py` fell back to per-prompt RMS, which drifts wildly across prompts and
-  inflates feature contributions by 5-10×, breaking the feat/error cancellation. Symptom:
-  on MedGemma, the steroid test prompt happened to land near training-time RMS and gave
-  completeness=0.76, but eligibility prompts gave completeness=4.14 / 8.14 (unphysical).
-  Recovery path: `scripts/compute_clt_scales.py` reads the HDF5, computes per-layer RMS
-  over a 100k-token sample, and writes `resid_scales` + `mlp_scales` into the existing
-  checkpoint. `clt/model.py` registers non-persistent buffers populated post-load via
-  `clt.load_scales_from_checkpoint(ckpt)`. `graphs/build.py` prefers saved scales and
-  warns + falls back to per-prompt only if a checkpoint predates this change.
-  **DONE (2026-06-07):** `_save_checkpoint` now bundles `resid_scales` and `mlp_scales`
-  from the loader into the checkpoint dict. No more post-hoc `compute_clt_scales.py` step.
-- **`find_top_activations.py` missing RMS normalization (fixed 2026-06-01).** The script
-  loaded the CLT state dict but never called `clt.load_scales_from_checkpoint(ckpt)`, and
-  fed raw (unnormalized) HDF5 residuals into `clt.encode()`. The CLT was trained on
-  RMS-normalized inputs, so every pre-activation was off-scale → JumpReLU gated all
-  features to zero → 0 activations for all 110 graph features. Symptom: `label_features.py`
-  produced plausible-sounding labels ("table of contents dots", "section numbers") from
-  empty activation lists — the LLM hallucinated labels with no grounding data. Fix: (1)
-  call `load_scales_from_checkpoint` in `load_clt()`, (2) divide each residual batch by
-  `clt.resid_scales[l]` before encoding. Any script that calls `clt.encode()` on raw HDF5
-  data must normalize first — `graphs/build.py` already does this correctly.
-- **Contrastive readout for binary decisions (2026-05-16).** `graphs/build.py` now accepts
-  a `contrastive=(pos_ids, neg_ids)` parameter. Target becomes
-  `mean(logit[pos_ids]) − mean(logit[neg_ids])` — same autograd backward, same completeness
-  check, same edge formulas. Features pushing equally toward both answers cancel by
-  construction, decontaminating scaffold/format artifacts from the graph. Standard approach
-  for binary-decision circuit analysis (IOI, sparse feature circuits).
-- **Contrastive graphs require sparser CLTs than single-token graphs.** At L0~91, the CLT
-  projects a constant ~0.55-logit No-bias onto the Yes−No direction regardless of prompt
-  content. For single-token targets (logit ~20+) this is <3% noise and completeness is
-  0.76–0.90. For contrastive targets (logit-diff ~0.2) the same absolute noise is >100% →
-  completeness is meaningless. Root cause: thousands of dense feature contributions must
-  cancel precisely to hit a near-zero target; at L0~91 they don't. Fix: retrain CLT at
-  L0~20–30, reducing active features ~4× and correspondingly reducing cancellation noise.
+- **Contrastive readout / dictionary sparsity (still relevant to the active path).** For
+  binary-decision targets, trace `mean(logit[pos_ids]) − mean(logit[neg_ids])` so features
+  pushing equally toward both answers cancel, decontaminating scaffold/format artifacts
+  (standard for IOI / sparse feature circuits). Contrastive targets need *sparser*
+  dictionaries than single-token targets: our L0~91 CLT projected a constant ~0.55-logit
+  No-bias onto the Yes−No direction — <3% noise for single-token targets (logit ~20+, where
+  completeness was 0.76–0.90) but >100% noise for contrastive targets (logit-diff ~0.2). This
+  is the main argument for the lower-L0 Gemma Scope 2 PLTs (L0 ∈ {10,50,150}) on the active
+  path. Implementation history (the retired `graphs/build.py contrastive=` param) is in
+  `docs/clt_era_archive.md`.
 - **Contrastive screening shows weak signal, not clean discrimination.**
   `medgemma-4b-pt` with the `Eligible?\nAnswer:` scaffold showed no dynamic range on
   absolute p_agg (easy controls ≈ categorical ≈ 0.3). On the contrastive metric
