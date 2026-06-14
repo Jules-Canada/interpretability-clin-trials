@@ -280,6 +280,24 @@ When labeling features found in attribution graphs, record labels in
 
 ## Pod Setup (RunPod — do this in order on every fresh instance)
 
+### Active path — Stage 1 (circuit-tracer + Gemma Scope 2 transcoders)
+No corpus, no HDF5, no CLT checkpoint — just pretrained transcoders.
+```bash
+git clone https://YOUR_TOKEN@github.com/Jules-Canada/interpretability-clin-trials.git ignis
+cd ignis
+export HF_TOKEN=YOUR_HF_TOKEN          # accept terms for gemma-3-4b-it, MedGemma, gemma-2-2b
+bash scripts/setup_pod_circuit_tracer.sh
+source .venv/bin/activate
+python scripts/run_graphs_ct.py --probe          # confirm circuit-tracer API (instant, no GPU)
+python scripts/run_graphs_ct.py --smoke          # gemma-2-2b known graph (API end-to-end)
+python scripts/sweep_eligibility.py --model google/gemma-3-4b-it   # behavioral gate
+python scripts/run_graphs_ct.py --model google/gemma-3-4b-it \
+    --transcoders mwhanna/gemma-scope-2-4b-it    # eligibility graphs; repeat for MedGemma
+# SCP back from Mac: frontend/graph_data/*.json and data/eligibility_sweep_*.json
+```
+H100 (80GB) — nnsight is less memory-efficient; A10 likely too small for 4B here.
+
+### Deferred path — CLT training (from-scratch, not the active path)
 ```bash
 # 1. Clone repo
 git clone https://YOUR_TOKEN@github.com/Jules-Canada/interpretability-clin-trials.git
@@ -392,16 +410,29 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
    layer distribution; structural L0 features still dominate. Reinforced the decision to stop
    investing in from-scratch CLT training. See `scripts/compare_layer_distribution.py`.
 
-2. **circuit-tracer Stage 0 → Stage 1 (active path):** Stage 0 — run `circuit-tracer` on hosted
-   Gemma 3 4B-IT (Neuronpedia), reproduce a known graph + push 2–3 clinical prompts (zero custom
-   code). Stage 1 — self-host on 1× H100, load MedGemma-4B + Gemma Scope 2 4B PLTs, run the
-   prompt set, measure the off-distribution completeness gap. Decision gate. See Phase 2 Models.
+2. **Stage 0 (hosted Neuronpedia) — DONE, provisional lead.** Confirmed Neuronpedia *does*
+   do on-demand Gemma-3-4b-it graphs (public docs say otherwise). Hosted UI limits: no chat
+   template, 64-token cap, mangles pasted special tokens → had to use raw-cloze prompts
+   (`… Eligible? Answer:`). Behavioral sweep showed the model **ignores the stated age bounds**
+   (effective eligible band ≈[16,97] vs stated [18,75]; approves 80/90/95; non-monotonic age-5
+   reversal). UNTRUSTWORTHY — raw text on an IT model is OOD; must be reproduced under proper
+   chat formatting before it's a result. The age-bound failure is a *candidate* clinical
+   failure-mode finding (handoff candidate #1).
 
-3. **First behavior CHOSEN (2026-06-13): clinical-trial eligibility yes/no**, traced
-   contrastively as `logit(Yes) − logit(No)`. Julie is the domain authority on correct answers;
-   cleanest binary framing. Next: spec a clean contrastive eligibility prompt set for the
-   Gemma-3-4B-**IT** target (chat template, consistent Yes/No target, matched pairs, minimal
-   telegraphing). Existing `prompts/eligibility.py` (4 prompts) needs a redesign pass — see below.
+3. **Stage 1 (self-hosted circuit-tracer) — scripts ready, run on H100.** Plan executed
+   2026-06-14: `scripts/setup_pod_circuit_tracer.sh` (env: circuit-tracer + nnsight, no CLT
+   deps), `scripts/sweep_eligibility.py` (forward-pass behavioral GATE — re-test the age-bound
+   finding under the real Gemma-3 chat template), `scripts/run_graphs_ct.py` (`--probe` /
+   `--smoke` / real batch over `ELIGIBILITY_PAIRS`). Round 1 = **gemma-3-4b-it** (in-distribution,
+   transcoders `mwhanna/gemma-scope-2-4b-it`) **+ MedGemma-4b** (off-distribution, same transcoder
+   set — the gap is a finding). Target = predicted Yes/No (single-target; both Yes & No captured
+   via top-K logits = free dual-logit read). True contrastive `logit(Yes)−logit(No)` deferred
+   (no native circuit-tracer support — revisit after round 1). Replacement-score ≥0.5 is the
+   completeness-gate analog (Dev Rule 8). **First behavior locked: eligibility yes/no.**
+   `prompts/eligibility.py` holds the 5 matched contrastive pairs (`ELIGIBILITY_PAIRS`,
+   decision-primitive ladder) + `to_chat` / `POS|NEG_TOKEN_IDS`. Pod run order: setup →
+   `run_graphs_ct.py --probe` → `--smoke` → `sweep_eligibility.py` → `run_graphs_ct.py` (it,
+   then MedGemma).
 
 4. **Visual abstract for non-ML audience:** Create a figure explaining the pipeline
    (model → transcoder → features → attribution graph → labeled circuit) in plain language.
