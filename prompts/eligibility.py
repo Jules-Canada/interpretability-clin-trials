@@ -99,11 +99,17 @@ def to_gemma_chat(p: ContrastivePrompt) -> str:
 
 
 # --- Active path: matched contrastive eligibility pairs ----------------------
-# Ranked easy -> scientifically interesting. Pairs 1-3 are near-boundary
-# controls (is there a real threshold-comparison feature?). Pairs 4-5 require
-# retrieving world knowledge (pembrolizumab is anti-PD-1; stage IV = metastatic)
-# rather than string-matching the criterion — where a genuine cross-layer
-# concept->decision circuit would show up.
+# A ladder of decision primitives, surface -> conceptual. Each control isolates
+# a DIFFERENT operation rather than re-measuring one:
+#   Pair 1    — numeric magnitude / range comparison
+#   Pair 2    — ordinal set membership
+#   Pair 3    — lexical / categorical match
+#   Pairs 4-5 — world-knowledge retrieval (pembrolizumab is anti-PD-1;
+#               stage IV = metastatic), where no string-match with the criterion
+#               is possible and a genuine cross-layer concept->decision circuit
+#               would show up.
+# The question the ladder asks: at which rung does the decision computation stop
+# being surface and start being conceptual?
 
 ELIGIBILITY_PAIRS: list[ContrastivePrompt] = [
     # Pair 1 — numeric age threshold
@@ -144,33 +150,41 @@ ELIGIBILITY_PAIRS: list[ContrastivePrompt] = [
         "requires": "ordinal performance-status comparison",
         "domain_tags": ["eligibility", "performance_status", "control"],
     },
-    # Pair 3 — lab-value cutoff with direction
+    # Pair 3 — lexical / categorical match (no number, no world knowledge).
+    # Pure surface: the criterion names a histology; the patient either contains
+    # that token or names a different one. Isolates the lexical-match circuit as
+    # the baseline the knowledge pairs (4-5) are compared against.
     {
-        "id": "elig_anc_pos",
-        "pair_id": "anc",
-        "criterion": "Inclusion: absolute neutrophil count at least 1,500 cells/uL.",
-        "patient": "54-year-old with breast cancer; absolute neutrophil count 2,200 cells/uL.",
+        "id": "elig_histology_pos",
+        "pair_id": "histology",
+        "criterion": "Inclusion: histologically confirmed adenocarcinoma.",
+        "patient": "61-year-old with lung adenocarcinoma.",
         "expected": "Yes",
-        "requires": "lab-value cutoff with direction",
-        "domain_tags": ["eligibility", "lab", "control"],
+        "requires": "lexical category match (named histology matches the criterion)",
+        "domain_tags": ["eligibility", "histology", "control"],
     },
     {
-        "id": "elig_anc_neg",
-        "pair_id": "anc",
-        "criterion": "Inclusion: absolute neutrophil count at least 1,500 cells/uL.",
-        "patient": "54-year-old with breast cancer; absolute neutrophil count 1,100 cells/uL.",
+        "id": "elig_histology_neg",
+        "pair_id": "histology",
+        "criterion": "Inclusion: histologically confirmed adenocarcinoma.",
+        "patient": "61-year-old with squamous cell lung carcinoma.",
         "expected": "No",
-        "requires": "lab-value cutoff with direction",
-        "domain_tags": ["eligibility", "lab", "control"],
+        "requires": "lexical category match (squamous cell carcinoma is not adenocarcinoma)",
+        "domain_tags": ["eligibility", "histology", "control"],
     },
-    # Pair 4 — drug -> class knowledge (no verbatim match with the criterion)
+    # Pair 4 — drug -> class knowledge (no verbatim match with the criterion).
+    # Both members name exactly one real drug. In the Gemma-3 tokenizer they
+    # share only the first subword 'p' and diverge at subword 2 (pemetrexed=
+    # p|emet|rex|ed, pembrolizumab=p|emb|rol|izumab), so the deciding signal
+    # cannot be the first token — it must come from post-token-1 discrimination
+    # + drug->class retrieval. (Verified scripts/stage0_tokenizer_check.py.)
     {
         "id": "elig_priortx_pos",
         "pair_id": "prior_tx",
         "criterion": "Exclusion: prior treatment with a PD-1 or PD-L1 inhibitor.",
-        "patient": "60-year-old with NSCLC who previously received carboplatin and pemetrexed.",
+        "patient": "60-year-old with NSCLC who previously received pemetrexed.",
         "expected": "Yes",
-        "requires": "drug-to-class knowledge (chemotherapy is not a checkpoint inhibitor)",
+        "requires": "drug-to-class knowledge (pemetrexed is chemotherapy, not a checkpoint inhibitor)",
         "domain_tags": ["eligibility", "prior_therapy", "knowledge"],
     },
     {
@@ -182,23 +196,25 @@ ELIGIBILITY_PAIRS: list[ContrastivePrompt] = [
         "requires": "drug-to-class knowledge (pembrolizumab is an anti-PD-1 inhibitor)",
         "domain_tags": ["eligibility", "prior_therapy", "knowledge"],
     },
-    # Pair 5 — staging -> metastatic knowledge
+    # Pair 5 — staging -> metastatic knowledge. Criterion deliberately omits the
+    # "(stage IV)" gloss so the model cannot string-match the stage; eligibility
+    # hinges on knowing III is M0 and IV is M1. Single roman-numeral flip.
     {
         "id": "elig_stage_pos",
         "pair_id": "stage",
-        "criterion": "Exclusion: metastatic (stage IV) disease.",
-        "patient": "57-year-old with stage IIIA non-small cell lung cancer.",
+        "criterion": "Exclusion: metastatic disease.",
+        "patient": "57-year-old with stage III non-small cell lung cancer.",
         "expected": "Yes",
-        "requires": "staging knowledge (stage IIIA is not metastatic)",
+        "requires": "staging knowledge (stage III is not metastatic)",
         "domain_tags": ["eligibility", "staging", "knowledge"],
     },
     {
         "id": "elig_stage_neg",
         "pair_id": "stage",
-        "criterion": "Exclusion: metastatic (stage IV) disease.",
-        "patient": "57-year-old with stage IV non-small cell lung cancer and hepatic metastases.",
+        "criterion": "Exclusion: metastatic disease.",
+        "patient": "57-year-old with stage IV non-small cell lung cancer.",
         "expected": "No",
-        "requires": "staging knowledge (stage IV = metastatic)",
+        "requires": "staging knowledge (stage IV is metastatic)",
         "domain_tags": ["eligibility", "staging", "knowledge"],
     },
 ]
