@@ -384,6 +384,14 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
   (age/ecog/histology: 0.67–0.71, ~81–84%). The Stage 0 "ignores age bounds" lead was a
   raw-cloze/OOD artifact — do not cite. Caveats: controls flip the answer (partial confound, needs
   a same-answer baseline); discriminating features exist but are tiny (~1.5 vs shared ~3–5).
+- **Over-exclusion is robust to medical fine-tuning (MedGemma, 2026-06-19).** medgemma-4b-it
+  (same transcoders/chat template; graphs in `frontend/graph_data/medgemma/`, completeness
+  0.84–0.85, off-distribution gap negligible) makes the SAME errors (pemetrexed→No, stage III→No)
+  with the SAME within-pair signature (knowledge pairs 0.78–0.81 jaccard vs controls 0.64–0.73).
+  Yet cross-model overlap (gemma↔medgemma, same prompt/transcoders) is only ~0.13–0.17 jaccard —
+  medical fine-tuning reorganized the circuit ~85% (more late-layer features) but did NOT fix the
+  failure. Headline finding: a clinically-consequential failure (wrongly excluding eligible
+  patients) robust across a general AND a medical model, surviving a major circuit reorganization.
 - **Autograd attribution pipeline validated** on MedGemma-4B-pt: 14 answer-telegraphing
   prompts achieved completeness 0.55–0.81, and 7 Track B medical-factual prompts achieved
   0.76–0.90. Phase 4 graphs + feature data moved to `deferred/phase4_telegraphing/`
@@ -468,18 +476,19 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
    `compare_graphs.py` confirmed the over-exclusion circuit (see What works). 10 graph JSONs on
    the Mac in `frontend/graph_data/elig_*.json`. **Remaining follow-ups (no GPU needed for the
    analysis, only for new graphs):**
-   - **>>> NEXT SESSION TOP PRIORITY: MedGemma round.** This is the actual experiment —
-     gemma-3-4b-it was only the generic in-distribution control; the over-exclusion finding so
-     far is on a NON-medical model. `google/medgemma-4b-it` confirmed to exist (IT fine-tune of
-     gemma-3-4b-pt; gated under Health AI Dev Foundation terms — accept the `-it` repo terms; the
-     `-pt` acceptance may not carry over). Pod (warm or fresh): `bash
-     scripts/setup_pod_circuit_tracer.sh`, then `python scripts/sweep_eligibility.py --model
-     google/medgemma-4b-it` (does the medical model fix the over-exclusion?), then `python
-     scripts/run_graphs_ct.py --model google/medgemma-4b-it --transcoders
-     mwhanna/gemma-scope-2-4b-it/transcoder_all/width_16k_l0_small_affine`. Two findings to read:
-     (1) does medical fine-tuning correct pemetrexed/stage-III → Yes? (2) the completeness gap vs
-     0.80 = the off-distribution cost of generic transcoders on the medical model. scp graphs back,
-     then `compare_graphs.py` / `analyze_graphs.py` locally.
+   - **MedGemma round DONE (2026-06-19).** Both findings answered: (1) medical fine-tuning does
+     NOT fix the over-exclusion — same errors, same circuit signature; (2) off-distribution gap is
+     negligible (completeness 0.84–0.85, ≥ generic Gemma). Bonus: cross-model circuit overlap only
+     ~0.13–0.17 → medical FT reorganized ~85% of the circuit yet preserved the failure. Graphs in
+     `frontend/graph_data/medgemma/`, sweep in `data/eligibility_sweep_medgemma-4b-it.json`. See
+     What works. (Note: local gemma `elig_age_pos.json` was truncated to 0B by an accidental shell
+     paste — regenerable if needed; derived results retained.)
+   - **NEXT: tighten + write up (no GPU for analysis).** (a) Same-answer minimal-pair baseline to
+     kill the confound; separate "knowledge gap" from "exclusion-phrasing→No bias" (probe e.g.
+     `Exclusion: prior chemotherapy. Patient: treatment-naive.` → should Yes). (b) Feature
+     labeling on the shared exclude-scaffold + the candidate Yes-feature (gemma L14 f7595238) and
+     MedGemma's late-layer features. (c) Draft the writeup — the cross-model-robust over-exclusion
+     is the result.
    - **Tighten the confound** — controls flip the answer, so add a same-answer minimal-pair
      baseline; and a probe to separate "knowledge gap" from "exclusion-phrasing→No bias"
      (e.g. `Exclusion: prior chemotherapy. Patient: treatment-naive.` should → Yes).
