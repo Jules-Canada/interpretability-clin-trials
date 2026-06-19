@@ -79,7 +79,9 @@ pip install --quiet torch --index-url https://download.pytorch.org/whl/cu121
 # deps; the scripts import the pure-python `prompts` module via sys.path.
 echo "--- Installing circuit-tracer + nnsight ---"
 pip install --quiet "git+https://github.com/safety-research/circuit-tracer.git"
-pip install --quiet nnsight jinja2
+# hf_transfer: RunPod images set HF_HUB_ENABLE_HF_TRANSFER=1 but don't ship the
+# package, which hard-fails every model/transcoder download until installed.
+pip install --quiet nnsight jinja2 hf_transfer
 
 # ---------------------------------------------------------------------------
 # 4. HuggingFace login (gated: gemma-3-4b-it, MedGemma, gemma-2-2b)
