@@ -38,8 +38,11 @@ if [ -d /workspace ]; then
     export HF_HOME=/workspace/.cache/huggingface
     grep -q 'HF_HOME=/workspace' ~/.bashrc 2>/dev/null \
         || echo 'export HF_HOME=/workspace/.cache/huggingface' >> ~/.bashrc
-    grep -q 'source.*\.venv/bin/activate' ~/.bashrc 2>/dev/null \
-        || echo 'source "$PWD/.venv/bin/activate" 2>/dev/null' >> ~/.bashrc
+    # Absolute path captured now — a literal $PWD resolves to /root in a fresh
+    # shell (e.g. a new tmux pane) and silently fails to activate the venv.
+    VENV_ACT="$(pwd)/.venv/bin/activate"
+    grep -qF "$VENV_ACT" ~/.bashrc 2>/dev/null \
+        || echo "source '$VENV_ACT' 2>/dev/null" >> ~/.bashrc
     echo "  HF_HOME=${HF_HOME}"
 else
     echo "  WARNING: /workspace not found — model weights will go to the root disk."
