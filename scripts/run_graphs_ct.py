@@ -131,14 +131,14 @@ def _logit_read(graph) -> str:
 
 def _export_and_score(graph, create_graph_files, *, slug, out_dir,
                       node_threshold, edge_threshold):
-    """Write the frontend graph JSON, then read back a completeness proxy."""
-    pt_path = Path(out_dir) / f"{slug}.pt"
-    if hasattr(graph, "to_pt"):
-        graph.to_pt(str(pt_path))
-        export_src = str(pt_path)
-    else:
-        export_src = graph
-    create_graph_files(export_src, slug=slug, output_path=out_dir,
+    """Write the frontend graph JSON, then read back a completeness proxy.
+
+    Pass the Graph object straight to create_graph_files (it accepts Graph|str).
+    We deliberately do NOT call graph.to_pt: the raw .pt for a 4B graph is large
+    and the 20GB root disk fills up — to_pt's zip write failed with
+    'unexpected pos' (out of space). Only the small frontend JSON is written.
+    """
+    create_graph_files(graph, slug=slug, output_path=out_dir,
                        node_threshold=node_threshold, edge_threshold=edge_threshold)
     return _completeness_from_json(Path(out_dir) / f"{slug}.json")
 
