@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import argparse
 import inspect
+import json
 import sys
 import traceback
 from pathlib import Path
@@ -102,15 +103,35 @@ def probe() -> None:
 # --------------------------------------------------------------------------- #
 # core: one attribution graph
 # --------------------------------------------------------------------------- #
+def _completeness_from_json(json_path: Path):
+    """Completeness proxy from the exported graph (Dev Rule 8 analog): share of
+    node influence flowing through transcoder features vs mlp-reconstruction-error
+    nodes. circuit-tracer stores no scalar score, but every node carries
+    feature_type + influence (confirmed 2026-06-18)."""
+    if not json_path.exists():
+        return None
+    nodes = json.loads(json_path.read_text()).get("nodes", [])
+    feat = sum(n.get("influence", 0.0) for n in nodes
+               if n.get("feature_type") == "cross layer transcoder")
+    err = sum(n.get("influence", 0.0) for n in nodes
+              if "error" in (n.get("feature_type") or ""))
+    return feat / (feat + err) if (feat + err) > 0 else None
+
+
+def _logit_read(graph) -> str:
+    """Top output logits (the free dual-logit Yes/No read)."""
+    try:
+        toks = list(graph.logit_tokens)
+        probs = graph.logit_probabilities
+        probs = probs.tolist() if hasattr(probs, "tolist") else list(probs)
+        return ", ".join(f"{t!r}:{p:.2f}" for t, p in list(zip(toks, probs))[:6])
+    except Exception as e:  # format drift — surfaced cheaply in --smoke
+        return f"(unavailable: {e})"
+
+
 def _export_and_score(graph, create_graph_files, *, slug, out_dir,
                       node_threshold, edge_threshold):
-    """Best-effort replacement score + write the frontend graph JSON."""
-    rscore = None
-    for attr in ("replacement_score", "completeness"):
-        if hasattr(graph, attr):
-            val = getattr(graph, attr)
-            rscore = float(val() if callable(val) else val)
-            break
+    """Write the frontend graph JSON, then read back a completeness proxy."""
     pt_path = Path(out_dir) / f"{slug}.pt"
     if hasattr(graph, "to_pt"):
         graph.to_pt(str(pt_path))
@@ -119,7 +140,7 @@ def _export_and_score(graph, create_graph_files, *, slug, out_dir,
         export_src = graph
     create_graph_files(export_src, slug=slug, output_path=out_dir,
                        node_threshold=node_threshold, edge_threshold=edge_threshold)
-    return rscore
+    return _completeness_from_json(Path(out_dir) / f"{slug}.json")
 
 
 def run_one(model, attribute, create_graph_files, *, slug, attr_input, display,
@@ -129,12 +150,12 @@ def run_one(model, attribute, create_graph_files, *, slug, attr_input, display,
     print(f"  input: {display}")
     graph = attribute(attr_input, model, max_n_logits=max_n_logits,
                       batch_size=batch_size, offload=offload, verbose=False)
-    rscore = _export_and_score(graph, create_graph_files, slug=slug, out_dir=out_dir,
-                               node_threshold=node_threshold, edge_threshold=edge_threshold)
-    msg = f"  replacement_score={rscore:.4f}" if rscore is not None \
-        else "  replacement_score=NA (see graph attrs from --smoke)"
-    print(f"{msg}  -> {out_dir}/{slug}.json")
-    return {"id": slug, "status": "ok", "replacement_score": rscore}
+    print(f"  logits: {_logit_read(graph)}")
+    comp = _export_and_score(graph, create_graph_files, slug=slug, out_dir=out_dir,
+                             node_threshold=node_threshold, edge_threshold=edge_threshold)
+    msg = f"completeness~{comp:.3f}" if comp is not None else "completeness~NA"
+    print(f"  {msg}  -> {out_dir}/{slug}.json")
+    return {"id": slug, "status": "ok", "completeness": comp}
 
 
 # --------------------------------------------------------------------------- #
@@ -150,11 +171,10 @@ def smoke(out_dir: str) -> None:
     prompt = "The capital of the state containing Dallas is"
     try:
         graph = attribute(prompt, model, max_n_logits=10, verbose=False)
-        print("  attribute() OK. Graph attrs (look for the replacement score):")
-        print("   ", [a for a in dir(graph) if not a.startswith("_")])
-        rscore = _export_and_score(graph, create_graph_files, slug="smoke_dallas",
-                                   out_dir=out_dir, node_threshold=0.8, edge_threshold=0.98)
-        print(f"  replacement_score={rscore}  -> {out_dir}/smoke_dallas.json")
+        print(f"  logits: {_logit_read(graph)}")
+        comp = _export_and_score(graph, create_graph_files, slug="smoke_dallas",
+                                 out_dir=out_dir, node_threshold=0.8, edge_threshold=0.98)
+        print(f"  completeness~{comp}  -> {out_dir}/smoke_dallas.json")
         print("\nSmoke OK — the attribute->export flow works.")
     except Exception:
         traceback.print_exc()
@@ -203,9 +223,9 @@ def batch(args) -> None:
     ok = [r for r in results if r["status"] == "ok"]
     print("=" * 60)
     print(f"Done: {len(ok)}/{len(ELIGIBILITY_PAIRS)} graphs.")
-    weak = [r for r in ok if (r["replacement_score"] or 0) < 0.5]
+    weak = [r for r in ok if (r["completeness"] or 0) < 0.5]
     if weak:
-        print("Below replacement-score 0.5 (Dev Rule 8 analog):",
+        print("Below completeness 0.5 (Dev Rule 8 analog):",
               ", ".join(r["id"] for r in weak))
 
 

@@ -416,8 +416,8 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
    (`… Eligible? Answer:`). Behavioral sweep showed the model **ignores the stated age bounds**
    (effective eligible band ≈[16,97] vs stated [18,75]; approves 80/90/95; non-monotonic age-5
    reversal). UNTRUSTWORTHY — raw text on an IT model is OOD; must be reproduced under proper
-   chat formatting before it's a result. The age-bound failure is a *candidate* clinical
-   failure-mode finding (handoff candidate #1).
+   chat formatting before it's a result. **OVERTURNED by the Stage 1 gate (2026-06-18):** the
+   age-bound "failure" was entirely a raw-cloze/OOD artifact (see step 3).
 
 3. **Stage 1 (self-hosted circuit-tracer) — scripts ready, run on H100.** Plan executed
    2026-06-14: `scripts/setup_pod_circuit_tracer.sh` (env: circuit-tracer + nnsight, no CLT
@@ -433,6 +433,21 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
    decision-primitive ladder) + `to_chat` / `POS|NEG_TOKEN_IDS`. Pod run order: setup →
    `run_graphs_ct.py --probe` → `--smoke` → `sweep_eligibility.py` → `run_graphs_ct.py` (it,
    then MedGemma).
+
+   **Behavioral gate result on gemma-3-4b-it (2026-06-18, `data/eligibility_sweep_*.json`):**
+   under the real chat template the model reads the bounds and gets age essentially perfect —
+   age sweep 17/18 (boundary snaps to [18,75]), bound-variation 4/4. The Stage 0 "ignores age
+   bounds" lead was a pure format artifact; do NOT cite it. Two REAL findings replace it:
+   (i) **off-by-one at the inclusive upper bound** — age 75 → No (treats 18-75 as `18≤age<75`);
+   (ii) **over-exclusion on knowledge-dependent EXCLUSION criteria** — both eligible arms fail:
+   `pemetrexed`→No (chemo, not a checkpoint inhibitor → should be eligible) and `stage III`→No
+   (not metastatic → should be eligible), while the true-exclusion arms (pembrolizumab, stage IV)
+   correctly→No. I.e. the model says ineligible whenever a prior drug / cancer stage is mentioned,
+   without applying drug-class / staging knowledge to clear the patient. Confound to resolve: the
+   3 clean pairs are *inclusion* criteria, the 2 failing ones *exclusion* — "knowledge gap" vs
+   "exclusion-phrasing→No bias" not yet separated; the graphs (pemetrexed-No vs pembrolizumab-No:
+   same circuit or different?) are meant to disentangle this. Predictions are confident (p≈1.00),
+   so single-target attribution has a clean target. **Next: graph the knowledge pairs.**
 
 4. **Visual abstract for non-ML audience:** Create a figure explaining the pipeline
    (model → transcoder → features → attribution graph → labeled circuit) in plain language.
