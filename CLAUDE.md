@@ -468,10 +468,18 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
    `compare_graphs.py` confirmed the over-exclusion circuit (see What works). 10 graph JSONs on
    the Mac in `frontend/graph_data/elig_*.json`. **Remaining follow-ups (no GPU needed for the
    analysis, only for new graphs):**
-   - **MedGemma round (NOT yet run)** — off-distribution comparison; pod stopped before this.
-     `python scripts/run_graphs_ct.py --model google/medgemma-4b-it --transcoders
-     mwhanna/gemma-scope-2-4b-it/transcoder_all/width_16k_l0_small_affine` (confirm the `-it`
-     variant exists first). The completeness gap vs 0.80 is the finding.
+   - **>>> NEXT SESSION TOP PRIORITY: MedGemma round.** This is the actual experiment —
+     gemma-3-4b-it was only the generic in-distribution control; the over-exclusion finding so
+     far is on a NON-medical model. `google/medgemma-4b-it` confirmed to exist (IT fine-tune of
+     gemma-3-4b-pt; gated under Health AI Dev Foundation terms — accept the `-it` repo terms; the
+     `-pt` acceptance may not carry over). Pod (warm or fresh): `bash
+     scripts/setup_pod_circuit_tracer.sh`, then `python scripts/sweep_eligibility.py --model
+     google/medgemma-4b-it` (does the medical model fix the over-exclusion?), then `python
+     scripts/run_graphs_ct.py --model google/medgemma-4b-it --transcoders
+     mwhanna/gemma-scope-2-4b-it/transcoder_all/width_16k_l0_small_affine`. Two findings to read:
+     (1) does medical fine-tuning correct pemetrexed/stage-III → Yes? (2) the completeness gap vs
+     0.80 = the off-distribution cost of generic transcoders on the medical model. scp graphs back,
+     then `compare_graphs.py` / `analyze_graphs.py` locally.
    - **Tighten the confound** — controls flip the answer, so add a same-answer minimal-pair
      baseline; and a probe to separate "knowledge gap" from "exclusion-phrasing→No bias"
      (e.g. `Exclusion: prior chemotherapy. Patient: treatment-naive.` should → Yes).
