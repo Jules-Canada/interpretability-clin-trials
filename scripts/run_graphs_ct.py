@@ -118,13 +118,15 @@ def _completeness_from_json(json_path: Path):
     return feat / (feat + err) if (feat + err) > 0 else None
 
 
-def _logit_read(graph) -> str:
+def _logit_read(graph, tokenizer) -> str:
     """Top output logits (the free dual-logit Yes/No read)."""
     try:
-        toks = list(graph.logit_tokens)
+        ids = graph.logit_token_ids
+        ids = ids.tolist() if hasattr(ids, "tolist") else list(ids)
         probs = graph.logit_probabilities
         probs = probs.tolist() if hasattr(probs, "tolist") else list(probs)
-        return ", ".join(f"{t!r}:{p:.2f}" for t, p in list(zip(toks, probs))[:6])
+        return ", ".join(f"{tokenizer.decode([i]).strip()!r}:{p:.2f}"
+                         for i, p in list(zip(ids, probs))[:6])
     except Exception as e:  # format drift — surfaced cheaply in --smoke
         return f"(unavailable: {e})"
 
@@ -145,12 +147,13 @@ def _export_and_score(graph, create_graph_files, *, slug, out_dir,
 
 def run_one(model, attribute, create_graph_files, *, slug, attr_input, display,
             out_dir, max_n_logits, node_threshold, edge_threshold,
-            batch_size, offload) -> dict:
+            batch_size, offload, max_feature_nodes) -> dict:
     """Attribute one input, export the graph, return a summary dict."""
     print(f"  input: {display}")
     graph = attribute(attr_input, model, max_n_logits=max_n_logits,
+                      max_feature_nodes=max_feature_nodes,
                       batch_size=batch_size, offload=offload, verbose=False)
-    print(f"  logits: {_logit_read(graph)}")
+    print(f"  logits: {_logit_read(graph, model.tokenizer)}")
     comp = _export_and_score(graph, create_graph_files, slug=slug, out_dir=out_dir,
                              node_threshold=node_threshold, edge_threshold=edge_threshold)
     msg = f"completeness~{comp:.3f}" if comp is not None else "completeness~NA"
@@ -171,7 +174,7 @@ def smoke(out_dir: str) -> None:
     prompt = "The capital of the state containing Dallas is"
     try:
         graph = attribute(prompt, model, max_n_logits=10, verbose=False)
-        print(f"  logits: {_logit_read(graph)}")
+        print(f"  logits: {_logit_read(graph, model.tokenizer)}")
         comp = _export_and_score(graph, create_graph_files, slug="smoke_dallas",
                                  out_dir=out_dir, node_threshold=0.8, edge_threshold=0.98)
         print(f"  completeness~{comp}  -> {out_dir}/smoke_dallas.json")
@@ -214,6 +217,7 @@ def batch(args) -> None:
                 out_dir=args.output_dir, max_n_logits=args.max_n_logits,
                 node_threshold=args.node_threshold, edge_threshold=args.edge_threshold,
                 batch_size=args.batch_size, offload=args.offload,
+                max_feature_nodes=args.max_feature_nodes,
             ))
         except Exception as e:
             traceback.print_exc()
@@ -239,6 +243,10 @@ def main() -> None:
     ap.add_argument("--output_dir", default="frontend/graph_data")
     ap.add_argument("--max_n_logits", type=int, default=10,
                     help="Top-K logits to attribute (>=2 so both Yes and No are captured)")
+    ap.add_argument("--max_feature_nodes", type=int, default=8192,
+                    help="Cap feature nodes kept by attribute(). 4B x 16k-width x ~30 "
+                         "positions otherwise yields >46k nodes, whose edge matrix "
+                         "(nodes^2) exceeds torch.sort's INT_MAX limit during pruning.")
     ap.add_argument("--batch_size", type=int, default=256,
                     help="attribute() batch size; lower if nnsight OOMs on 4B (lib default 512)")
     ap.add_argument("--offload", choices=["cpu", "disk"], default=None,
