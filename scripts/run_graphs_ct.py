@@ -48,6 +48,15 @@ from pathlib import Path
 # Repo root on sys.path so `prompts` imports when run as a script.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# Route the HF cache to /workspace on pods (20GB root disk fills otherwise).
+# Must be set before circuit_tracer/transformers import. No-op on the Mac.
+import os
+os.environ.setdefault(
+    "HF_HOME",
+    "/workspace/.cache/huggingface" if os.path.isdir("/workspace")
+    else os.path.expanduser("~/.cache/huggingface"),
+)
+
 import torch
 
 from prompts.eligibility import ELIGIBILITY_PAIRS, to_chat
