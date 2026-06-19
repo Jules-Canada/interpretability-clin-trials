@@ -102,39 +102,37 @@ def probe() -> None:
 # --------------------------------------------------------------------------- #
 # core: one attribution graph
 # --------------------------------------------------------------------------- #
-def run_one(model, attribute, create_graph_files, *, slug: str, prompt: str,
-            out_dir: str, max_n_logits: int, node_threshold: float,
-            edge_threshold: float) -> dict:
-    """Attribute one prompt, export the graph, return a summary dict."""
-    print(f"  prompt: {prompt!r}")
-    graph = attribute(prompt, model, max_n_logits=max_n_logits, verbose=False)
-
-    # Replacement score is the completeness analog (Dev Rule 8, >=0.5). Access
-    # is best-effort across versions; smoke dumps the graph attrs if missing.
+def _export_and_score(graph, create_graph_files, *, slug, out_dir,
+                      node_threshold, edge_threshold):
+    """Best-effort replacement score + write the frontend graph JSON."""
     rscore = None
     for attr in ("replacement_score", "completeness"):
         if hasattr(graph, attr):
             val = getattr(graph, attr)
             rscore = float(val() if callable(val) else val)
             break
-
-    # Export pruned graph JSON for the frontend.
     pt_path = Path(out_dir) / f"{slug}.pt"
     if hasattr(graph, "to_pt"):
         graph.to_pt(str(pt_path))
         export_src = str(pt_path)
     else:
         export_src = graph
-    create_graph_files(
-        export_src,
-        slug=slug,
-        output_path=out_dir,
-        node_threshold=node_threshold,
-        edge_threshold=edge_threshold,
-    )
+    create_graph_files(export_src, slug=slug, output_path=out_dir,
+                       node_threshold=node_threshold, edge_threshold=edge_threshold)
+    return rscore
 
+
+def run_one(model, attribute, create_graph_files, *, slug, attr_input, display,
+            out_dir, max_n_logits, node_threshold, edge_threshold,
+            batch_size, offload) -> dict:
+    """Attribute one input, export the graph, return a summary dict."""
+    print(f"  input: {display}")
+    graph = attribute(attr_input, model, max_n_logits=max_n_logits,
+                      batch_size=batch_size, offload=offload, verbose=False)
+    rscore = _export_and_score(graph, create_graph_files, slug=slug, out_dir=out_dir,
+                               node_threshold=node_threshold, edge_threshold=edge_threshold)
     msg = f"  replacement_score={rscore:.4f}" if rscore is not None \
-        else "  replacement_score=NA (inspect graph attrs in --smoke)"
+        else "  replacement_score=NA (see graph attrs from --smoke)"
     print(f"{msg}  -> {out_dir}/{slug}.json")
     return {"id": slug, "status": "ok", "replacement_score": rscore}
 
@@ -152,15 +150,15 @@ def smoke(out_dir: str) -> None:
     prompt = "The capital of the state containing Dallas is"
     try:
         graph = attribute(prompt, model, max_n_logits=10, verbose=False)
-        print("  attribute() OK; graph attrs:")
+        print("  attribute() OK. Graph attrs (look for the replacement score):")
         print("   ", [a for a in dir(graph) if not a.startswith("_")])
-        run_one(model, attribute, create_graph_files, slug="smoke_dallas",
-                prompt=prompt, out_dir=out_dir, max_n_logits=10,
-                node_threshold=0.8, edge_threshold=0.98)
+        rscore = _export_and_score(graph, create_graph_files, slug="smoke_dallas",
+                                   out_dir=out_dir, node_threshold=0.8, edge_threshold=0.98)
+        print(f"  replacement_score={rscore}  -> {out_dir}/smoke_dallas.json")
         print("\nSmoke OK — the attribute->export flow works.")
     except Exception:
         traceback.print_exc()
-        print("\nSmoke FAILED — run --probe and paste the signatures so the calls can be fixed.")
+        print("\nSmoke FAILED — paste the traceback so the calls can be fixed.")
 
 
 # --------------------------------------------------------------------------- #
@@ -173,9 +171,10 @@ def batch(args) -> None:
     ReplacementModel, attribute = _import_attr()
     create_graph_files = _import_export()
 
-    print(f"Loading {args.model}\n  transcoders={args.transcoders}\n  backend=nnsight")
+    print(f"Loading {args.model}\n  transcoder_set={args.transcoders}\n  backend=nnsight")
+    # transcoder_set is the 2nd positional arg (confirmed via --probe 2026-06-18).
     model = ReplacementModel.from_pretrained(
-        args.model, dtype=torch.bfloat16, backend="nnsight", transcoders=args.transcoders
+        args.model, args.transcoders, backend="nnsight", dtype=torch.bfloat16
     )
 
     Path(args.output_dir).mkdir(parents=True, exist_ok=True)
@@ -184,12 +183,17 @@ def batch(args) -> None:
         slug = p["id"]
         print(f"[{i+1}/{len(ELIGIBILITY_PAIRS)}] {slug}  (expected {p['expected']})")
         try:
-            # IT model -> IT transcoders -> chat template, consistently.
-            prompt = to_chat(model.tokenizer, p)
+            # IT model -> IT transcoders -> chat template, consistently. Tokenize
+            # ourselves with add_special_tokens=False: the template already
+            # includes <bos>, so this avoids a doubled BOS at the front.
+            chat = to_chat(model.tokenizer, p)
+            input_ids = model.tokenizer(chat, add_special_tokens=False)["input_ids"]
             results.append(run_one(
-                model, attribute, create_graph_files, slug=slug, prompt=prompt,
+                model, attribute, create_graph_files, slug=slug,
+                attr_input=input_ids, display=f"{p['patient']} (expect {p['expected']})",
                 out_dir=args.output_dir, max_n_logits=args.max_n_logits,
                 node_threshold=args.node_threshold, edge_threshold=args.edge_threshold,
+                batch_size=args.batch_size, offload=args.offload,
             ))
         except Exception as e:
             traceback.print_exc()
@@ -215,6 +219,10 @@ def main() -> None:
     ap.add_argument("--output_dir", default="frontend/graph_data")
     ap.add_argument("--max_n_logits", type=int, default=10,
                     help="Top-K logits to attribute (>=2 so both Yes and No are captured)")
+    ap.add_argument("--batch_size", type=int, default=256,
+                    help="attribute() batch size; lower if nnsight OOMs on 4B (lib default 512)")
+    ap.add_argument("--offload", choices=["cpu", "disk"], default=None,
+                    help="attribute() offload to free VRAM on 4B+nnsight (default: none)")
     ap.add_argument("--node_threshold", type=float, default=0.8)
     ap.add_argument("--edge_threshold", type=float, default=0.98)
     args = ap.parse_args()
