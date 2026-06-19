@@ -365,10 +365,25 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
 
 ---
 
-## Current Status (as of 2026-05-18)
+## Current Status (as of 2026-06-18)
 
 ### What works
 
+- **STAGE 1 PIPELINE VALIDATED (2026-06-18) — the active path works end-to-end.**
+  circuit-tracer (nnsight) + Gemma Scope 2 IT transcoders
+  (`mwhanna/gemma-scope-2-4b-it/transcoder_all/width_16k_l0_small_affine`) on
+  **gemma-3-4b-it** produced 10 eligibility attribution graphs at **completeness 0.80–0.82**
+  (all above the 0.5 gate) — `scripts/run_graphs_ct.py`, graphs in `frontend/graph_data/elig_*.json`.
+  First completeness-passing graphs on this path after the CLT era. Pod recipe: see Pod Setup.
+- **Over-exclusion finding (behavioral + circuit, 2026-06-18).** Under the proper chat template
+  the model reads eligibility well (age sweep 17/18, bound-variation 4/4), but **over-excludes on
+  knowledge-dependent EXCLUSION criteria**: eligible arms wrongly → No (`pemetrexed`, `stage III`)
+  while true-exclusion arms correctly → No (`pembrolizumab`, `stage IV`). `scripts/compare_graphs.py`
+  shows this in the circuits: the eligibility-determining token barely moves the graph for knowledge
+  pairs (Jaccard 0.87–0.91, 93–95% shared influence) vs the discriminating controls
+  (age/ecog/histology: 0.67–0.71, ~81–84%). The Stage 0 "ignores age bounds" lead was a
+  raw-cloze/OOD artifact — do not cite. Caveats: controls flip the answer (partial confound, needs
+  a same-answer baseline); discriminating features exist but are tiny (~1.5 vs shared ~3–5).
 - **Autograd attribution pipeline validated** on MedGemma-4B-pt: 14 answer-telegraphing
   prompts achieved completeness 0.55–0.81, and 7 Track B medical-factual prompts achieved
   0.76–0.90. Phase 4 graphs + feature data moved to `deferred/phase4_telegraphing/`
@@ -448,6 +463,20 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
    "exclusion-phrasing→No bias" not yet separated; the graphs (pemetrexed-No vs pembrolizumab-No:
    same circuit or different?) are meant to disentangle this. Predictions are confident (p≈1.00),
    so single-target attribution has a clean target. **Next: graph the knowledge pairs.**
+
+   **Graphs DONE (2026-06-18):** all 10 pairs graphed on gemma-3-4b-it, completeness 0.80–0.82;
+   `compare_graphs.py` confirmed the over-exclusion circuit (see What works). 10 graph JSONs on
+   the Mac in `frontend/graph_data/elig_*.json`. **Remaining follow-ups (no GPU needed for the
+   analysis, only for new graphs):**
+   - **MedGemma round (NOT yet run)** — off-distribution comparison; pod stopped before this.
+     `python scripts/run_graphs_ct.py --model google/medgemma-4b-it --transcoders
+     mwhanna/gemma-scope-2-4b-it/transcoder_all/width_16k_l0_small_affine` (confirm the `-it`
+     variant exists first). The completeness gap vs 0.80 is the finding.
+   - **Tighten the confound** — controls flip the answer, so add a same-answer minimal-pair
+     baseline; and a probe to separate "knowledge gap" from "exclusion-phrasing→No bias"
+     (e.g. `Exclusion: prior chemotherapy. Patient: treatment-naive.` should → Yes).
+   - **Feature labeling** — label the shared "exclude" circuit features; check whether a
+     drug-class/staging feature exists but is disconnected from the decision.
 
 4. **Visual abstract for non-ML audience:** Create a figure explaining the pipeline
    (model → transcoder → features → attribution graph → labeled circuit) in plain language.
