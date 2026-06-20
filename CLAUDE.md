@@ -483,17 +483,31 @@ use full extraction (resid + mlp_post, ~2.5TB) only for CLT training — needs a
      `frontend/graph_data/medgemma/`, sweep in `data/eligibility_sweep_medgemma-4b-it.json`. See
      What works. (Note: local gemma `elig_age_pos.json` was truncated to 0B by an accidental shell
      paste — regenerable if needed; derived results retained.)
-   - **NEXT: tighten + write up (no GPU for analysis).** (a) Same-answer minimal-pair baseline to
-     kill the confound; separate "knowledge gap" from "exclusion-phrasing→No bias" (probe e.g.
-     `Exclusion: prior chemotherapy. Patient: treatment-naive.` → should Yes). (b) Feature
-     labeling on the shared exclude-scaffold + the candidate Yes-feature (gemma L14 f7595238) and
-     MedGemma's late-layer features. (c) Draft the writeup — the cross-model-robust over-exclusion
-     is the result.
-   - **Tighten the confound** — controls flip the answer, so add a same-answer minimal-pair
-     baseline; and a probe to separate "knowledge gap" from "exclusion-phrasing→No bias"
-     (e.g. `Exclusion: prior chemotherapy. Patient: treatment-naive.` should → Yes).
-   - **Feature labeling** — label the shared "exclude" circuit features; check whether a
-     drug-class/staging feature exists but is disconnected from the decision.
+   - **PROMPT SET REDESIGNED (2026-06-20) — confound now built in; ready to run.** The Round-1
+     5-pair set was confounded (all clean pairs inclusion, all failing pairs exclusion) and
+     off-distribution: a profile of 2,545 real ClinicalTrials.gov eligibility sections
+     (`scripts/profile_criteria.py`) found carve-outs in ~44% of protocols, numeric thresholds
+     ~76%, temporal ~45%, conjunction ~38% — all tested at ~0% before. `prompts/eligibility.py`
+     now has three tiers: **ELIGIBILITY_PAIRS** (8 core graph pairs = complete 2×2
+     {inclusion,exclusion}×{surface,knowledge}, adding the missing exclusion×surface
+     [`prior_chemo`: treatment-naive→Yes] and inclusion×knowledge [`her2`: ERBB2-amp vs
+     triple-negative] cells, plus two headline exception pairs — `gilbert` = STATED carve-out
+     (no knowledge), `malignancy` = KNOWLEDGE carve-out; all ≤88 tok);
+     **ELIGIBILITY_PAIRS_EXTENDED** (ecog, creatinine ×ULN, temporal window);
+     **ELIGIBILITY_BEHAVIORAL** (conjunction-aggregation, nested liver-mets carve-out;
+     forward-pass only — too long to graph). Each item tagged tier/structure/phrasing/inference.
+   - **NEXT pod run (no redesign needed, scripts wired):** (1) `sweep_eligibility.py` now runs
+     ELIGIBILITY_ALL grouped by 2×2 cell + a **contrastive `logit(Yes)−logit(No)` column** +
+     prints the phrasing×inference confound read — this alone may settle knowledge-gap vs
+     exclusion-phrasing **without new graphs** (`prior_chemo`/`gilbert` clean but `prior_tx`/
+     `stage`/`malignancy` failing → knowledge gap; exclusion-surface also failing → phrasing
+     bias). (2) Then `run_graphs_ct.py` graphs the 16 core ELIGIBILITY_PAIRS on gemma-3-4b-it
+     (+ MedGemma). The `gilbert` vs `malignancy` contrast isolates "can't apply a stated
+     exception" from "lacks the knowledge to match it."
+   - **Then: feature labeling + writeup (no GPU).** Label the shared "exclude" scaffold + the
+     candidate Yes-feature (gemma L14 f7595238) and MedGemma's late-layer features; check whether
+     a drug-class/staging feature exists but is disconnected from the decision. Draft the writeup —
+     the cross-model-robust over-exclusion is the result.
 
 4. **Visual abstract for non-ML audience:** Create a figure explaining the pipeline
    (model → transcoder → features → attribution graph → labeled circuit) in plain language.
