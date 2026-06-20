@@ -47,7 +47,7 @@ os.environ.setdefault(
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from prompts.eligibility import ELIGIBILITY_PAIRS, build_body, to_chat
+from prompts.eligibility import ELIGIBILITY_ALL, build_body, to_chat
 
 
 def resolve_yes_no_ids(tokenizer) -> tuple[list[int], list[int]]:
@@ -118,21 +118,47 @@ def main() -> None:
     pos_ids, neg_ids = resolve_yes_no_ids(tokenizer)
     print(f"Yes ids={pos_ids}  No ids={neg_ids}\n")
 
-    results: dict = {"model": args.model, "pairs": [], "age_sweep": [], "bound_variation": []}
+    results: dict = {"model": args.model, "prompts": [], "cells": {},
+                     "age_sweep": [], "bound_variation": []}
 
     def run(crit, pat):
         return decision(model, tokenizer, crit, pat, pos_ids, neg_ids, device)
 
-    # (a) the 5 matched pairs ------------------------------------------------
-    print("=== (a) ELIGIBILITY_PAIRS ===")
-    for p in ELIGIBILITY_PAIRS:
+    # (a) the full contrastive set, grouped by 2x2 cell ----------------------
+    # Iterate ELIGIBILITY_ALL (core + extended + behavioral) so the cheap
+    # forward-pass sweep covers every structural tier. The per-cell accuracy is
+    # the confound-breaker: if exclusion x SURFACE over-excludes the eligible arm
+    # (no knowledge required) the bug is exclusion-PHRASING; if it's clean there
+    # but fails exclusion x KNOWLEDGE, the bug is the knowledge step.
+    print("=== (a) ELIGIBILITY_ALL  (grouped by tier / phrasing x inference) ===")
+    rows_by_cell: dict = {}
+    for p in sorted(ELIGIBILITY_ALL,
+                    key=lambda q: (q["tier"], q["phrasing"], q["inference"],
+                                   q["pair_id"], q["expected"])):
         d = run(p["criterion"], p["patient"])
         correct = d["says"] == p["expected"]
-        row = {"id": p["id"], "expected": p["expected"], **d, "correct": correct}
-        results["pairs"].append(row)
-        flag = "ok " if correct else "XX "
-        print(f"  {flag}{p['id']:22} exp={p['expected']:3} says={d['says']:3} "
-              f"p(Yes)={d['p_yes']:.2f} p(No)={d['p_no']:.2f}")
+        row = {"id": p["id"], "pair_id": p["pair_id"], "tier": p["tier"],
+               "structure": p["structure"], "phrasing": p["phrasing"],
+               "inference": p["inference"], "expected": p["expected"],
+               **d, "correct": correct}
+        results["prompts"].append(row)
+        cell = f"{p['tier']}|{p['phrasing']}x{p['inference']}"
+        rows_by_cell.setdefault(cell, []).append(row)
+
+    for cell, rows in rows_by_cell.items():
+        n_ok = sum(r["correct"] for r in rows)
+        print(f"\n  [{cell}]  {n_ok}/{len(rows)} correct")
+        for r in rows:
+            flag = "ok " if r["correct"] else "XX "
+            print(f"    {flag}{r['id']:24} exp={r['expected']:3} says={r['says']:3} "
+                  f"p(Yes)={r['p_yes']:.2f} p(No)={r['p_no']:.2f}  [{r['structure']}]")
+
+    # per-cell summary (phrasing x inference, collapsing tier) ----------------
+    for r in results["prompts"]:
+        key = f"{r['phrasing']}x{r['inference']}"
+        c = results["cells"].setdefault(key, {"n": 0, "correct": 0})
+        c["n"] += 1
+        c["correct"] += int(r["correct"])
 
     # (b) age sweep against fixed 18-75 criterion ----------------------------
     print("\n=== (b) age sweep  (criterion: age 18-75) ===")
@@ -168,6 +194,15 @@ def main() -> None:
     n_ok = sum(r["correct"] for r in results["age_sweep"])
     print(f"\nGate read: age sweep {n_ok}/{len(results['age_sweep'])} correct. "
           "If the boundary now tracks [18,75], proceed to run_graphs_ct.py.")
+
+    print("\nConfound read (phrasing x inference accuracy):")
+    for key in ("inclusion x surface", "inclusion x knowledge",
+                "exclusion x surface", "exclusion x knowledge"):
+        c = results["cells"].get(key.replace(" ", ""))
+        if c:
+            print(f"  {key:24} {c['correct']}/{c['n']}")
+    print("  -> exclusion x surface clean but exclusion x knowledge failing "
+          "= knowledge gap; both failing = exclusion-phrasing bias.")
 
 
 if __name__ == "__main__":
