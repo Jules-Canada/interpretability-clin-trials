@@ -83,7 +83,16 @@ def pick_device(arg: str) -> torch.device:
 @torch.no_grad()
 def decision(model, tokenizer, criterion: str, patient: str,
              pos_ids: list[int], neg_ids: list[int], device) -> dict:
-    """p(Yes)/p(No) at the generation position for one criterion+patient."""
+    """p(Yes)/p(No) and the contrastive logit(Yes)-logit(No) at the generation
+    position for one criterion+patient.
+
+    The contrastive metric averages raw (pre-softmax) logits over the variant ids
+    on each side and subtracts: mean(logit[pos]) - mean(logit[neg]). Averaging
+    over both surface variants per side follows the CLAUDE.md rule (we can't know
+    a priori which of " Yes"/"Yes" the model emits). The logit-diff is the target
+    a contrastive attribution graph would trace, and it separates difficulty
+    better than absolute p (CLAUDE.md Findings): >0 favors Yes, <0 favors No.
+    """
     p = {"criterion": criterion, "patient": patient}
     chat = to_chat(tokenizer, p)  # includes <bos> via the template
     ids = tokenizer(chat, add_special_tokens=False, return_tensors="pt").to(device)
@@ -91,10 +100,13 @@ def decision(model, tokenizer, criterion: str, patient: str,
     probs = torch.softmax(logits, dim=-1)
     p_yes = probs[pos_ids].sum().item()
     p_no = probs[neg_ids].sum().item()
+    logit_yes = logits[pos_ids].mean().item()
+    logit_no = logits[neg_ids].mean().item()
     top_id = int(logits.argmax())
     return {
         "p_yes": round(p_yes, 4),
         "p_no": round(p_no, 4),
+        "logit_diff": round(logit_yes - logit_no, 4),  # >0 -> Yes, <0 -> No
         "says": "Yes" if p_yes > p_no else "No",
         "top_token": tokenizer.decode([top_id]),
     }
@@ -151,7 +163,8 @@ def main() -> None:
         for r in rows:
             flag = "ok " if r["correct"] else "XX "
             print(f"    {flag}{r['id']:24} exp={r['expected']:3} says={r['says']:3} "
-                  f"p(Yes)={r['p_yes']:.2f} p(No)={r['p_no']:.2f}  [{r['structure']}]")
+                  f"p(Yes)={r['p_yes']:.2f} p(No)={r['p_no']:.2f} "
+                  f"dlogit={r['logit_diff']:+.2f}  [{r['structure']}]")
 
     # per-cell summary (phrasing x inference, collapsing tier) ----------------
     for r in results["prompts"]:
@@ -170,7 +183,8 @@ def main() -> None:
         row = {"age": age, "truth": truth, **d, "correct": d["says"] == truth}
         results["age_sweep"].append(row)
         flag = "ok " if d["says"] == truth else "XX "
-        print(f"  {flag}age={age:3} truth={truth:3} says={d['says']:3} p(Yes)={d['p_yes']:.2f}")
+        print(f"  {flag}age={age:3} truth={truth:3} says={d['says']:3} "
+              f"p(Yes)={d['p_yes']:.2f} dlogit={d['logit_diff']:+.2f}")
 
     # (c) bound-variation: fixed age 60, move the stated bounds ---------------
     print("\n=== (c) bound variation  (patient age 60) ===")
@@ -182,7 +196,8 @@ def main() -> None:
         row = {"bounds": [lo, hi], "truth": truth, **d, "correct": d["says"] == truth}
         results["bound_variation"].append(row)
         flag = "ok " if d["says"] == truth else "XX "
-        print(f"  {flag}{lo}-{hi:<3} truth={truth:3} says={d['says']:3} p(Yes)={d['p_yes']:.2f}")
+        print(f"  {flag}{lo}-{hi:<3} truth={truth:3} says={d['says']:3} "
+              f"p(Yes)={d['p_yes']:.2f} dlogit={d['logit_diff']:+.2f}")
 
     # save -------------------------------------------------------------------
     slug = args.model.split("/")[-1]
