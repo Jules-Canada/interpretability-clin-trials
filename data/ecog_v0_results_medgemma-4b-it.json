@@ -1,0 +1,1244 @@
+{
+  "model": "google/medgemma-4b-it",
+  "stimuli_file": "specs/stimuli/ecog_v0.csv",
+  "n_rows": 18,
+  "scoring": {
+    "eligibility": "all rows",
+    "grading": "ambiguous rows excluded from headline, reported separately",
+    "primary_tokens": "canonical leading-space only; *_agg is evaluation-only"
+  },
+  "token_ids": {
+    "canonical": {
+      "yes": 8438,
+      "no": 2301,
+      "grades": {
+        "0": 236771,
+        "1": 236770,
+        "2": 236778,
+        "3": 236800,
+        "4": 236812
+      },
+      "surface_forms": {
+        "yes": " Yes",
+        "no": " No",
+        "0": "0",
+        "1": "1",
+        "2": "2",
+        "3": "3",
+        "4": "4"
+      }
+    },
+    "aggregated_eval_only": {
+      "yes": [
+        51327,
+        26915,
+        8438,
+        10784,
+        11262,
+        4443
+      ],
+      "no": [
+        9424,
+        7018,
+        2301,
+        3771,
+        951,
+        1904
+      ],
+      "grades": {
+        "0": [
+          236771
+        ],
+        "1": [
+          236770
+        ],
+        "2": [
+          236778
+        ],
+        "3": [
+          236800
+        ],
+        "4": [
+          236812
+        ]
+      }
+    }
+  },
+  "prompts": {
+    "eligibility": "You are screening a patient for a clinical trial.\nInclusion: <inclusion_rule>.\nPatient: <patient_detail>\nIs the patient eligible for the trial? Answer Yes or No.",
+    "grading": "You are assessing a patient for a clinical trial.\nPatient: <patient_detail>\nWhat is the patient's ECOG performance status grade? Answer with a single digit: 0, 1, 2, 3, or 4."
+  },
+  "warnings": [
+    "No stimuli at grade(s) [4]; grading accuracy says nothing about that end of the scale."
+  ],
+  "summary": {
+    "eligibility_correct": 11,
+    "eligibility_n": 18,
+    "grade_correct": 8,
+    "grade_n": 15,
+    "grade_ambiguous_correct": 1,
+    "grade_ambiguous_n": 3,
+    "self_consistent": 15,
+    "by_expected_grade": {
+      "0": {
+        "n": 4,
+        "elig_n": 4,
+        "elig_correct": 4,
+        "grade_n": 4,
+        "grade_correct": 4,
+        "grade_ambiguous_n": 0,
+        "grade_ambiguous_correct": 0
+      },
+      "1": {
+        "n": 6,
+        "elig_n": 6,
+        "elig_correct": 6,
+        "grade_n": 3,
+        "grade_correct": 1,
+        "grade_ambiguous_n": 3,
+        "grade_ambiguous_correct": 1
+      },
+      "2": {
+        "n": 6,
+        "elig_n": 6,
+        "elig_correct": 0,
+        "grade_n": 6,
+        "grade_correct": 2,
+        "grade_ambiguous_n": 0,
+        "grade_ambiguous_correct": 0
+      },
+      "3": {
+        "n": 2,
+        "elig_n": 2,
+        "elig_correct": 1,
+        "grade_n": 2,
+        "grade_correct": 1,
+        "grade_ambiguous_n": 0,
+        "grade_ambiguous_correct": 0
+      }
+    },
+    "by_lexical_distance": {
+      "verbatim": {
+        "n": 4,
+        "elig_n": 4,
+        "elig_correct": 2,
+        "grade_n": 4,
+        "grade_correct": 2,
+        "grade_ambiguous_n": 0,
+        "grade_ambiguous_correct": 0
+      },
+      "near": {
+        "n": 4,
+        "elig_n": 4,
+        "elig_correct": 2,
+        "grade_n": 4,
+        "grade_correct": 2,
+        "grade_ambiguous_n": 0,
+        "grade_ambiguous_correct": 0
+      },
+      "far": {
+        "n": 10,
+        "elig_n": 10,
+        "elig_correct": 7,
+        "grade_n": 7,
+        "grade_correct": 4,
+        "grade_ambiguous_n": 3,
+        "grade_ambiguous_correct": 1
+      }
+    },
+    "by_decisiveness": {
+      "non-decisive": {
+        "n": 10,
+        "elig_n": 10,
+        "elig_correct": 10,
+        "grade_n": 7,
+        "grade_correct": 5,
+        "grade_ambiguous_n": 3,
+        "grade_ambiguous_correct": 1
+      },
+      "decisive": {
+        "n": 8,
+        "elig_n": 8,
+        "elig_correct": 1,
+        "grade_n": 8,
+        "grade_correct": 3,
+        "grade_ambiguous_n": 0,
+        "grade_ambiguous_correct": 0
+      }
+    },
+    "paraphrase_sets": {
+      "S01": {
+        "expected_grade": 0,
+        "members": [
+          {
+            "id": "E004",
+            "lexical_distance": "near",
+            "pred_grade": 0,
+            "says": "Yes",
+            "logit_diff": 10.3125
+          },
+          {
+            "id": "E005",
+            "lexical_distance": "far",
+            "pred_grade": 0,
+            "says": "Yes",
+            "logit_diff": 6.375
+          }
+        ],
+        "grade_consistent": true,
+        "eligibility_consistent": true,
+        "grade_drift": 0
+      },
+      "S02": {
+        "expected_grade": 1,
+        "members": [
+          {
+            "id": "E006",
+            "lexical_distance": "near",
+            "pred_grade": 0,
+            "says": "Yes",
+            "logit_diff": 9.9375
+          },
+          {
+            "id": "E007",
+            "lexical_distance": "far",
+            "pred_grade": 0,
+            "says": "Yes",
+            "logit_diff": 8.75
+          }
+        ],
+        "grade_consistent": true,
+        "eligibility_consistent": true,
+        "grade_drift": 0
+      },
+      "S03": {
+        "expected_grade": 2,
+        "members": [
+          {
+            "id": "E008",
+            "lexical_distance": "near",
+            "pred_grade": 2,
+            "says": "Yes",
+            "logit_diff": 9.75
+          },
+          {
+            "id": "E009",
+            "lexical_distance": "far",
+            "pred_grade": 1,
+            "says": "Yes",
+            "logit_diff": 10.0625
+          }
+        ],
+        "grade_consistent": false,
+        "eligibility_consistent": true,
+        "grade_drift": 1
+      },
+      "S04": {
+        "expected_grade": 2,
+        "members": [
+          {
+            "id": "E010",
+            "lexical_distance": "near",
+            "pred_grade": 1,
+            "says": "Yes",
+            "logit_diff": 8.1875
+          },
+          {
+            "id": "E011",
+            "lexical_distance": "far",
+            "pred_grade": 1,
+            "says": "Yes",
+            "logit_diff": 10.25
+          }
+        ],
+        "grade_consistent": true,
+        "eligibility_consistent": true,
+        "grade_drift": 0
+      },
+      "S05": {
+        "expected_grade": 3,
+        "members": [
+          {
+            "id": "E012",
+            "lexical_distance": "verbatim",
+            "pred_grade": 2,
+            "says": "Yes",
+            "logit_diff": 2.375
+          },
+          {
+            "id": "E013",
+            "lexical_distance": "far",
+            "pred_grade": 3,
+            "says": "No",
+            "logit_diff": -7.875
+          }
+        ],
+        "grade_consistent": false,
+        "eligibility_consistent": false,
+        "grade_drift": 1
+      }
+    },
+    "dissociation": {
+      "both_right": 7,
+      "both_wrong": 5,
+      "right_answer_wrong_grade": 4,
+      "wrong_answer_right_grade": 2
+    }
+  },
+  "rows": [
+    {
+      "id": "E001",
+      "set_id": null,
+      "criterion_text": "ECOG <= 1",
+      "patient": "Fully active, able to carry on all pre-disease performance without restriction",
+      "expected_grade": 0,
+      "expected_eligible": "Yes",
+      "lexical_distance": "verbatim",
+      "decisive": false,
+      "ambiguous": false,
+      "notes": "ECOG 0 definition verbatim - control",
+      "leaks_vocab": false,
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 0.0,
+        "logit_diff": 10.6875,
+        "p_yes_agg": 0.99993,
+        "p_no_agg": 5e-05,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.99999,
+          "1": 1e-05,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.999939,
+          "1": 8e-06,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.999939,
+          "1": 8e-06,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_token_mass": 0.99995,
+        "pred_grade": 0,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "0"
+      },
+      "eligibility_correct": true,
+      "grade_correct": true,
+      "self_consistent": true,
+      "dissociation": "both_right"
+    },
+    {
+      "id": "E002",
+      "set_id": null,
+      "criterion_text": "ECOG <= 1",
+      "patient": "Restricted in physically strenuous activity but ambulatory and able to carry out work of a light or sedentary nature, e.g. light house work, office work",
+      "expected_grade": 1,
+      "expected_eligible": "Yes",
+      "lexical_distance": "verbatim",
+      "decisive": false,
+      "ambiguous": false,
+      "notes": "ECOG 1 definition verbatim - control",
+      "leaks_vocab": false,
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 0.0,
+        "logit_diff": 10.625,
+        "p_yes_agg": 0.99994,
+        "p_no_agg": 5e-05,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.09535,
+          "1": 0.90464,
+          "2": 1e-05,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.09502,
+          "1": 0.901524,
+          "2": 1.3e-05,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.09502,
+          "1": 0.901524,
+          "2": 1.3e-05,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_token_mass": 0.99656,
+        "pred_grade": 1,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "1"
+      },
+      "eligibility_correct": true,
+      "grade_correct": true,
+      "self_consistent": true,
+      "dissociation": "both_right"
+    },
+    {
+      "id": "E003",
+      "set_id": null,
+      "criterion_text": "ECOG <= 1",
+      "patient": "Ambulatory and capable of all self-care but unable to carry out any work activities; up and about more than 50% of waking hours",
+      "expected_grade": 2,
+      "expected_eligible": "No",
+      "lexical_distance": "verbatim",
+      "decisive": true,
+      "ambiguous": false,
+      "notes": "ECOG 2 definition verbatim - control",
+      "leaks_vocab": false,
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 0.0,
+        "logit_diff": 7.375,
+        "p_yes_agg": 0.99879,
+        "p_no_agg": 0.00117,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.01243,
+          "1": 0.98714,
+          "2": 0.00043,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.01233,
+          "1": 0.979475,
+          "2": 0.000422,
+          "3": 5e-06,
+          "4": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.01233,
+          "1": 0.979475,
+          "2": 0.000422,
+          "3": 5e-06,
+          "4": 0.0
+        },
+        "grade_token_mass": 0.99223,
+        "pred_grade": 1,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "1"
+      },
+      "eligibility_correct": false,
+      "grade_correct": false,
+      "self_consistent": true,
+      "dissociation": "both_wrong"
+    },
+    {
+      "id": "E004",
+      "set_id": "S01",
+      "criterion_text": "ECOG <= 1",
+      "patient": "Patient walking and working normally",
+      "expected_grade": 0,
+      "expected_eligible": "Yes",
+      "lexical_distance": "near",
+      "decisive": false,
+      "ambiguous": false,
+      "notes": "",
+      "leaks_vocab": false,
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 0.0,
+        "logit_diff": 10.3125,
+        "p_yes_agg": 0.99989,
+        "p_no_agg": 8e-05,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.99999,
+          "1": 1e-05,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.999965,
+          "1": 1e-05,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.999965,
+          "1": 1e-05,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_token_mass": 0.99998,
+        "pred_grade": 0,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "0"
+      },
+      "eligibility_correct": true,
+      "grade_correct": true,
+      "self_consistent": true,
+      "dissociation": "both_right"
+    },
+    {
+      "id": "E005",
+      "set_id": "S01",
+      "criterion_text": "ECOG <= 1",
+      "patient": "Back at the office full time and running again on weekends",
+      "expected_grade": 0,
+      "expected_eligible": "Yes",
+      "lexical_distance": "far",
+      "decisive": false,
+      "ambiguous": false,
+      "notes": "Same patient as E004",
+      "leaks_vocab": false,
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 0.0,
+        "logit_diff": 6.375,
+        "p_yes_agg": 0.99682,
+        "p_no_agg": 0.0028,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.99987,
+          "1": 0.00012,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.999143,
+          "1": 0.000123,
+          "2": 2e-06,
+          "3": 1e-06,
+          "4": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.999143,
+          "1": 0.000123,
+          "2": 2e-06,
+          "3": 1e-06,
+          "4": 0.0
+        },
+        "grade_token_mass": 0.99927,
+        "pred_grade": 0,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "0"
+      },
+      "eligibility_correct": true,
+      "grade_correct": true,
+      "self_consistent": true,
+      "dissociation": "both_right"
+    },
+    {
+      "id": "E006",
+      "set_id": "S02",
+      "criterion_text": "ECOG <= 1",
+      "patient": "Patient working at office but no strenuous activity",
+      "expected_grade": 1,
+      "expected_eligible": "Yes",
+      "lexical_distance": "near",
+      "decisive": false,
+      "ambiguous": false,
+      "notes": "",
+      "leaks_vocab": false,
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 0.0,
+        "logit_diff": 9.9375,
+        "p_yes_agg": 0.99986,
+        "p_no_agg": 0.0001,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.99984,
+          "1": 0.00016,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.999567,
+          "1": 0.000158,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.999567,
+          "1": 0.000158,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_token_mass": 0.99973,
+        "pred_grade": 0,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "0"
+      },
+      "eligibility_correct": true,
+      "grade_correct": false,
+      "self_consistent": true,
+      "dissociation": "right_answer_wrong_grade"
+    },
+    {
+      "id": "E007",
+      "set_id": "S02",
+      "criterion_text": "ECOG <= 1",
+      "patient": "Doing desk work most days. Gave up the gym but manages the stairs at home fine",
+      "expected_grade": 1,
+      "expected_eligible": "Yes",
+      "lexical_distance": "far",
+      "decisive": false,
+      "ambiguous": false,
+      "notes": "Same patient as E006",
+      "leaks_vocab": false,
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 0.0,
+        "logit_diff": 8.75,
+        "p_yes_agg": 0.99943,
+        "p_no_agg": 0.0003,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.91486,
+          "1": 0.0851,
+          "2": 4e-05,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.885973,
+          "1": 0.082408,
+          "2": 4e-05,
+          "3": 1e-06,
+          "4": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.885973,
+          "1": 0.082408,
+          "2": 4e-05,
+          "3": 1e-06,
+          "4": 0.0
+        },
+        "grade_token_mass": 0.96842,
+        "pred_grade": 0,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "0"
+      },
+      "eligibility_correct": true,
+      "grade_correct": false,
+      "self_consistent": true,
+      "dissociation": "right_answer_wrong_grade"
+    },
+    {
+      "id": "E008",
+      "set_id": "S03",
+      "criterion_text": "ECOG <= 1",
+      "patient": "Patient able to walk unassisted but not able to work",
+      "expected_grade": 2,
+      "expected_eligible": "No",
+      "lexical_distance": "near",
+      "decisive": true,
+      "ambiguous": false,
+      "notes": "The decisive case",
+      "leaks_vocab": false,
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 0.0,
+        "logit_diff": 9.75,
+        "p_yes_agg": 0.99987,
+        "p_no_agg": 0.0001,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.0,
+          "1": 0.26892,
+          "2": 0.73101,
+          "3": 6e-05,
+          "4": 0.0
+        },
+        "grade_p_raw": {
+          "0": 3e-06,
+          "1": 0.26797,
+          "2": 0.728418,
+          "3": 6.2e-05,
+          "4": 0.0
+        },
+        "grade_p_agg": {
+          "0": 3e-06,
+          "1": 0.26797,
+          "2": 0.728418,
+          "3": 6.2e-05,
+          "4": 0.0
+        },
+        "grade_token_mass": 0.99645,
+        "pred_grade": 2,
+        "pred_eligible_from_grade": "No",
+        "top_token": "2"
+      },
+      "eligibility_correct": false,
+      "grade_correct": true,
+      "self_consistent": false,
+      "dissociation": "wrong_answer_right_grade"
+    },
+    {
+      "id": "E009",
+      "set_id": "S03",
+      "criterion_text": "ECOG <= 1",
+      "patient": "Gets around the house on her own and does her own washing. Had to stop work entirely - cannot manage a shift",
+      "expected_grade": 2,
+      "expected_eligible": "No",
+      "lexical_distance": "far",
+      "decisive": true,
+      "ambiguous": false,
+      "notes": "Same patient as E008",
+      "leaks_vocab": false,
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 0.0,
+        "logit_diff": 10.0625,
+        "p_yes_agg": 0.99988,
+        "p_no_agg": 8e-05,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.00028,
+          "1": 0.7307,
+          "2": 0.26881,
+          "3": 0.00022,
+          "4": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.000258,
+          "1": 0.678726,
+          "2": 0.249689,
+          "3": 0.000201,
+          "4": 2e-06
+        },
+        "grade_p_agg": {
+          "0": 0.000258,
+          "1": 0.678726,
+          "2": 0.249689,
+          "3": 0.000201,
+          "4": 2e-06
+        },
+        "grade_token_mass": 0.92888,
+        "pred_grade": 1,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "1"
+      },
+      "eligibility_correct": false,
+      "grade_correct": false,
+      "self_consistent": true,
+      "dissociation": "both_wrong"
+    },
+    {
+      "id": "E010",
+      "set_id": "S04",
+      "criterion_text": "ECOG <= 1",
+      "patient": "Ambulatory and self-caring but out of work; resting for roughly half the day",
+      "expected_grade": 2,
+      "expected_eligible": "No",
+      "lexical_distance": "near",
+      "decisive": true,
+      "ambiguous": false,
+      "notes": "",
+      "leaks_vocab": false,
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 0.0,
+        "logit_diff": 8.1875,
+        "p_yes_agg": 0.99936,
+        "p_no_agg": 0.00055,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 2e-05,
+          "1": 0.56214,
+          "2": 0.4378,
+          "3": 4e-05,
+          "4": 0.0
+        },
+        "grade_p_raw": {
+          "0": 1.7e-05,
+          "1": 0.537654,
+          "2": 0.418725,
+          "3": 4e-05,
+          "4": 0.0
+        },
+        "grade_p_agg": {
+          "0": 1.7e-05,
+          "1": 0.537654,
+          "2": 0.418725,
+          "3": 4e-05,
+          "4": 0.0
+        },
+        "grade_token_mass": 0.95644,
+        "pred_grade": 1,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "1"
+      },
+      "eligibility_correct": false,
+      "grade_correct": false,
+      "self_consistent": true,
+      "dissociation": "both_wrong"
+    },
+    {
+      "id": "E011",
+      "set_id": "S04",
+      "criterion_text": "ECOG <= 1",
+      "patient": "Up and dressed most of the day though he naps after lunch. Not been in to work since March. Manages showering and meals himself",
+      "expected_grade": 2,
+      "expected_eligible": "No",
+      "lexical_distance": "far",
+      "decisive": true,
+      "ambiguous": false,
+      "notes": "Same patient as E010",
+      "leaks_vocab": false,
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 0.0,
+        "logit_diff": 10.25,
+        "p_yes_agg": 0.9999,
+        "p_no_agg": 5e-05,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.4378,
+          "1": 0.56215,
+          "2": 5e-05,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.277815,
+          "1": 0.356721,
+          "2": 3e-05,
+          "3": 1e-06,
+          "4": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.277815,
+          "1": 0.356721,
+          "2": 3e-05,
+          "3": 1e-06,
+          "4": 0.0
+        },
+        "grade_token_mass": 0.63457,
+        "pred_grade": 1,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "Based"
+      },
+      "eligibility_correct": false,
+      "grade_correct": false,
+      "self_consistent": true,
+      "dissociation": "both_wrong"
+    },
+    {
+      "id": "E012",
+      "set_id": "S05",
+      "criterion_text": "ECOG <= 1",
+      "patient": "Capable of only limited self-care; confined to bed or chair more than half of waking hours",
+      "expected_grade": 3,
+      "expected_eligible": "No",
+      "lexical_distance": "verbatim",
+      "decisive": true,
+      "ambiguous": false,
+      "notes": "ECOG 3 definition verbatim - control",
+      "leaks_vocab": false,
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 0.0,
+        "logit_diff": 2.375,
+        "p_yes_agg": 0.77699,
+        "p_no_agg": 0.22261,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.0,
+          "1": 2e-05,
+          "2": 0.62241,
+          "3": 0.37751,
+          "4": 5e-05
+        },
+        "grade_p_raw": {
+          "0": 1e-06,
+          "1": 1.9e-05,
+          "2": 0.619527,
+          "3": 0.375762,
+          "4": 5.3e-05
+        },
+        "grade_p_agg": {
+          "0": 1e-06,
+          "1": 1.9e-05,
+          "2": 0.619527,
+          "3": 0.375762,
+          "4": 5.3e-05
+        },
+        "grade_token_mass": 0.99536,
+        "pred_grade": 2,
+        "pred_eligible_from_grade": "No",
+        "top_token": "2"
+      },
+      "eligibility_correct": false,
+      "grade_correct": false,
+      "self_consistent": false,
+      "dissociation": "both_wrong"
+    },
+    {
+      "id": "E013",
+      "set_id": "S05",
+      "criterion_text": "ECOG <= 1",
+      "patient": "Needs help washing and dressing. Spends most of the day in the recliner",
+      "expected_grade": 3,
+      "expected_eligible": "No",
+      "lexical_distance": "far",
+      "decisive": true,
+      "ambiguous": false,
+      "notes": "Same patient as E012",
+      "leaks_vocab": false,
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 0.0,
+        "logit_diff": -7.875,
+        "p_yes_agg": 0.00011,
+        "p_no_agg": 0.9998,
+        "says": "No",
+        "top_token": "No"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 0.0953,
+          "3": 0.90413,
+          "4": 0.00057
+        },
+        "grade_p_raw": {
+          "0": 0.0,
+          "1": 3e-06,
+          "2": 0.093207,
+          "3": 0.884326,
+          "4": 0.000554
+        },
+        "grade_p_agg": {
+          "0": 0.0,
+          "1": 3e-06,
+          "2": 0.093207,
+          "3": 0.884326,
+          "4": 0.000554
+        },
+        "grade_token_mass": 0.97809,
+        "pred_grade": 3,
+        "pred_eligible_from_grade": "No",
+        "top_token": "3"
+      },
+      "eligibility_correct": true,
+      "grade_correct": true,
+      "self_consistent": true,
+      "dissociation": "both_right"
+    },
+    {
+      "id": "E014",
+      "set_id": null,
+      "criterion_text": "ECOG <= 1",
+      "patient": "Patient unable to lift heavy weights but otherwise at baseline",
+      "expected_grade": 1,
+      "expected_eligible": "Yes",
+      "lexical_distance": "far",
+      "decisive": false,
+      "ambiguous": true,
+      "notes": "Contestable 0 vs 1; not decisive either way",
+      "leaks_vocab": false,
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 0.0,
+        "logit_diff": 8.6875,
+        "p_yes_agg": 0.99966,
+        "p_no_agg": 0.00026,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.989,
+          "1": 0.01099,
+          "2": 1e-05,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.987975,
+          "1": 0.010975,
+          "2": 1e-05,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.987975,
+          "1": 0.010975,
+          "2": 1e-05,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_token_mass": 0.99896,
+        "pred_grade": 0,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "0"
+      },
+      "eligibility_correct": true,
+      "grade_correct": false,
+      "self_consistent": true,
+      "dissociation": "right_answer_wrong_grade"
+    },
+    {
+      "id": "E015",
+      "set_id": null,
+      "criterion_text": "ECOG <= 1",
+      "patient": "Reports feeling exhausted and low but continues full time work and all usual activities",
+      "expected_grade": 1,
+      "expected_eligible": "Yes",
+      "lexical_distance": "far",
+      "decisive": false,
+      "ambiguous": true,
+      "notes": "Distractor: sounds unwell but activity unrestricted",
+      "leaks_vocab": false,
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 0.0,
+        "logit_diff": 6.4375,
+        "p_yes_agg": 0.99608,
+        "p_no_agg": 0.00359,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.0002,
+          "1": 0.99517,
+          "2": 0.00461,
+          "3": 2e-05,
+          "4": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.000193,
+          "1": 0.948798,
+          "2": 0.004394,
+          "3": 1.8e-05,
+          "4": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.000193,
+          "1": 0.948798,
+          "2": 0.004394,
+          "3": 1.8e-05,
+          "4": 0.0
+        },
+        "grade_token_mass": 0.9534,
+        "pred_grade": 1,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "1"
+      },
+      "eligibility_correct": true,
+      "grade_correct": true,
+      "self_consistent": true,
+      "dissociation": "both_right"
+    },
+    {
+      "id": "E016",
+      "set_id": null,
+      "criterion_text": "ECOG <= 1",
+      "patient": "Looks well and denies symptoms. Retired last year and has not worked since; independent for all self-care and out most of the day",
+      "expected_grade": 1,
+      "expected_eligible": "Yes",
+      "lexical_distance": "far",
+      "decisive": false,
+      "ambiguous": true,
+      "notes": "Distractor: not working for non-clinical reasons - work status is not the criterion",
+      "leaks_vocab": false,
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 0.0,
+        "logit_diff": 9.75,
+        "p_yes_agg": 0.9998,
+        "p_no_agg": 0.00014,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.99999,
+          "1": 1e-05,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.99953,
+          "1": 1.3e-05,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.99953,
+          "1": 1.3e-05,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_token_mass": 0.99954,
+        "pred_grade": 0,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "0"
+      },
+      "eligibility_correct": true,
+      "grade_correct": false,
+      "self_consistent": true,
+      "dissociation": "right_answer_wrong_grade"
+    },
+    {
+      "id": "E017",
+      "set_id": null,
+      "criterion_text": "ECOG <= 1",
+      "patient": "Walks the dog each morning without difficulty. Stopped teaching because she could not get through a full day",
+      "expected_grade": 2,
+      "expected_eligible": "No",
+      "lexical_distance": "far",
+      "decisive": true,
+      "ambiguous": false,
+      "notes": "Distractor: sounds well but work capacity lost",
+      "leaks_vocab": false,
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 0.0,
+        "logit_diff": 7.875,
+        "p_yes_agg": 0.99921,
+        "p_no_agg": 0.00063,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.0,
+          "1": 0.18239,
+          "2": 0.81744,
+          "3": 0.00017,
+          "4": 0.0
+        },
+        "grade_p_raw": {
+          "0": 2e-06,
+          "1": 0.175195,
+          "2": 0.78517,
+          "3": 0.00016,
+          "4": 0.0
+        },
+        "grade_p_agg": {
+          "0": 2e-06,
+          "1": 0.175195,
+          "2": 0.78517,
+          "3": 0.00016,
+          "4": 0.0
+        },
+        "grade_token_mass": 0.96053,
+        "pred_grade": 2,
+        "pred_eligible_from_grade": "No",
+        "top_token": "2"
+      },
+      "eligibility_correct": false,
+      "grade_correct": true,
+      "self_consistent": false,
+      "dissociation": "wrong_answer_right_grade"
+    },
+    {
+      "id": "E018",
+      "set_id": null,
+      "criterion_text": "ECOG <= 1",
+      "patient": "Uses a stick outdoors after a knee replacement three years ago. Works full time with no restriction",
+      "expected_grade": 0,
+      "expected_eligible": "Yes",
+      "lexical_distance": "far",
+      "decisive": false,
+      "ambiguous": false,
+      "notes": "Distractor: walking aid unrelated to disease",
+      "leaks_vocab": false,
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 0.0,
+        "logit_diff": 5.4375,
+        "p_yes_agg": 0.99222,
+        "p_no_agg": 0.00669,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.9997,
+          "1": 0.0003,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.998935,
+          "1": 0.000296,
+          "2": 3e-06,
+          "3": 1e-06,
+          "4": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.998935,
+          "1": 0.000296,
+          "2": 3e-06,
+          "3": 1e-06,
+          "4": 0.0
+        },
+        "grade_token_mass": 0.99923,
+        "pred_grade": 0,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "0"
+      },
+      "eligibility_correct": true,
+      "grade_correct": true,
+      "self_consistent": true,
+      "dissociation": "both_right"
+    }
+  ]
+}
