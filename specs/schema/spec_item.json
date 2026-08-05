@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "StrataSpecItem",
+  "description": "A specification-grounded evaluation item. Extends TrialPrompt with the externally-specified computation: which attributes the spec REQUIRES the model to use, and which it FORBIDS. Serves pillars 1 and 2 from a single object.",
+  "type": "object",
+  "required": ["item_id", "prompt", "target_token", "required_conditions", "attribute_policy", "adjudication"],
+  "properties": {
+    "item_id": { "type": "string" },
+    "source": {
+      "type": "object",
+      "description": "Provenance of the specification itself — the protocol or guideline that defines the correct computation.",
+      "properties": {
+        "kind": { "enum": ["trial_protocol", "guideline", "label", "synthetic"] },
+        "identifier": { "type": "string", "description": "e.g. NCT number, guideline citation" },
+        "excerpt": { "type": "string" }
+      }
+    },
+
+    "prompt": { "type": "string" },
+    "target_token": {
+      "type": "string",
+      "description": "Single canonical token for attribution. Leading-space variant for IT models."
+    },
+    "answer_token_variants": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "All case/space variants, for probability aggregation during evaluation ONLY. Never used for attribution."
+    },
+    "adjudicated_answer": { "enum": ["yes", "no", "indeterminate"] },
+
+    "required_conditions": {
+      "type": "array",
+      "description": "PILLAR 1. The conjunction the spec requires. Each must have an identifiable causal representative in the circuit or the item scores a completeness failure.",
+      "items": {
+        "type": "object",
+        "required": ["condition_id", "text", "satisfied", "span"],
+        "properties": {
+          "condition_id": { "type": "string" },
+          "text": { "type": "string" },
+          "satisfied": { "type": "boolean", "description": "Whether this patient satisfies it" },
+          "span": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "description": "[start, end] char offsets in prompt — the text that must be attended to"
+          },
+          "contrast_variant": {
+            "type": "string",
+            "description": "Prompt with this condition alone flipped. Basis of the contrastive protocol."
+          },
+          "decisive": {
+            "type": "boolean",
+            "description": "Whether flipping this condition alone flips the correct answer"
+          }
+        }
+      }
+    },
+
+    "attribute_policy": {
+      "type": "object",
+      "description": "PILLAR 2. Partition of patient attributes into those the spec permits and those it forbids for THIS item. The same attribute may be permitted in one item and forbidden in another — that asymmetry is the basis of the bidirectional intervention test.",
+      "required": ["forbidden", "permitted"],
+      "properties": {
+        "forbidden": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["attribute", "rationale"],
+            "properties": {
+              "attribute": { "enum": ["race", "ethnicity", "sex", "gender", "age", "insurance", "language", "body_habitus", "housing_status", "substance_use"] },
+              "rationale": { "type": "string", "description": "Why this attribute is not clinically informative HERE" },
+              "contrast_variant": { "type": "string" },
+              "expected_behavioural_delta": { "type": "number", "description": "Should be ~0 if unbiased" }
+            }
+          }
+        },
+        "permitted": {
+          "type": "array",
+          "description": "Attributes that ARE legitimately diagnostic for this item. Populates the preservation arm (b) of the bidirectional test.",
+          "items": {
+            "type": "object",
+            "required": ["attribute", "rationale"],
+            "properties": {
+              "attribute": { "type": "string" },
+              "rationale": { "type": "string", "description": "e.g. G6PD deficiency prevalence and primaquine risk" },
+              "contrast_variant": { "type": "string" },
+              "expected_behavioural_delta": { "type": "number", "description": "Should be non-zero — ablation must NOT destroy this" }
+            }
+          }
+        }
+      }
+    },
+
+    "adjudication": {
+      "type": "object",
+      "required": ["adjudicators", "date", "method"],
+      "properties": {
+        "adjudicators": {
+          "type": "array",
+          "items": { "type": "string", "description": "Rater ID, not name" }
+        },
+        "date": { "type": "string", "format": "date" },
+        "method": { "enum": ["single", "independent_dual", "consensus", "third_party_arbitration"] },
+        "agreement": { "type": "number", "description": "Cohen's kappa where dual" },
+        "disagreement_note": { "type": "string" }
+      }
+    },
+
+    "notes": { "type": "string" }
+  }
+}

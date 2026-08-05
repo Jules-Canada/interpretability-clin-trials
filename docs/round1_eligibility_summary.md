@@ -11,8 +11,9 @@ Gemma Scope 2 per-layer transcoders. See CLAUDE.md Phase 2 for context.*
   **medical** model (MedGemma-4B-IT) **over-exclude eligible patients** on knowledge-dependent
   trial-eligibility criteria.
 - The failure is **robust**: same behavioral errors, same within-model circuit signature, and it
-  **survives an ~85% reorganization** of the circuit between the two models. Medical fine-tuning
-  rebuilt the machinery but did not fix the bug.
+  survives despite the two models sharing little circuitry on the same prompt. Medical
+  fine-tuning did not fix the bug. (An earlier draft put the reorganization at "~85%" — that
+  figure is size-confounded and is not currently supported. See Cross-model, below.)
 
 ## Method / setup
 
@@ -79,13 +80,25 @@ Gemma Scope 2 per-layer transcoders. See CLAUDE.md Phase 2 for context.*
 - **Shared shallow scaffold dominates** every graph: a few recurring early/mid features carry
   most influence; prompt-specific clinical content contributes little (decision is ~48–70%
   early-layer). Consistent with a pattern-driven, not concept-driven, decision.
-- **Cross-model: same failure, different circuit.** Gemma↔MedGemma overlap on the same prompt is
-  only ~0.13–0.17 jaccard — medical fine-tuning **reorganized ~85% of the circuit** (MedGemma
-  leans on more late-layer features, L27/L25/L29/L30, vs Gemma's L16-dominated scaffold) yet
-  preserved the failure.
-- **Nuance:** MedGemma's knowledge-pair overlap (0.78–0.81) is lower than Gemma's (0.87–0.91) →
-  the drug/stage token perturbs MedGemma's circuit slightly *more*. The medical model "notices"
-  the distinction a bit more — just not enough to flip the answer.
+- **Cross-model: same failure, low circuit overlap.** Gemma↔MedGemma jaccard on the same prompt
+  is 0.13–0.19. The failure survives that. But **"reorganized ~85%" does not follow from this
+  number** — the two graphs are different sizes (Gemma ~1760–1840 unique features, MedGemma
+  ~1170–1300), which caps jaccard near 0.67 even if MedGemma's set were a perfect subset of
+  Gemma's. Shared influence is correspondingly asymmetric: 18–27% viewed from Gemma, 33–44%
+  viewed from MedGemma — the pattern of a smaller, partly-nested set, not necessarily a rebuild.
+  A size-matched comparator (top-N by influence at matched N) is needed before any percentage
+  is claimed.
+- **Depth, corrected.** An earlier draft said MedGemma leans on *more* late-layer features. By
+  aggregate feature influence it is the reverse: MedGemma is more early-weighted (early 64–70%,
+  late 10–14%) than Gemma (early 45–49%, late 15–18%). The late-layer impression came from
+  MedGemma's single top-ranked feature sitting at L27 — but its top features are nearly flat
+  (2.23, 2.23, 2.22, 2.21, 2.12 on `stage_pos`), where Gemma has a real peak at L16 (5.07 vs
+  3.37 next). One top node in a flat distribution does not support the claim.
+- **Nuance (weakened).** MedGemma's knowledge-pair overlap (0.78–0.81) is lower than Gemma's
+  (0.87–0.91), which would suggest the drug/stage token perturbs MedGemma's circuit slightly
+  more. Note this compares jaccard *across* models of differing graph density, so the absolute
+  gap is not reliable. What does hold in both models is the ordering: knowledge pairs overlap
+  more than controls.
 
 ## Caveats (do not overclaim)
 
@@ -99,12 +112,19 @@ Gemma Scope 2 per-layer transcoders. See CLAUDE.md Phase 2 for context.*
   not yet semantic. Feature labeling is the next mechanistic step.
 - **Local `elig_age_pos.json` (Gemma) truncated to 0B** by an accidental shell paste; regenerable,
   derived results retained.
+- **Cross-model jaccard is not size-normalised.** Any claim of the form "medical fine-tuning
+  changed X% of the circuit" needs a matched-N comparator first. The qualitative statement —
+  the two models share little and fail identically — is what the current numbers support.
+- **Re-verified 2026-08-04**, offline, from the graph JSONs alone: `scripts/reproduce_round1.py`,
+  record in `docs/round1_reproduced.json`. Completeness, within-pair overlap and the behavioural
+  claims reproduced; the two claims corrected above did not.
 
 ## Artifacts
 
 - Gemma graphs: `frontend/graph_data/elig_*.json` (9 intact + 1 truncated)
 - MedGemma graphs: `frontend/graph_data/medgemma/elig_*.json` (10)
-- Sweeps: `data/eligibility_sweep_gemma-3-4b-it.json`, `data/eligibility_sweep_medgemma-4b-it.json`
+- Sweeps: `data/eligibility_sweep_gemma-3-4b-it.json`. The MedGemma sweep JSON is **not on this
+  machine** — it was never copied back from the pod. The behavioural claims above rest on it.
 - All scripts in `scripts/`; findings in CLAUDE.md (Current Status / Findings) + memory.
 
 ## Next steps (analysis is GPU-free; new graphs need a pod)

@@ -1,0 +1,351 @@
+{
+  "per_graph": {
+    "gemma-3-4b-it/age_neg": {
+      "completeness": 0.821006859063728,
+      "n_feat": 2165,
+      "n_err": 508,
+      "depth": {
+        "early": 0.4771517892634987,
+        "mid": 0.36707104111291006,
+        "late": 0.1557771696235912
+      }
+    },
+    "gemma-3-4b-it/ecog_pos": {
+      "completeness": 0.8122857838791726,
+      "n_feat": 2185,
+      "n_err": 539,
+      "depth": {
+        "early": 0.47310386016661965,
+        "mid": 0.36096788742809544,
+        "late": 0.16592825240528492
+      }
+    },
+    "gemma-3-4b-it/ecog_neg": {
+      "completeness": 0.8154213001491855,
+      "n_feat": 2184,
+      "n_err": 531,
+      "depth": {
+        "early": 0.4543246466327809,
+        "mid": 0.37205483529792055,
+        "late": 0.17362051806929854
+      }
+    },
+    "gemma-3-4b-it/histology_pos": {
+      "completeness": 0.8007449768806715,
+      "n_feat": 2136,
+      "n_err": 561,
+      "depth": {
+        "early": 0.485970717046697,
+        "mid": 0.3505662745164035,
+        "late": 0.16346300843689954
+      }
+    },
+    "gemma-3-4b-it/histology_neg": {
+      "completeness": 0.8075972168226907,
+      "n_feat": 2161,
+      "n_err": 550,
+      "depth": {
+        "early": 0.465770356024982,
+        "mid": 0.35940421427298325,
+        "late": 0.17482542970203474
+      }
+    },
+    "gemma-3-4b-it/priortx_pos": {
+      "completeness": 0.8138682042819768,
+      "n_feat": 2221,
+      "n_err": 550,
+      "depth": {
+        "early": 0.4736594722501815,
+        "mid": 0.36275341002900857,
+        "late": 0.1635871177208099
+      }
+    },
+    "gemma-3-4b-it/priortx_neg": {
+      "completeness": 0.8202560408978443,
+      "n_feat": 2257,
+      "n_err": 537,
+      "depth": {
+        "early": 0.45399110323784186,
+        "mid": 0.3699843174008558,
+        "late": 0.1760245793613024
+      }
+    },
+    "gemma-3-4b-it/stage_pos": {
+      "completeness": 0.800935775530661,
+      "n_feat": 2124,
+      "n_err": 564,
+      "depth": {
+        "early": 0.4899097982319019,
+        "mid": 0.35733553209538516,
+        "late": 0.15275466967271298
+      }
+    },
+    "gemma-3-4b-it/stage_neg": {
+      "completeness": 0.8047463845289691,
+      "n_feat": 2121,
+      "n_err": 550,
+      "depth": {
+        "early": 0.4820320531217111,
+        "mid": 0.3476944275637296,
+        "late": 0.1702735193145593
+      }
+    },
+    "medgemma-4b-it/age_pos": {
+      "completeness": 0.838008116603608,
+      "n_feat": 1384,
+      "n_err": 275,
+      "depth": {
+        "early": 0.650446126719606,
+        "mid": 0.23116497382194345,
+        "late": 0.11838889945845056
+      }
+    },
+    "medgemma-4b-it/age_neg": {
+      "completeness": 0.8423630087706041,
+      "n_feat": 1254,
+      "n_err": 242,
+      "depth": {
+        "early": 0.6872953831769291,
+        "mid": 0.19693191259681225,
+        "late": 0.11577270422625867
+      }
+    },
+    "medgemma-4b-it/ecog_pos": {
+      "completeness": 0.8436157676419014,
+      "n_feat": 1400,
+      "n_err": 270,
+      "depth": {
+        "early": 0.6379372169581212,
+        "mid": 0.24211657575418974,
+        "late": 0.11994620728768902
+      }
+    },
+    "medgemma-4b-it/ecog_neg": {
+      "completeness": 0.85200723432589,
+      "n_feat": 1286,
+      "n_err": 233,
+      "depth": {
+        "early": 0.654454270300523,
+        "mid": 0.21019909671456738,
+        "late": 0.1353466329849096
+      }
+    },
+    "medgemma-4b-it/histology_pos": {
+      "completeness": 0.8411197952195195,
+      "n_feat": 1384,
+      "n_err": 270,
+      "depth": {
+        "early": 0.6387959694950561,
+        "mid": 0.2454685583632866,
+        "late": 0.11573547214165733
+      }
+    },
+    "medgemma-4b-it/histology_neg": {
+      "completeness": 0.8533696434963175,
+      "n_feat": 1261,
+      "n_err": 226,
+      "depth": {
+        "early": 0.6729477530267973,
+        "mid": 0.19797111348272012,
+        "late": 0.12908113349048253
+      }
+    },
+    "medgemma-4b-it/priortx_pos": {
+      "completeness": 0.8373829043222907,
+      "n_feat": 1224,
+      "n_err": 245,
+      "depth": {
+        "early": 0.6950432257321959,
+        "mid": 0.19478062418375042,
+        "late": 0.11017615008405365
+      }
+    },
+    "medgemma-4b-it/priortx_neg": {
+      "completeness": 0.8416035886180764,
+      "n_feat": 1335,
+      "n_err": 260,
+      "depth": {
+        "early": 0.6462327106194399,
+        "mid": 0.21502652969463895,
+        "late": 0.13874075968592117
+      }
+    },
+    "medgemma-4b-it/stage_pos": {
+      "completeness": 0.8377062876171559,
+      "n_feat": 1244,
+      "n_err": 248,
+      "depth": {
+        "early": 0.6944981264440334,
+        "mid": 0.20084080922433675,
+        "late": 0.1046610643316298
+      }
+    },
+    "medgemma-4b-it/stage_neg": {
+      "completeness": 0.8432961824103531,
+      "n_feat": 1271,
+      "n_err": 244,
+      "depth": {
+        "early": 0.6621338223056878,
+        "mid": 0.20773181564457394,
+        "late": 0.13013436204973824
+      }
+    }
+  },
+  "within_pair": {
+    "gemma-3-4b-it/ecog": {
+      "type": "control",
+      "jaccard": 0.6705444392740809,
+      "n_shared": 1441,
+      "n_a": 1800,
+      "n_b": 1790,
+      "shared_inf_a": 0.8068706208189808,
+      "shared_inf_b": 0.8184566403828
+    },
+    "gemma-3-4b-it/histology": {
+      "type": "control",
+      "jaccard": 0.6680672268907563,
+      "n_shared": 1431,
+      "n_a": 1777,
+      "n_b": 1796,
+      "shared_inf_a": 0.8090778735166716,
+      "shared_inf_b": 0.8129888917424506
+    },
+    "gemma-3-4b-it/priortx": {
+      "type": "knowledge",
+      "jaccard": 0.8663265306122448,
+      "n_shared": 1698,
+      "n_a": 1819,
+      "n_b": 1839,
+      "shared_inf_a": 0.9328849925821971,
+      "shared_inf_b": 0.925270157388903
+    },
+    "gemma-3-4b-it/stage": {
+      "type": "knowledge",
+      "jaccard": 0.9117009750812568,
+      "n_shared": 1683,
+      "n_a": 1768,
+      "n_b": 1761,
+      "shared_inf_a": 0.9518821070628632,
+      "shared_inf_b": 0.9573011614488938
+    },
+    "medgemma-4b-it/age": {
+      "type": "control",
+      "jaccard": 0.725,
+      "n_shared": 1044,
+      "n_a": 1290,
+      "n_b": 1194,
+      "shared_inf_a": 0.7980244915863084,
+      "shared_inf_b": 0.8679665449167918
+    },
+    "medgemma-4b-it/ecog": {
+      "type": "control",
+      "jaccard": 0.6401564537157758,
+      "n_shared": 982,
+      "n_a": 1296,
+      "n_b": 1220,
+      "shared_inf_a": 0.7446214924282896,
+      "shared_inf_b": 0.7941887549002282
+    },
+    "medgemma-4b-it/histology": {
+      "type": "control",
+      "jaccard": 0.6365435356200527,
+      "n_shared": 965,
+      "n_a": 1284,
+      "n_b": 1197,
+      "shared_inf_a": 0.739562845181943,
+      "shared_inf_b": 0.796711771960909
+    },
+    "medgemma-4b-it/priortx": {
+      "type": "knowledge",
+      "jaccard": 0.7831501831501831,
+      "n_shared": 1069,
+      "n_a": 1170,
+      "n_b": 1264,
+      "shared_inf_a": 0.9094146978384534,
+      "shared_inf_b": 0.840973913732565
+    },
+    "medgemma-4b-it/stage": {
+      "type": "knowledge",
+      "jaccard": 0.8085908063300679,
+      "n_shared": 1073,
+      "n_a": 1193,
+      "n_b": 1207,
+      "shared_inf_a": 0.8933211460598859,
+      "shared_inf_b": 0.8853140638683743
+    }
+  },
+  "cross_model": {
+    "age_neg": {
+      "jaccard": 0.1424731182795699,
+      "n_shared": 371,
+      "n_a": 1781,
+      "n_b": 1194,
+      "shared_inf_a": 0.19681425421346785,
+      "shared_inf_b": 0.349612812821163
+    },
+    "ecog_pos": {
+      "jaccard": 0.1930635838150289,
+      "n_shared": 501,
+      "n_a": 1800,
+      "n_b": 1296,
+      "shared_inf_a": 0.2694443554233354,
+      "shared_inf_b": 0.4373701742684072
+    },
+    "ecog_neg": {
+      "jaccard": 0.16350985697719367,
+      "n_shared": 423,
+      "n_a": 1790,
+      "n_b": 1220,
+      "shared_inf_a": 0.22844851982829498,
+      "shared_inf_b": 0.38709780351929723
+    },
+    "histology_pos": {
+      "jaccard": 0.1887378640776699,
+      "n_shared": 486,
+      "n_a": 1777,
+      "n_b": 1284,
+      "shared_inf_a": 0.261479902047787,
+      "shared_inf_b": 0.42745018157900555
+    },
+    "histology_neg": {
+      "jaccard": 0.14938556067588327,
+      "n_shared": 389,
+      "n_a": 1796,
+      "n_b": 1197,
+      "shared_inf_a": 0.20228375343189006,
+      "shared_inf_b": 0.3667200266633407
+    },
+    "priortx_pos": {
+      "jaccard": 0.1321969696969697,
+      "n_shared": 349,
+      "n_a": 1819,
+      "n_b": 1170,
+      "shared_inf_a": 0.18257916302402008,
+      "shared_inf_b": 0.3342338329061777
+    },
+    "priortx_neg": {
+      "jaccard": 0.1744890234670704,
+      "n_shared": 461,
+      "n_a": 1839,
+      "n_b": 1264,
+      "shared_inf_a": 0.23942968520104665,
+      "shared_inf_b": 0.40562329187467683
+    },
+    "stage_pos": {
+      "jaccard": 0.14016172506738545,
+      "n_shared": 364,
+      "n_a": 1768,
+      "n_b": 1193,
+      "shared_inf_a": 0.1953963339016642,
+      "shared_inf_b": 0.3404367482148583
+    },
+    "stage_neg": {
+      "jaccard": 0.16300940438871472,
+      "n_shared": 416,
+      "n_a": 1761,
+      "n_b": 1207,
+      "shared_inf_a": 0.2225551551025867,
+      "shared_inf_b": 0.3851364674665591
+    }
+  }
+}

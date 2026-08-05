@@ -23,14 +23,22 @@ BUCKETS = [("early L0-11", 0, 11), ("mid L12-22", 12, 22), ("late L23-33", 23, 3
 
 
 def summarize(path: str) -> None:
-    d = json.loads(Path(path).read_text())
+    raw = Path(path).read_text()
+    if not raw.strip():
+        print(f"=== {Path(path).stem} ===\n  SKIPPED (empty/truncated file)")
+        return
+    try:
+        d = json.loads(raw)
+    except json.JSONDecodeError as e:
+        print(f"=== {Path(path).stem} ===\n  SKIPPED (malformed JSON: {e})")
+        return
     nodes = d["nodes"]
     feats = [n for n in nodes if n.get("feature_type") == "cross layer transcoder"]
     errs = [n for n in nodes if "error" in (n.get("feature_type") or "")]
     logits = [n for n in nodes if n.get("feature_type") == "logit"]
 
-    feat_inf = sum(n.get("influence", 0.0) for n in feats)
-    err_inf = sum(n.get("influence", 0.0) for n in errs)
+    feat_inf = sum((n.get("influence") or 0.0) for n in feats)
+    err_inf = sum((n.get("influence") or 0.0) for n in errs)
     comp = feat_inf / (feat_inf + err_inf) if (feat_inf + err_inf) else float("nan")
 
     # answer = highest-prob logit node
@@ -43,8 +51,8 @@ def summarize(path: str) -> None:
     agg = collections.defaultdict(float)
     for n in feats:
         L = int(n["layer"])
-        layer_inf[L] += n.get("influence", 0.0)
-        agg[(L, int(n["feature"]))] += n.get("influence", 0.0)
+        layer_inf[L] += (n.get("influence") or 0.0)
+        agg[(L, int(n["feature"]))] += (n.get("influence") or 0.0)
     buckets = {name: sum(layer_inf[L] for L in range(lo, hi + 1)) / feat_inf
                for name, lo, hi in BUCKETS} if feat_inf else {}
     top = sorted(agg.items(), key=lambda x: -x[1])[:5]
@@ -61,7 +69,10 @@ def summarize(path: str) -> None:
 
 def main() -> None:
     args = sys.argv[1:]
-    if args:
+    if args and args[0] == "--dir":
+        # analyze every elig_*.json in a directory (e.g. the medgemma subdir)
+        paths = sorted(glob.glob(f"{args[1].rstrip('/')}/elig_*.json"))
+    elif args:
         paths = [a if a.endswith(".json") else f"frontend/graph_data/{a}.json" for a in args]
     else:
         paths = sorted(glob.glob("frontend/graph_data/elig_*.json"))

@@ -28,7 +28,7 @@ def load_features(path: str) -> dict:
     agg: dict = collections.defaultdict(float)
     for n in d["nodes"]:
         if n.get("feature_type") == "cross layer transcoder":
-            agg[(int(n["layer"]), int(n["feature"]))] += float(n.get("influence", 0.0))
+            agg[(int(n["layer"]), int(n["feature"]))] += float((n.get("influence") or 0.0))
     return agg
 
 
