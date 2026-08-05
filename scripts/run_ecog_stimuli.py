@@ -170,8 +170,34 @@ def single_token_id(tokenizer, s: str) -> int | None:
     return enc[0] if len(enc) == 1 else None
 
 
+def resolve_canonical(tokenizer, word: str) -> tuple[int | None, str | None]:
+    """The one canonical single token for `word` at the generation position.
+
+    CLAUDE.md's "leading-space variant on IT models" rule is a Yes/No fact and
+    does NOT generalise to digits. In the Gemma-3 tokenizer (verified on
+    google/medgemma-4b-it, 2026-08-05):
+
+        " Yes" -> [8438]              single
+        " No"  -> [2301]              single
+        " 0"   -> [236743, 236771]    '▁' + '0'  -- TWO tokens
+        "0"    -> [236771]            single
+
+    A space before a digit is its own token, so for numeric answers the bare
+    digit is the canonical readout, not the space-prefixed form. Prefer the
+    leading-space variant where the tokenizer actually makes it single, and fall
+    back to the bare form otherwise — rather than hard-requiring a convention the
+    tokenizer does not honour. The chosen surface form is recorded in the output
+    JSON so the readout is auditable.
+    """
+    for cand in (" " + word, word):
+        tid = single_token_id(tokenizer, cand)
+        if tid is not None:
+            return tid, cand
+    return None, None
+
+
 def resolve_tokens(tokenizer) -> dict:
-    """Canonical leading-space ids (primary) + variant ids (evaluation only)."""
+    """Canonical ids (primary, one per answer) + variant ids (evaluation only)."""
     def variants(word: str) -> list[int]:
         forms = sorted({word, word.lower(), word.upper(), word.capitalize()})
         ids, seen = [], set()
@@ -183,21 +209,26 @@ def resolve_tokens(tokenizer) -> dict:
                     ids.append(tid)
         return ids
 
+    yes_id, yes_form = resolve_canonical(tokenizer, "Yes")
+    no_id, no_form = resolve_canonical(tokenizer, "No")
+    grade_res = {g: resolve_canonical(tokenizer, str(g)) for g in GRADES}
+
     tok = {
-        "yes": single_token_id(tokenizer, " Yes"),
-        "no": single_token_id(tokenizer, " No"),
+        "yes": yes_id, "no": no_id,
+        "yes_form": yes_form, "no_form": no_form,
         "yes_agg": variants("Yes"),
         "no_agg": variants("No"),
-        "grade": {g: single_token_id(tokenizer, f" {g}") for g in GRADES},
+        "grade": {g: grade_res[g][0] for g in GRADES},
+        "grade_form": {g: grade_res[g][1] for g in GRADES},
         "grade_agg": {g: [t for t in (single_token_id(tokenizer, f" {g}"),
                                       single_token_id(tokenizer, f"{g}"))
                           if t is not None] for g in GRADES},
     }
-    if tok["yes"] is None or tok["no"] is None:
-        raise ValueError("Canonical ' Yes'/' No' are not single tokens in this tokenizer")
+    if yes_id is None or no_id is None:
+        raise ValueError("Neither ' Yes'/' No' nor 'Yes'/'No' are single tokens here")
     missing = [g for g, t in tok["grade"].items() if t is None]
     if missing:
-        raise ValueError(f"Canonical grade digits {missing} are not single tokens")
+        raise ValueError(f"No single-token form for grade digits {missing}")
     return tok
 
 
@@ -346,6 +377,10 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=None, help="first N rows only")
     ap.add_argument("--dry-run", action="store_true",
                     help="render prompts and stimulus parse, load no model")
+    ap.add_argument("--check-tokens", action="store_true",
+                    help="resolve the readout tokens and exit — downloads the "
+                         "tokenizer only (~seconds), not the weights. Run this "
+                         "before a first run on a new model/tokenizer.")
     ap.add_argument("--write-csv", nargs="?", const="AUTO", default=None,
                     help="also write a copy of the CSV with model_inclusion / "
                          "model_ecog filled in; bare flag uses "
@@ -400,6 +435,22 @@ def main() -> None:
         print("\nDry run: no model loaded, nothing written.")
         return
 
+    if args.check_tokens:
+        # Tokenizer only — no weights. This is the cheap gate that catches a
+        # tokenizer whose surface forms differ from the ones assumed here
+        # (Gemma-3 splits " 0" into '▁'+'0'), in seconds rather than after an
+        # 8GB checkpoint download.
+        from transformers import AutoTokenizer
+        tkz = AutoTokenizer.from_pretrained(args.model)
+        t = resolve_tokens(tkz)
+        print(f"\n{args.model}")
+        print(f"  yes  {t['yes_form']!r:>8} -> {t['yes']}")
+        print(f"  no   {t['no_form']!r:>8} -> {t['no']}")
+        for g in GRADES:
+            print(f"  {g}    {t['grade_form'][g]!r:>8} -> {t['grade'][g]}")
+        print("\nAll readout tokens resolved to a single id.")
+        return
+
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -411,8 +462,10 @@ def main() -> None:
     model.to(device).eval()
 
     tok = resolve_tokens(tokenizer)
-    print(f"Canonical ids: ' Yes'={tok['yes']} ' No'={tok['no']} "
-          f"grades={ {g: tok['grade'][g] for g in GRADES} }")
+    print("Canonical readout tokens (surface form actually used):")
+    print(f"  yes={tok['yes_form']!r}->{tok['yes']}   no={tok['no_form']!r}->{tok['no']}")
+    print("  grades=" + "  ".join(f"{tok['grade_form'][g]!r}->{tok['grade'][g]}"
+                                  for g in GRADES))
 
     for r in rows:
         r["eligibility"] = run_eligibility(model, tokenizer, r, tok, device)
@@ -514,7 +567,14 @@ def main() -> None:
         },
         "token_ids": {
             "canonical": {"yes": tok["yes"], "no": tok["no"],
-                          "grades": {str(g): tok["grade"][g] for g in GRADES}},
+                          "grades": {str(g): tok["grade"][g] for g in GRADES},
+                          # surface form actually used per answer — " Yes"/" No"
+                          # are single tokens in Gemma-3 but " 0" is '▁'+'0', so
+                          # digits fall back to the bare form. Recorded so the
+                          # readout is auditable rather than assumed.
+                          "surface_forms": {
+                              "yes": tok["yes_form"], "no": tok["no_form"],
+                              **{str(g): tok["grade_form"][g] for g in GRADES}}},
             "aggregated_eval_only": {
                 "yes": tok["yes_agg"], "no": tok["no_agg"],
                 "grades": {str(g): tok["grade_agg"][g] for g in GRADES}},
