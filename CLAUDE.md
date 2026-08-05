@@ -1,25 +1,16 @@
 # Strata
 
-Repo name and the old `ignis` codename are historical. The project is Strata.
+Project name is Strata, 'ignis' is historical
 
-Keep this file under 150 lines. If it grows past that, move detail into `docs/` and leave
-a pointer. It loads into every session, so it should be the smallest file that stops
-someone doing the wrong thing.
+Keep this file under 150 lines. Docs go in `docs/` with pointer.
 
 ---
 
 ## What we're doing
 
-Interpretability can check whether a model got the right answer. It can't check whether the
-model got there the right way, because nobody wrote down what the right way was.
+High level: advance interpretability for life science and specifically clinical trials
 
-Medicine did write it down. Trial eligibility is a conjunction of criteria in a protocol.
-Guideline therapy is a published decision rule. Whether a patient attribute may inform a
-given decision has been argued out in the clinical literature. So we can score the
-computation against a spec that existed before the model did.
-
-That's the project: use clinical specs as ground truth for whether a circuit is right for
-the right reasons. Medicine is the testbed, not the application.
+Hypothesis: It's often easy to check if a model got the right answer. In medicine, it can be equally important how the model got the answer. We will use trial eligibility as ground truth for whether a circuit is right for the right reasons.
 
 Read `docs/program/thesis.md` before proposing work. Kill criteria are in there. A
 pre-registered null is a real result and does not need rescuing.
@@ -61,7 +52,7 @@ dictionary before they build graphs. Plan: `docs/program/pillars-1-2-intermediat
 6. Annotate tensor shapes in comments.
 7. All figures go through `viz/`.
 
-On rule 3: `data/feature_labels.jsonl` was once populated from an empty-context bug and the
+On rule 3: `data/deferred/feature_labels.jsonl` was once populated from an empty-context bug and the
 labeller produced confident nonsense that nearly shipped. Assume an unvalidated label is
 wrong.
 
@@ -82,10 +73,8 @@ writing wins. Don't queue compute that runs ahead of the stimuli it needs.
 ## Not doing
 
 - Training a better transcoder, or domain-adapting one. Stage 2 is killed (ADR-0004).
-- Showing a medical model has medical features. Crowded lane, expected result.
+- Only showing a medical model has medical features. Crowded lane, expected result.
 - Generic MedGemma vs Gemma 3 diffing, unless scoped to a pillar.
-- One-off clinical failure case studies. Gives an anecdote, not an instrument.
-- Exhaustive graph reading up front. Graphs run early but small, then late and contingent.
 
 ---
 
@@ -112,10 +101,10 @@ Spec snapshots freeze once a PREREG points at them.
   replaced by 0004.
 - `docs/decisions/0004-intermediate-recovery.md` — current. Intermediate recovery, not
   criterion-node search; transcoders as dictionary before graph.
-
-`docs/ignis_approach_handoff.md`: staging still correct, framing superseded by 0003. Stage
-0/1/2 sequencing, PLT vs CLT reasoning, and width arithmetic all hold. The paper framing
-in it doesn't.
+- `docs/decisions/0005-medicine-as-testbed-and-application.md` — **Proposed, not in force.**
+  Would make medicine both testbed and application domain. Until it is accepted, 0003
+  governs: medicine is the testbed, not the application. §What we're doing above is ahead
+  of the ADR trail on this point — 0005 is where that gets settled, not CLAUDE.md.
 
 ---
 
@@ -148,18 +137,23 @@ and still names the package `ignis`. Python >=3.10, pytest `-m slow` opt-in.
 
 ## Layout on disk
 
-`clt/ graphs/ interventions/` — CLT era, superseded, still imported by tests. `prompts/` —
+`clt/ graphs/ interventions/` — CLT era, superseded, now imported by nothing. `prompts/` —
 eligibility.py (617 lines, live), categorical_prompts.py, medical_knowledge.py, plus
-adverse_events.py and endpoints.py (both real, both ~58-line stubs). Root `graph_data/` is a
-stale May duplicate of `frontend/graph_data/` — dead.
+adverse_events.py and endpoints.py (both real, both ~58-line stubs). `tests/` is empty: all
+five tests were CLT-era and moved to `deferred/tests/` (2026-08-05), so there is no live test
+suite. Root `graph_data/` — an earlier 2026-05-31 run superseded by the 2026-06-01 regeneration
+in `frontend/graph_data/`, not a byte-identical copy — moved to `deferred/graph_data_2026-05-31/`.
 
 ## Entry points
 
-Active: `run_graphs_ct.py` (`--probe`, `--smoke`, then batch), `sweep_eligibility.py`,
-`analyze_graphs.py`, `compare_graphs.py`, `reproduce_round1.py`, `profile_criteria.py`. The
-rest of `scripts/` is CLT-path and belongs in `deferred/`. `find_top_activations.py` still
-has the 2026-06-01 RMS-scale fix; without it it silently returns zeros. Pod recipes and
-gotchas: `docs/ops.md`.
+`scripts/` is now the live set only: `run_graphs_ct.py` (`--probe`, `--smoke`, then batch),
+`sweep_eligibility.py`, `analyze_graphs.py`, `compare_graphs.py`, `reproduce_round1.py`,
+`profile_criteria.py`, `run_ecog_stimuli.py`, `setup_pod_circuit_tracer.sh`, plus
+`stage0_tokenizer_check.py` (kept live — `prompts/eligibility.py` cites it as the provenance
+for the canonical-token choice, which 0004 still depends on). The 21 CLT-path scripts moved to
+`deferred/scripts/` on 2026-08-05. Among them `find_top_activations.py` still has the
+2026-06-01 RMS-scale fix; without it it silently returns zeros. Pod recipes and gotchas:
+`docs/ops.md`.
 
 ## Writing spec items
 
