@@ -9,8 +9,8 @@
   },
   "token_ids": {
     "canonical": {
-      "yes": 8438,
-      "no": 2301,
+      "yes": 10784,
+      "no": 3771,
       "grades": {
         "0": 236771,
         "1": 236770,
@@ -19,13 +19,18 @@
         "4": 236812
       },
       "surface_forms": {
-        "yes": " Yes",
-        "no": " No",
+        "yes": "Yes",
+        "no": "No",
         "0": "0",
         "1": "1",
         "2": "2",
         "3": "3",
         "4": "4"
+      },
+      "calibration": {
+        "yes_no": "bare",
+        "grades": "bare",
+        "probe_canonical_mass": 0.99998
       }
     },
     "aggregated_eval_only": {
@@ -175,14 +180,14 @@
             "lexical_distance": "near",
             "pred_grade": 0,
             "says": "Yes",
-            "logit_diff": 10.3125
+            "logit_diff": 9.375
           },
           {
             "id": "E005",
             "lexical_distance": "far",
             "pred_grade": 0,
             "says": "Yes",
-            "logit_diff": 6.375
+            "logit_diff": 5.875
           }
         ],
         "grade_consistent": true,
@@ -197,14 +202,14 @@
             "lexical_distance": "near",
             "pred_grade": 0,
             "says": "Yes",
-            "logit_diff": 9.9375
+            "logit_diff": 9.25
           },
           {
             "id": "E007",
             "lexical_distance": "far",
             "pred_grade": 0,
             "says": "Yes",
-            "logit_diff": 8.75
+            "logit_diff": 8.125
           }
         ],
         "grade_consistent": true,
@@ -219,14 +224,14 @@
             "lexical_distance": "near",
             "pred_grade": 2,
             "says": "Yes",
-            "logit_diff": 9.75
+            "logit_diff": 9.25
           },
           {
             "id": "E009",
             "lexical_distance": "far",
             "pred_grade": 1,
             "says": "Yes",
-            "logit_diff": 10.0625
+            "logit_diff": 9.375
           }
         ],
         "grade_consistent": false,
@@ -241,14 +246,14 @@
             "lexical_distance": "near",
             "pred_grade": 1,
             "says": "Yes",
-            "logit_diff": 8.1875
+            "logit_diff": 7.5
           },
           {
             "id": "E011",
             "lexical_distance": "far",
             "pred_grade": 1,
             "says": "Yes",
-            "logit_diff": 10.25
+            "logit_diff": 9.875
           }
         ],
         "grade_consistent": true,
@@ -263,14 +268,14 @@
             "lexical_distance": "verbatim",
             "pred_grade": 2,
             "says": "Yes",
-            "logit_diff": 2.375
+            "logit_diff": 1.25
           },
           {
             "id": "E013",
             "lexical_distance": "far",
             "pred_grade": 3,
             "says": "No",
-            "logit_diff": -7.875
+            "logit_diff": -9.125
           }
         ],
         "grade_consistent": false,
@@ -299,9 +304,9 @@
       "notes": "ECOG 0 definition verbatim - control",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 10.6875,
+        "p_yes": 0.99993,
+        "p_no": 5e-05,
+        "logit_diff": 9.875,
         "p_yes_agg": 0.99993,
         "p_no_agg": 5e-05,
         "says": "Yes",
@@ -352,9 +357,9 @@
       "notes": "ECOG 1 definition verbatim - control",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 10.625,
+        "p_yes": 0.99994,
+        "p_no": 5e-05,
+        "logit_diff": 9.875,
         "p_yes_agg": 0.99994,
         "p_no_agg": 5e-05,
         "says": "Yes",
@@ -405,9 +410,9 @@
       "notes": "ECOG 2 definition verbatim - control",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 7.375,
+        "p_yes": 0.99879,
+        "p_no": 0.00117,
+        "logit_diff": 6.75,
         "p_yes_agg": 0.99879,
         "p_no_agg": 0.00117,
         "says": "Yes",
@@ -458,9 +463,9 @@
       "notes": "",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 10.3125,
+        "p_yes": 0.99989,
+        "p_no": 8e-05,
+        "logit_diff": 9.375,
         "p_yes_agg": 0.99989,
         "p_no_agg": 8e-05,
         "says": "Yes",
@@ -511,9 +516,9 @@
       "notes": "Same patient as E004",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 6.375,
+        "p_yes": 0.99682,
+        "p_no": 0.0028,
+        "logit_diff": 5.875,
         "p_yes_agg": 0.99682,
         "p_no_agg": 0.0028,
         "says": "Yes",
@@ -564,9 +569,9 @@
       "notes": "",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 9.9375,
+        "p_yes": 0.99986,
+        "p_no": 0.0001,
+        "logit_diff": 9.25,
         "p_yes_agg": 0.99986,
         "p_no_agg": 0.0001,
         "says": "Yes",
@@ -617,9 +622,9 @@
       "notes": "Same patient as E006",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 8.75,
+        "p_yes": 0.99943,
+        "p_no": 0.0003,
+        "logit_diff": 8.125,
         "p_yes_agg": 0.99943,
         "p_no_agg": 0.0003,
         "says": "Yes",
@@ -670,9 +675,9 @@
       "notes": "The decisive case",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 9.75,
+        "p_yes": 0.99987,
+        "p_no": 0.0001,
+        "logit_diff": 9.25,
         "p_yes_agg": 0.99987,
         "p_no_agg": 0.0001,
         "says": "Yes",
@@ -723,9 +728,9 @@
       "notes": "Same patient as E008",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 10.0625,
+        "p_yes": 0.99988,
+        "p_no": 8e-05,
+        "logit_diff": 9.375,
         "p_yes_agg": 0.99988,
         "p_no_agg": 8e-05,
         "says": "Yes",
@@ -776,9 +781,9 @@
       "notes": "",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 8.1875,
+        "p_yes": 0.99936,
+        "p_no": 0.00055,
+        "logit_diff": 7.5,
         "p_yes_agg": 0.99936,
         "p_no_agg": 0.00055,
         "says": "Yes",
@@ -829,9 +834,9 @@
       "notes": "Same patient as E010",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 10.25,
+        "p_yes": 0.9999,
+        "p_no": 5e-05,
+        "logit_diff": 9.875,
         "p_yes_agg": 0.9999,
         "p_no_agg": 5e-05,
         "says": "Yes",
@@ -882,9 +887,9 @@
       "notes": "ECOG 3 definition verbatim - control",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 2.375,
+        "p_yes": 0.77699,
+        "p_no": 0.22261,
+        "logit_diff": 1.25,
         "p_yes_agg": 0.77699,
         "p_no_agg": 0.22261,
         "says": "Yes",
@@ -935,9 +940,9 @@
       "notes": "Same patient as E012",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": -7.875,
+        "p_yes": 0.00011,
+        "p_no": 0.9998,
+        "logit_diff": -9.125,
         "p_yes_agg": 0.00011,
         "p_no_agg": 0.9998,
         "says": "No",
@@ -988,9 +993,9 @@
       "notes": "Contestable 0 vs 1; not decisive either way",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 8.6875,
+        "p_yes": 0.99966,
+        "p_no": 0.00026,
+        "logit_diff": 8.25,
         "p_yes_agg": 0.99966,
         "p_no_agg": 0.00026,
         "says": "Yes",
@@ -1041,9 +1046,9 @@
       "notes": "Distractor: sounds unwell but activity unrestricted",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 6.4375,
+        "p_yes": 0.99607,
+        "p_no": 0.00359,
+        "logit_diff": 5.625,
         "p_yes_agg": 0.99608,
         "p_no_agg": 0.00359,
         "says": "Yes",
@@ -1094,9 +1099,9 @@
       "notes": "Distractor: not working for non-clinical reasons - work status is not the criterion",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 9.75,
+        "p_yes": 0.9998,
+        "p_no": 0.00014,
+        "logit_diff": 8.875,
         "p_yes_agg": 0.9998,
         "p_no_agg": 0.00014,
         "says": "Yes",
@@ -1147,9 +1152,9 @@
       "notes": "Distractor: sounds well but work capacity lost",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 7.875,
+        "p_yes": 0.99921,
+        "p_no": 0.00063,
+        "logit_diff": 7.375,
         "p_yes_agg": 0.99921,
         "p_no_agg": 0.00063,
         "says": "Yes",
@@ -1200,9 +1205,9 @@
       "notes": "Distractor: walking aid unrelated to disease",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 5.4375,
+        "p_yes": 0.99222,
+        "p_no": 0.00669,
+        "logit_diff": 5.0,
         "p_yes_agg": 0.99222,
         "p_no_agg": 0.00669,
         "says": "Yes",

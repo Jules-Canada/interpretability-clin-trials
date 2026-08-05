@@ -60,9 +60,17 @@ per prompt type, comparing spaced vs bare mass — before choosing canonical ids
 and hard-fails if the chosen tokens carry <1% mass on a probe row. The chosen
 forms and the probe mass are recorded under `token_ids.canonical.calibration`.
 
-These files are kept rather than regenerated: they are the raw output that the
-diagnosis rests on. **Re-run to get clean files; until then read `*_agg`, never
-`p_yes`/`p_no`/`logit_diff`.**
+## Resolved — files regenerated 2026-08-05
+
+Both JSONs have been **re-run with the fix** and now carry a valid readout
+(`calibration: {yes_no: bare, grades: bare, probe_canonical_mass: 0.99998}`,
+`p_yes` 0.9999 where it was 0.000000). Every column in the current files is
+sound; nothing here needs working around any more.
+
+This note is kept as the record of what happened, because the re-run reproduced
+the corrected numbers **exactly** — MedGemma 11/18 and 15/18, Gemma-3 5/18 and
+8/18 — confirming that recovering the result from the `*_agg` columns was valid
+and that only the probability/logit columns were ever affected.
 
 ## Check the other sweeps
 

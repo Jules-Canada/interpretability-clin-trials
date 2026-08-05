@@ -9,8 +9,8 @@
   },
   "token_ids": {
     "canonical": {
-      "yes": 8438,
-      "no": 2301,
+      "yes": 10784,
+      "no": 3771,
       "grades": {
         "0": 236771,
         "1": 236770,
@@ -19,13 +19,18 @@
         "4": 236812
       },
       "surface_forms": {
-        "yes": " Yes",
-        "no": " No",
+        "yes": "Yes",
+        "no": "No",
         "0": "0",
         "1": "1",
         "2": "2",
         "3": "3",
         "4": "4"
+      },
+      "calibration": {
+        "yes_no": "bare",
+        "grades": "bare",
+        "probe_canonical_mass": 0.99999
       }
     },
     "aggregated_eval_only": {
@@ -72,13 +77,13 @@
     "No stimuli at grade(s) [4]; grading accuracy says nothing about that end of the scale."
   ],
   "summary": {
-    "eligibility_correct": 6,
+    "eligibility_correct": 5,
     "eligibility_n": 18,
     "grade_correct": 12,
     "grade_n": 15,
     "grade_ambiguous_correct": 1,
     "grade_ambiguous_n": 3,
-    "self_consistent": 9,
+    "self_consistent": 8,
     "by_expected_grade": {
       "0": {
         "n": 4,
@@ -92,7 +97,7 @@
       "1": {
         "n": 6,
         "elig_n": 6,
-        "elig_correct": 4,
+        "elig_correct": 3,
         "grade_n": 3,
         "grade_correct": 3,
         "grade_ambiguous_n": 3,
@@ -139,7 +144,7 @@
       "far": {
         "n": 10,
         "elig_n": 10,
-        "elig_correct": 3,
+        "elig_correct": 2,
         "grade_n": 7,
         "grade_correct": 5,
         "grade_ambiguous_n": 3,
@@ -150,7 +155,7 @@
       "non-decisive": {
         "n": 10,
         "elig_n": 10,
-        "elig_correct": 5,
+        "elig_correct": 4,
         "grade_n": 7,
         "grade_correct": 6,
         "grade_ambiguous_n": 3,
@@ -175,14 +180,14 @@
             "lexical_distance": "near",
             "pred_grade": 0,
             "says": "No",
-            "logit_diff": -13.0625
+            "logit_diff": -17.25
           },
           {
             "id": "E005",
             "lexical_distance": "far",
             "pred_grade": 0,
             "says": "No",
-            "logit_diff": -18.0625
+            "logit_diff": -23.5
           }
         ],
         "grade_consistent": true,
@@ -197,14 +202,14 @@
             "lexical_distance": "near",
             "pred_grade": 1,
             "says": "Yes",
-            "logit_diff": 16.375
+            "logit_diff": 10.25
           },
           {
             "id": "E007",
             "lexical_distance": "far",
             "pred_grade": 1,
             "says": "No",
-            "logit_diff": -8.75
+            "logit_diff": -14.75
           }
         ],
         "grade_consistent": true,
@@ -219,14 +224,14 @@
             "lexical_distance": "near",
             "pred_grade": 2,
             "says": "Yes",
-            "logit_diff": 13.875
+            "logit_diff": 8.25
           },
           {
             "id": "E009",
             "lexical_distance": "far",
             "pred_grade": 2,
             "says": "Yes",
-            "logit_diff": 11.625
+            "logit_diff": 6.5
           }
         ],
         "grade_consistent": true,
@@ -241,14 +246,14 @@
             "lexical_distance": "near",
             "pred_grade": 1,
             "says": "Yes",
-            "logit_diff": 7.875
+            "logit_diff": 0.75
           },
           {
             "id": "E011",
             "lexical_distance": "far",
             "pred_grade": 1,
             "says": "Yes",
-            "logit_diff": 14.5
+            "logit_diff": 9.25
           }
         ],
         "grade_consistent": true,
@@ -263,14 +268,14 @@
             "lexical_distance": "verbatim",
             "pred_grade": 3,
             "says": "Yes",
-            "logit_diff": 15.0
+            "logit_diff": 10.75
           },
           {
             "id": "E013",
             "lexical_distance": "far",
             "pred_grade": 3,
             "says": "No",
-            "logit_diff": -15.5
+            "logit_diff": -19.5
           }
         ],
         "grade_consistent": true,
@@ -279,8 +284,8 @@
       }
     },
     "dissociation": {
-      "both_right": 5,
-      "wrong_answer_right_grade": 8,
+      "both_right": 4,
+      "wrong_answer_right_grade": 9,
       "both_wrong": 4,
       "right_answer_wrong_grade": 1
     }
@@ -299,9 +304,9 @@
       "notes": "ECOG 0 definition verbatim - control",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
+        "p_yes": 0.99999,
         "p_no": 0.0,
-        "logit_diff": 15.75,
+        "logit_diff": 12.25,
         "p_yes_agg": 0.99999,
         "p_no_agg": 0.0,
         "says": "Yes",
@@ -352,9 +357,9 @@
       "notes": "ECOG 1 definition verbatim - control",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
+        "p_yes": 1.0,
         "p_no": 0.0,
-        "logit_diff": 19.5,
+        "logit_diff": 14.75,
         "p_yes_agg": 1.0,
         "p_no_agg": 0.0,
         "says": "Yes",
@@ -405,9 +410,9 @@
       "notes": "ECOG 2 definition verbatim - control",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 9.75,
+        "p_yes": 0.99142,
+        "p_no": 0.00858,
+        "logit_diff": 4.75,
         "p_yes_agg": 0.99142,
         "p_no_agg": 0.00858,
         "says": "Yes",
@@ -459,8 +464,8 @@
       "leaks_vocab": false,
       "eligibility": {
         "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": -13.0625,
+        "p_no": 1.0,
+        "logit_diff": -17.25,
         "p_yes_agg": 0.0,
         "p_no_agg": 1.0,
         "says": "No",
@@ -512,8 +517,8 @@
       "leaks_vocab": false,
       "eligibility": {
         "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": -18.0625,
+        "p_no": 1.0,
+        "logit_diff": -23.5,
         "p_yes_agg": 0.0,
         "p_no_agg": 1.0,
         "says": "No",
@@ -564,9 +569,9 @@
       "notes": "",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 16.375,
+        "p_yes": 0.99996,
+        "p_no": 4e-05,
+        "logit_diff": 10.25,
         "p_yes_agg": 0.99996,
         "p_no_agg": 4e-05,
         "says": "Yes",
@@ -618,8 +623,8 @@
       "leaks_vocab": false,
       "eligibility": {
         "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": -8.75,
+        "p_no": 1.0,
+        "logit_diff": -14.75,
         "p_yes_agg": 0.0,
         "p_no_agg": 1.0,
         "says": "No",
@@ -670,9 +675,9 @@
       "notes": "The decisive case",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 13.875,
+        "p_yes": 0.99974,
+        "p_no": 0.00026,
+        "logit_diff": 8.25,
         "p_yes_agg": 0.99974,
         "p_no_agg": 0.00026,
         "says": "Yes",
@@ -723,9 +728,9 @@
       "notes": "Same patient as E008",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 11.625,
+        "p_yes": 0.99849,
+        "p_no": 0.0015,
+        "logit_diff": 6.5,
         "p_yes_agg": 0.99849,
         "p_no_agg": 0.0015,
         "says": "Yes",
@@ -776,9 +781,9 @@
       "notes": "",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 7.875,
+        "p_yes": 0.67898,
+        "p_no": 0.32073,
+        "logit_diff": 0.75,
         "p_yes_agg": 0.67898,
         "p_no_agg": 0.32073,
         "says": "Yes",
@@ -829,9 +834,9 @@
       "notes": "Same patient as E010",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 14.5,
+        "p_yes": 0.99975,
+        "p_no": 0.0001,
+        "logit_diff": 9.25,
         "p_yes_agg": 0.99975,
         "p_no_agg": 0.0001,
         "says": "Yes",
@@ -882,9 +887,9 @@
       "notes": "ECOG 3 definition verbatim - control",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 15.0,
+        "p_yes": 0.99998,
+        "p_no": 2e-05,
+        "logit_diff": 10.75,
         "p_yes_agg": 0.99998,
         "p_no_agg": 2e-05,
         "says": "Yes",
@@ -936,8 +941,8 @@
       "leaks_vocab": false,
       "eligibility": {
         "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": -15.5,
+        "p_no": 1.0,
+        "logit_diff": -19.5,
         "p_yes_agg": 0.0,
         "p_no_agg": 1.0,
         "says": "No",
@@ -988,12 +993,12 @@
       "notes": "Contestable 0 vs 1; not decisive either way",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 0.875,
+        "p_yes": 0.00858,
+        "p_no": 0.99142,
+        "logit_diff": -4.75,
         "p_yes_agg": 0.00858,
         "p_no_agg": 0.99142,
-        "says": "Yes",
+        "says": "No",
         "top_token": "No"
       },
       "grading": {
@@ -1023,10 +1028,10 @@
         "pred_eligible_from_grade": "Yes",
         "top_token": "1"
       },
-      "eligibility_correct": true,
+      "eligibility_correct": false,
       "grade_correct": true,
-      "self_consistent": true,
-      "dissociation": "both_right"
+      "self_consistent": false,
+      "dissociation": "wrong_answer_right_grade"
     },
     {
       "id": "E015",
@@ -1042,8 +1047,8 @@
       "leaks_vocab": false,
       "eligibility": {
         "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": -18.5,
+        "p_no": 1.0,
+        "logit_diff": -24.0,
         "p_yes_agg": 0.0,
         "p_no_agg": 1.0,
         "says": "No",
@@ -1094,9 +1099,9 @@
       "notes": "Distractor: not working for non-clinical reasons - work status is not the criterion",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 14.875,
+        "p_yes": 0.99989,
+        "p_no": 7e-05,
+        "logit_diff": 9.5,
         "p_yes_agg": 0.99989,
         "p_no_agg": 7e-05,
         "says": "Yes",
@@ -1147,9 +1152,9 @@
       "notes": "Distractor: sounds well but work capacity lost",
       "leaks_vocab": false,
       "eligibility": {
-        "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": 16.0,
+        "p_yes": 0.99998,
+        "p_no": 2e-05,
+        "logit_diff": 11.0,
         "p_yes_agg": 0.99998,
         "p_no_agg": 2e-05,
         "says": "Yes",
@@ -1201,8 +1206,8 @@
       "leaks_vocab": false,
       "eligibility": {
         "p_yes": 0.0,
-        "p_no": 0.0,
-        "logit_diff": -15.8125,
+        "p_no": 1.0,
+        "logit_diff": -19.75,
         "p_yes_agg": 0.0,
         "p_no_agg": 1.0,
         "says": "No",
