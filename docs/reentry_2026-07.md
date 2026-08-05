@@ -128,5 +128,5 @@ Order matters — the cheap step may answer the question before you spend GPU on
 
 ## Untracked scratch (not committed, safe to ignore or clean)
 
-`docs/clt_feature_count_handoff.md`, `docs/corpus_experiment.md`,
+`deferred/docs/clt_feature_count_handoff.md`, `deferred/docs/corpus_experiment.md`,
 `docs/ignis_L0_diagnosis_note.md` — CLT-era notes, superseded by the active path.

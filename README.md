@@ -1,5 +1,11 @@
 # ignis
 
+> **Superseded — this README describes the CLT era.** The project is Strata, and the
+> from-scratch CLT pipeline below is not the active path (ADR-0002 pivoted to pretrained
+> PLTs; ADR-0004 killed Stage 2). The code it documents now lives in `deferred/scripts/`.
+> For what the project currently is, read `CLAUDE.md` and `docs/program/thesis.md`.
+> Kept for the pipeline rationale, not as instructions.
+
 **Attribution graphs for clinical trial reasoning in language models.**
 
 Replicates the Cross-Layer Transcoder (CLT) methodology from
@@ -37,25 +43,25 @@ Chosen for transparency and reproducibility; future work targets MedGemma-27B + 
 
 ```
 1. Extract activations
-   scripts/extract_activations.py
+   deferred/scripts/extract_activations.py
    └─ Streams text from pile-uncopyrighted, runs Pythia, saves residual streams
       and MLP outputs to HDF5 (5M tokens, ~20GB)
 
 2. Train CLT
-   scripts/train_clt.py
+   deferred/scripts/train_clt.py
    └─ Trains a Cross-Layer Transcoder on the cached activations
       (24 encoders + 300 decoder matrices, JumpReLU sparsity)
       ~10hrs on H100, n_features=2048
 
 3. Build attribution graphs
-   scripts/run_graphs_batch.py
+   deferred/scripts/run_graphs_batch.py
    └─ For each clinical prompt: freeze attention + LayerNorm, compute
       feature→feature edge weights, prune to top-K, export to JSON
 
 4. Label features
-   scripts/collect_graph_features.py   # which features appear in graphs?
-   scripts/find_top_activations.py     # what tokens activate each feature?
-   scripts/label_features.py           # Claude API → natural-language labels
+   deferred/scripts/collect_graph_features.py   # which features appear in graphs?
+   deferred/scripts/find_top_activations.py     # what tokens activate each feature?
+   deferred/scripts/label_features.py           # Claude API → natural-language labels
 
 5. Visualise
    frontend/                           # anthropics/attribution-graphs-frontend
@@ -99,7 +105,7 @@ prompts/
   adverse_events.py 4 adverse event prompts (hematologic, hepatotoxicity)
   endpoints.py      4 endpoint prompts (PFS, OS, ORR)
 
-scripts/
+deferred/scripts/
   extract_activations.py   Dump Pythia residual streams to HDF5
   train_clt.py             Train CLT from cached activations
   run_graphs_batch.py      Build + export graphs for all prompts
@@ -129,13 +135,13 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
 # Dev run: extract 50k tokens from pythia-70m (CPU, ~2 min)
-python scripts/extract_activations.py \
+python deferred/scripts/extract_activations.py \
     --model_name EleutherAI/pythia-70m \
     --output_path data/activations/pythia-70m.h5 \
     --max_tokens 50000
 
 # Train CLT on toy data (CPU, ~1 min)
-python scripts/train_clt.py \
+python deferred/scripts/train_clt.py \
     --activation_path data/activations/pythia-70m.h5 \
     --n_layers 6 --d_model 512 --d_mlp 2048 --n_features 512 \
     --n_steps 500 --no_wandb
@@ -143,8 +149,8 @@ python scripts/train_clt.py \
 # Run tests
 python -m pytest tests/
 
-# Full pipeline (requires GPU — see scripts/run_pipeline.sh)
-bash scripts/run_pipeline.sh
+# Full pipeline (requires GPU — see deferred/scripts/run_pipeline.sh)
+bash deferred/scripts/run_pipeline.sh
 ```
 
 ---

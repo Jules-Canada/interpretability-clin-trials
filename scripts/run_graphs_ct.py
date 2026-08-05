@@ -4,7 +4,7 @@ scripts/run_graphs_ct.py
 
 Stage 1 attribution graphs via Anthropic's circuit-tracer (nnsight backend) +
 Gemma Scope 2 pretrained transcoders. Replaces the retired
-graphs/build.py + CrossLayerTranscoder path (see docs/clt_era_archive.md).
+graphs/build.py + CrossLayerTranscoder path (see deferred/docs/clt_era_archive.md).
 
 Single-target attribution: trace the model's predicted Yes/No token. Because
 attribution targets the top-K logits, one run yields logit nodes for BOTH "Yes"

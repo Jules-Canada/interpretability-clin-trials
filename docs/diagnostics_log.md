@@ -190,7 +190,7 @@ target Phase 1 must match within ±0.02.
 | field | value |
 |---|---|
 | script | `scripts/phase0_baseline.py` |
-| record | `docs/phase0_baseline.json` |
+| record | `deferred/docs/phase0_baseline.json` |
 | model | EleutherAI/pythia-70m (6 layers, d_model=512, d_mlp=2048) |
 | CLT | random init, n_features=128, seed=0 (decoders ~ N(0, 0.01)) |
 | prompt | `"The capital of France is"` |
@@ -219,7 +219,7 @@ derived manually after the autograd pass since the mlp_out detach severs the
 autograd path to mlp_post.
 
 **Regression result** (`scripts/phase1_validate_autograd.py`,
-`docs/phase1_autograd.json`):
+`deferred/docs/phase1_autograd.json`):
 
 | | manual baseline | autograd | Δ |
 |---|---|---|---|

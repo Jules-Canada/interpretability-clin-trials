@@ -21,6 +21,11 @@ data/
 # Model checkpoints — large, regenerable
 checkpoints/
 
+# Attribution-graph viewer: an upstream clone, not our code. Provenance (URL +
+# pinned commit) is in docs/ops.md. Holds frontend/graph_data/ — 1.1GB of results,
+# two files over GitHub's 100MB hard limit. Regenerable via run_graphs_ct.py.
+frontend/
+
 # Weights & Biases
 wandb/
 

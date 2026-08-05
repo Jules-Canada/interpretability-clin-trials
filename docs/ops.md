@@ -36,6 +36,24 @@ none of the CLT dependencies. It installs `circuit-tracer` from git plus `nnsigh
 **SCP back before terminating:** `frontend/graph_data/*.json`, `data/eligibility_sweep_*.json`,
 `data/ecog_v0_results_*.json`.
 
+### The graph viewer (`frontend/`)
+
+Not our code and not in git — an upstream clone, gitignored since 2026-08-05. It was
+tracked as a submodule gitlink with no `.gitmodules`, so a fresh clone got an empty
+directory and no way to fill it. Recreate it with:
+
+```bash
+git clone https://github.com/anthropics/attribution-graphs-frontend.git frontend
+cd frontend && git checkout 398f0547  # pinned; upstream HEAD as of 2026-08-05
+```
+
+Graphs go in `frontend/graph_data/` where the viewer expects them. **That directory is
+not backed up by git** — 1.1GB, and `elig_priortx_neg.json` (107MB) and
+`elig_priortx_pos.json` (101MB) both exceed GitHub's 100MB hard limit, so LFS would be
+the only route and it isn't worth it for regenerable output. Rebuild via
+`run_graphs_ct.py`, or keep a copy on external storage if you'd rather not repeat the pod
+run. `elig_age_pos.json` is 0 bytes and needs regenerating regardless.
+
 ---
 
 ## Pod setup — forward-pass only (sweeps, ECOG stimuli, probes)
@@ -111,7 +129,7 @@ Only for from-scratch CLT work, which is not the active path.
 ```bash
 pip uninstall torchvision torchaudio -y      # BEFORE anything imports transformer_lens
 export HF_TOKEN=YOUR_HF_TOKEN
-bash scripts/setup_pod_medgemma.sh           # or setup_pod.sh for non-MedGemma
+bash deferred/scripts/setup_pod_medgemma.sh  # or setup_pod.sh for non-MedGemma
 source .venv/bin/activate
 ```
 
@@ -127,7 +145,7 @@ scp -P <PORT> -i ~/.ssh/id_ed25519 \
 ### Pre-termination
 
 If `run_pipeline.sh` completed, step 4 already ran — go straight to scp. If it was
-interrupted, `bash scripts/pre_terminate.sh` does checkpoint stripping,
+interrupted, `bash deferred/scripts/pre_terminate.sh` does checkpoint stripping,
 `collect_graph_features`, and `find_top_activations` in one pass, then prints the scp
 commands. Rationale in `docs/pipeline_lessons.md`.
 
