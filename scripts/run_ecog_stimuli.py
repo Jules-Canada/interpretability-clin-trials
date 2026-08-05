@@ -21,6 +21,16 @@ actual forward pass (see calibrate_surface). On chat-templated Gemma-3 this
 resolves to the bare "Yes"/"No" and bare digits. Variant sums are reported as
 *_agg for evaluation only.
 
+SCOPE: single-digit ordinal intermediates only (answer_surface
+"single_token_per_value" in specs/schema/spec_item.json). GRADES is a constant,
+so pointing this at anything else takes a code edit. The other two surfaces the
+schema describes need different instruments, not parameters: roman numerals must
+be read after a prefix ("Class ") because bare "I" is among the most frequent
+tokens in the vocabulary, and continuous values have no bounded token set to form
+a distribution over. Build those when stimuli for them exist; extract the shared
+core (load_stimuli, score_rows, summarise, breakdown, paraphrase_sets, print_*,
+build_results — none of which inspect value type) rather than copying this file.
+
 Columns read from ecog_v0.csv:
   lexical_distance  verbatim | near | far
   set_id            groups near/far restatements of one patient; the true grade

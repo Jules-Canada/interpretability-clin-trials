@@ -135,7 +135,7 @@
             },
             "answer_surface": {
               "enum": ["single_token_per_value", "prefixed_token", "free_number", "forced_choice"],
-              "description": "Readout strategy. 'single_token_per_value' requires every admissible value to be one token AND to be what the model emits — true for ECOG digits, NOT for continuous values, and unsafe for bare roman numerals since 'I' is among the most frequent tokens in the vocabulary. Use 'prefixed_token' (answer_prefix 'Class ') for NYHA, and note that 'free_number' cannot be scored as a distribution at all."
+              "description": "Readout strategy. 'single_token_per_value' requires every admissible value to be one token AND to be what the model emits — true for ECOG digits, NOT for continuous values, and unsafe for bare roman numerals since 'I' is among the most frequent tokens in the vocabulary. Use 'prefixed_token' (answer_prefix 'Class ') for NYHA, and note that 'free_number' cannot be scored as a distribution at all. IMPLEMENTATION STATUS: only 'single_token_per_value' is implemented (scripts/run_ecog_stimuli.py). The others are recorded here so stimuli can be annotated correctly, but no runner consumes them yet — and a runner that reads `values` from this schema MUST reject the unimplemented surfaces rather than resolve a token id for them, since a bare 'I' resolves cleanly and calibrates fine while measuring the wrong thing."
             },
             "answer_prefix": {
               "type": "string",
