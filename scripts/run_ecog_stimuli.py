@@ -170,33 +170,66 @@ def single_token_id(tokenizer, s: str) -> int | None:
     return enc[0] if len(enc) == 1 else None
 
 
-def resolve_canonical(tokenizer, word: str) -> tuple[int | None, str | None]:
-    """The one canonical single token for `word` at the generation position.
+def resolve_canonical(tokenizer, word: str,
+                      prefer: str = "spaced") -> tuple[int | None, str | None]:
+    """The canonical single token for `word` at the generation position.
 
-    CLAUDE.md's "leading-space variant on IT models" rule is a Yes/No fact and
-    does NOT generalise to digits. In the Gemma-3 tokenizer (verified on
-    google/medgemma-4b-it, 2026-08-05):
+    `prefer` picks which surface family to try first — "spaced" (" Yes") or
+    "bare" ("Yes") — falling back to the other when the preferred form is not a
+    single token. Do not call this with a hardcoded preference: use
+    calibrate_surface() to find out what the model actually emits.
 
-        " Yes" -> [8438]              single
-        " No"  -> [2301]              single
-        " 0"   -> [236743, 236771]    '▁' + '0'  -- TWO tokens
-        "0"    -> [236771]            single
+    Two distinct facts about the Gemma-3 tokenizer, both verified on
+    google/medgemma-4b-it (2026-08-05), and it is easy to conflate them:
 
-    A space before a digit is its own token, so for numeric answers the bare
-    digit is the canonical readout, not the space-prefixed form. Prefer the
-    leading-space variant where the tokenizer actually makes it single, and fall
-    back to the bare form otherwise — rather than hard-requiring a convention the
-    tokenizer does not honour. The chosen surface form is recorded in the output
-    JSON so the readout is auditable.
+    1. TOKENISATION — is the form a single token at all?
+           " Yes" -> [8438]              single
+           " 0"   -> [236743, 236771]    '▁' + '0'  -- TWO tokens
+           "0"    -> [236771]            single
+       So digits have no single-token spaced form; Yes/No do.
+
+    2. EMISSION — is it the form the model actually produces? After a chat
+       template ending in "<start_of_turn>model\\n" there is no preceding space,
+       so the model emits the BARE form. Measured on the ECOG v0 run:
+           p(" Yes") ~ 0.000000     <- single token, never emitted
+           p("Yes")  ~ 0.9999       <- what the model actually puts mass on
+
+    Picking by (1) alone reads a token the model never produces: the original
+    ECOG v0 run scored eligibility off " Yes"/" No" and every p_yes/p_no/
+    logit_diff in it is ~0 noise. Grades escaped only because no single-token
+    spaced digit exists, so they fell back to the bare form by accident.
     """
-    for cand in (" " + word, word):
+    order = (" " + word, word) if prefer == "spaced" else (word, " " + word)
+    for cand in order:
         tid = single_token_id(tokenizer, cand)
         if tid is not None:
             return tid, cand
     return None, None
 
 
-def resolve_tokens(tokenizer) -> dict:
+def calibrate_surface(model, tokenizer, chat: str, words: list[str], device) -> str:
+    """Return "spaced" or "bare" — whichever the model actually emits here.
+
+    One forward pass on a representative prompt, comparing summed probability on
+    the space-prefixed forms against the bare forms. This is the check that
+    catches an emission/tokenisation mismatch, and it re-runs per model and per
+    prompt type so a different chat template cannot silently reintroduce it.
+    """
+    import torch
+    logits = next_token_logits(model, tokenizer, chat, device)
+    probs = torch.softmax(logits, dim=-1)  # (vocab,)
+
+    def mass(forms: list[str]) -> float:
+        ids = {t for t in (single_token_id(tokenizer, f) for f in forms) if t is not None}
+        return float(probs[list(ids)].sum()) if ids else 0.0
+
+    spaced = mass([f" {w}" for w in words])
+    bare = mass(list(words))
+    return "spaced" if spaced > bare else "bare"
+
+
+def resolve_tokens(tokenizer, prefer_yesno: str = "spaced",
+                   prefer_grade: str = "bare") -> dict:
     """Canonical ids (primary, one per answer) + variant ids (evaluation only)."""
     def variants(word: str) -> list[int]:
         forms = sorted({word, word.lower(), word.upper(), word.capitalize()})
@@ -209,9 +242,9 @@ def resolve_tokens(tokenizer) -> dict:
                     ids.append(tid)
         return ids
 
-    yes_id, yes_form = resolve_canonical(tokenizer, "Yes")
-    no_id, no_form = resolve_canonical(tokenizer, "No")
-    grade_res = {g: resolve_canonical(tokenizer, str(g)) for g in GRADES}
+    yes_id, yes_form = resolve_canonical(tokenizer, "Yes", prefer_yesno)
+    no_id, no_form = resolve_canonical(tokenizer, "No", prefer_yesno)
+    grade_res = {g: resolve_canonical(tokenizer, str(g), prefer_grade) for g in GRADES}
 
     tok = {
         "yes": yes_id, "no": no_id,
@@ -443,6 +476,9 @@ def main() -> None:
         from transformers import AutoTokenizer
         tkz = AutoTokenizer.from_pretrained(args.model)
         t = resolve_tokens(tkz)
+        print("NOTE: tokenizer-only. This shows which forms are single TOKENS; it "
+              "cannot tell which the model EMITS — that needs weights and is "
+              "calibrated at run start.")
         print(f"\n{args.model}")
         print(f"  yes  {t['yes_form']!r:>8} -> {t['yes']}")
         print(f"  no   {t['no_form']!r:>8} -> {t['no']}")
@@ -461,11 +497,33 @@ def main() -> None:
     model = AutoModelForCausalLM.from_pretrained(args.model, torch_dtype=dtype)
     model.to(device).eval()
 
-    tok = resolve_tokens(tokenizer)
+    # Calibrate the readout surface against what the model actually emits,
+    # separately for each prompt type, BEFORE choosing canonical ids.
+    prefer_yesno = calibrate_surface(model, tokenizer,
+                                     eligibility_chat(tokenizer, rows[0]),
+                                     ["Yes", "No"], device)
+    prefer_grade = calibrate_surface(model, tokenizer,
+                                     grading_chat(tokenizer, rows[0]),
+                                     [str(g) for g in GRADES], device)
+    tok = resolve_tokens(tokenizer, prefer_yesno, prefer_grade)
+    print(f"Readout calibration: yes/no -> {prefer_yesno}, grades -> {prefer_grade}")
     print("Canonical readout tokens (surface form actually used):")
     print(f"  yes={tok['yes_form']!r}->{tok['yes']}   no={tok['no_form']!r}->{tok['no']}")
     print("  grades=" + "  ".join(f"{tok['grade_form'][g]!r}->{tok['grade'][g]}"
                                   for g in GRADES))
+
+    # Guard: the canonical tokens must carry real mass at the generation
+    # position. This is the check whose absence let the first ECOG v0 run score
+    # eligibility off a token with p ~ 0.
+    probe = run_eligibility(model, tokenizer, rows[0], tok, device)
+    canon_mass = probe["p_yes"] + probe["p_no"]
+    print(f"  canonical Yes/No mass on probe row: {canon_mass:.4f} "
+          f"(aggregated {probe['p_yes_agg'] + probe['p_no_agg']:.4f})")
+    if canon_mass < 0.01:
+        raise ValueError(
+            f"Canonical Yes/No tokens carry {canon_mass:.6f} probability at the "
+            "generation position — the model is not emitting this surface form. "
+            "Refusing to score against a token the model never produces.")
 
     for r in rows:
         r["eligibility"] = run_eligibility(model, tokenizer, r, tok, device)
@@ -574,7 +632,12 @@ def main() -> None:
                           # readout is auditable rather than assumed.
                           "surface_forms": {
                               "yes": tok["yes_form"], "no": tok["no_form"],
-                              **{str(g): tok["grade_form"][g] for g in GRADES}}},
+                              **{str(g): tok["grade_form"][g] for g in GRADES}},
+                          # calibrated against an actual forward pass, not
+                          # assumed from tokenisation
+                          "calibration": {"yes_no": prefer_yesno,
+                                          "grades": prefer_grade,
+                                          "probe_canonical_mass": round(canon_mass, 5)}},
             "aggregated_eval_only": {
                 "yes": tok["yes_agg"], "no": tok["no_agg"],
                 "grades": {str(g): tok["grade_agg"][g] for g in GRADES}},
