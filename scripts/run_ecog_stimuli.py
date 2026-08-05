@@ -31,14 +31,28 @@ a distribution over. Build those when stimuli for them exist; extract the shared
 core (load_stimuli, score_rows, summarise, breakdown, paraphrase_sets, print_*,
 build_results — none of which inspect value type) rather than copying this file.
 
-Columns read from ecog_v0.csv:
-  lexical_distance  verbatim | near | far
-  set_id            groups near/far restatements of one patient; the true grade
-                    is fixed across a set, so a changed prediction is
-                    paraphrase-generalisation failure
-  decisive          the grade settles eligibility (grade >=2 -> No)
-  ambiguous         the grade is contestable while eligibility is not; excluded
-                    from headline grading accuracy, reported separately
+Columns read from ecog_v0.csv (shared schema with mrs_v0.csv / recist_v0.csv):
+  <x>_true          the true grade, named per intermediate (ecog_true, mrs_true)
+  lexical_distance  easy -> hard. direct_label states the grade outright and so
+                    tests lookup; definition_verbatim quotes the scale's defining
+                    text without naming a grade; then paraphrase,
+                    computed_no_label / inferred_symptoms / inferred_rule, and
+                    distractor. ECOG has no direct_label rows by design - its
+                    anchors are definition_verbatim, which name no grade.
+  boundary_case     the row sits on either edge of the threshold (ECOG <= 1, so
+                    grades 1 and 2); harder than an anchor case by construction
+  expected_answer   eligible | excluded | indeterminate
+  distractor_type   none, or what the row baits the model with
+  set_id            ECOG only. Groups restatements of one patient at different
+                    lexical distance; the true grade is fixed across a set, so a
+                    changed prediction is paraphrase-generalisation failure.
+                    mrs_v0/recist_v0 have no equivalent - their same-grade rows
+                    are matched by grade, not by patient.
+  ambiguous         ECOG only. The grade is contestable while eligibility is not;
+                    excluded from headline grading accuracy, reported separately.
+
+"decisive" was dropped: it held Yes in exactly the rows where the answer was
+"excluded", so it is derived (see load_stimuli) rather than stored.
 
 Usage:
     python scripts/run_ecog_stimuli.py --model google/medgemma-4b-it
@@ -80,7 +94,20 @@ DEFAULT_STIMULI = Path("specs/stimuli/ecog_v0.csv")
 OUT_TEMPLATE = "data/ecog_v0_results_{slug}.json"
 
 GRADES = [0, 1, 2, 3, 4]
-LEX_ORDER = {"verbatim": 0, "near": 1, "far": 2}   # print order, easy -> hard
+# Print order, easy -> hard. Covers the mrs_v0/recist_v0 vocabulary too so the
+# shared loader orders any of the three sets; unknown values sort last.
+LEX_ORDER = {
+    "direct_label": 0,        # states the grade outright ("mRS score is 2")
+    "definition_verbatim": 1, # quotes the scale's definition text, names no grade
+    "paraphrase": 2,
+    "computed_no_label": 3,
+    "inferred_symptoms": 4,
+    "inferred_rule": 4,
+    "distractor": 5,
+}
+
+# expected_answer -> the eligibility surface the model is scored against.
+ANSWER_TO_SAYS = {"eligible": "Yes", "excluded": "No"}
 
 # This prompt names the intermediate because it asks the model to report it.
 # Vignettes must not name it (see DEFINING_VOCAB).
@@ -90,8 +117,53 @@ GRADE_QUESTION = (
     "Answer with a single digit: 0, 1, 2, 3, or 4."
 )
 
-# A vignette containing these tests lookup rather than recovery.
-DEFINING_VOCAB = re.compile(r"\becog\b|\bperformance status\b|\bkarnofsky\b", re.I)
+# A vignette containing its own intermediate's vocabulary tests lookup rather
+# than recovery. Keyed by the `<x>_true` column so the check follows the file:
+# naming ECOG inside an mRS set is cross-domain bait, not a leak, and must not
+# be flagged as one.
+DEFINING_VOCAB_BY_INTERMEDIATE = {
+    "ecog": re.compile(r"\becog\b|\bperformance status\b|\bkarnofsky\b", re.I),
+    "mrs": re.compile(r"\bmrs\b|\bmodified rankin\b|\brankin\b", re.I),
+    "recist": re.compile(r"\brecist\b", re.I),
+}
+DEFINING_VOCAB = DEFINING_VOCAB_BY_INTERMEDIATE["ecog"]   # default for this runner
+
+# Only this surface has a runner. spec_item.json requires that the others be
+# REJECTED rather than resolved: a bare "I" resolves cleanly and calibrates fine
+# while measuring the wrong thing.
+IMPLEMENTED_SURFACES = {"single_token_per_value"}
+
+# Minimal per-intermediate readout declaration — the data the offline checks
+# need, and the seed for the full config. `surface_forms` lists the ways a value
+# can be lexicalised: readout is safe only if the admissible values separate at
+# the FIRST token, which is weaker than every value being one token.
+#
+# Digits carry one lexicalisation because the grading prompt pins them
+# ("Answer with a single digit"). RECIST does not have that luxury: "CR" and
+# "Complete Response" are both correct answers to the same question.
+READOUTS = {
+    "ecog": {
+        "answer_surface": "single_token_per_value",
+        "values": ["0", "1", "2", "3", "4"],
+        "surface_forms": {v: [v] for v in ["0", "1", "2", "3", "4"]},
+    },
+    "mrs": {
+        "answer_surface": "single_token_per_value",
+        "values": ["0", "1", "2", "3", "4", "5", "6"],
+        "surface_forms": {v: [v] for v in ["0", "1", "2", "3", "4", "5", "6"]},
+    },
+    "recist": {
+        # Provisional: --check-tokens is what decides whether this holds.
+        "answer_surface": "single_token_per_value",
+        "values": ["CR", "PR", "SD", "PD"],
+        "surface_forms": {
+            "CR": ["CR", "Complete Response"],
+            "PR": ["PR", "Partial Response"],
+            "SD": ["SD", "Stable Disease"],
+            "PD": ["PD", "Progressive Disease"],
+        },
+    },
+}
 
 TRUTHY = {"yes", "y", "true", "1"}
 
@@ -105,35 +177,74 @@ def as_bool(v: str) -> bool:
     return (v or "").strip().lower() in TRUTHY
 
 
-def load_stimuli(path: Path) -> list[dict]:
-    """Read ecog_v0.csv into rows with stable field names.
+def true_grade_column(fieldnames) -> str | None:
+    """Find the `<intermediate>_true` column (ecog_true, mrs_true, recist_true)."""
+    for f in fieldnames or []:
+        k = norm_key(f)
+        if k.endswith("_true"):
+            return k
+    return None
 
-    Tolerates the header variants seen across revisions of this file
-    (`patient_detail`/`patient`, `inclusion_rule`/`inclusion`).
+
+def load_stimuli(path: Path) -> list[dict]:
+    """Read a stimulus CSV into rows with stable field names.
+
+    Reads the shared schema used by ecog_v0/mrs_v0/recist_v0, and still tolerates
+    the pre-2026-08-05 ECOG headers (`patient_detail`, `inclusion_rule`,
+    `expected_ecog`, `expected_inclusion`, `decisive`) so older copies and the
+    scored CSVs written from them still load.
+
+    set_id and ambiguous are ECOG-only; they default to None/False elsewhere,
+    which disables the paraphrase-set and ambiguous-bucket reports rather than
+    breaking them.
     """
     with path.open(newline="", encoding="utf-8-sig") as fh:
-        raw_rows = list(csv.DictReader(fh))
+        reader = csv.DictReader(fh)
+        grade_col = true_grade_column(reader.fieldnames)
+        raw_rows = list(reader)
+
+    # "ecog_true" -> "ecog"; falls back to the ECOG vocabulary for the old header.
+    intermediate = grade_col[:-len("_true")] if grade_col else "ecog"
+    vocab = DEFINING_VOCAB_BY_INTERMEDIATE.get(intermediate, DEFINING_VOCAB)
 
     rows: list[dict] = []
     for i, raw in enumerate(raw_rows):
         r = {norm_key(k): (v or "").strip() for k, v in raw.items() if k is not None}
-        patient = r.get("patient_detail") or r.get("patient") or ""
-        if not patient:
+        vignette = (r.get("vignette_text") or r.get("patient_detail")
+                    or r.get("patient") or "")
+        if not vignette:
             continue  # skip blank/trailing lines
-        grade_raw = r.get("expected_ecog", "")
-        expected_incl = (r.get("expected_inclusion") or "").strip().capitalize() or None
+
+        grade_raw = (r.get(grade_col) if grade_col else "") or r.get("expected_ecog", "")
+
+        # expected_answer is the current spelling; expected_inclusion the old one.
+        answer = (r.get("expected_answer") or "").strip().lower()
+        if answer:
+            expected_eligible = ANSWER_TO_SAYS.get(answer)   # None if indeterminate
+        else:
+            expected_eligible = (r.get("expected_inclusion") or "").capitalize() or None
+
+        # "decisive" is no longer stored: the grade settles eligibility exactly
+        # when the row is excluded. Fall back to the column if an old file has it.
+        decisive = (as_bool(r["decisive"]) if "decisive" in r
+                    else answer == "excluded")
+
         rows.append({
             "id": r.get("id") or f"row{i:03d}",
             "set_id": r.get("set_id") or None,
-            "criterion_text": r.get("inclusion_rule") or r.get("inclusion") or "ECOG <= 1",
-            "patient": patient,
+            "criterion_text": (r.get("eligibility_criterion") or r.get("inclusion_rule")
+                               or r.get("inclusion") or "ECOG <= 1"),
+            "patient": vignette,
             "expected_grade": int(grade_raw) if grade_raw.isdigit() else None,
-            "expected_eligible": expected_incl,          # "Yes" | "No" | None
+            "expected_eligible": expected_eligible,      # "Yes" | "No" | None
+            "expected_answer": answer or None,
             "lexical_distance": (r.get("lexical_distance") or "unknown").lower(),
-            "decisive": as_bool(r.get("decisive", "")),
+            "boundary_case": as_bool(r.get("boundary_case", "")),
+            "decisive": decisive,
             "ambiguous": as_bool(r.get("ambiguous", "")),
+            "distractor_type": (r.get("distractor_type") or "none").lower(),
             "notes": r.get("notes") or "",
-            "leaks_vocab": bool(DEFINING_VOCAB.search(patient)),
+            "leaks_vocab": bool(vocab.search(vignette)),
         })
     return rows
 
@@ -166,6 +277,62 @@ def grading_chat(tokenizer, row: dict) -> str:
 def single_token_id(tokenizer, s: str) -> int | None:
     enc = tokenizer.encode(s, add_special_tokens=False)
     return enc[0] if len(enc) == 1 else None
+
+
+def surface_gate(name: str, decl: dict) -> str | None:
+    """Reject unimplemented answer surfaces. Returns an error string or None.
+
+    Required by specs/schema/spec_item.json: a runner that reads `values` must
+    refuse the surfaces it cannot read, because resolving a token id for them
+    succeeds and produces a plausible number that measures something else.
+    """
+    surface = decl.get("answer_surface")
+    if surface not in IMPLEMENTED_SURFACES:
+        return (f"{name}: answer_surface {surface!r} is not implemented "
+                f"(implemented: {sorted(IMPLEMENTED_SURFACES)}). Refusing to "
+                f"resolve readout tokens for it.")
+    return None
+
+
+def separability(encode, values: list[str], surface_forms: dict) -> dict:
+    """Can these values be told apart at one token position?
+
+    Takes `encode(text) -> list[int]` rather than a tokenizer so it can be
+    exercised without loading transformers.
+
+    A value needs neither to be a single token nor to have one lexicalisation.
+    It needs its admissible forms to occupy a first token no other value claims:
+    "Complete Response" is a fine target because "Complete" is unique among
+    CR/PR/SD/PD. Checked per spacing convention, since a readout reads one
+    position under one convention.
+    """
+    report: dict = {"conventions": {}, "values": {}}
+    for conv, prefix in (("bare", ""), ("spaced", " ")):
+        first: dict = {}          # first-token id -> values claiming it
+        unresolved: list[str] = []
+        for val in values:
+            got = False
+            for form in surface_forms.get(val, [val]):
+                ids = encode(prefix + form)
+                if not ids:
+                    continue
+                first.setdefault(ids[0], set()).add(val)
+                got = True
+                report["values"].setdefault(val, []).append({
+                    "convention": conv, "form": form,
+                    "first_id": ids[0], "n_tokens": len(ids),
+                })
+            if not got:
+                unresolved.append(val)
+        collisions = {tid: sorted(v) for tid, v in first.items() if len(v) > 1}
+        report["conventions"][conv] = {
+            "separable": not collisions and not unresolved,
+            "collisions": collisions,
+            "unresolved": unresolved,
+        }
+    report["separable_under"] = [c for c, d in report["conventions"].items()
+                                 if d["separable"]]
+    return report
 
 
 def resolve_canonical(tokenizer, word: str,
@@ -532,6 +699,11 @@ def write_scored_csv(stim_path: Path, rows: list[dict], out: Path) -> None:
         reader = csv.DictReader(fh)
         fields = list(reader.fieldnames or [])
         src = list(reader)
+    # The hand-written sets carry no output columns; append them if absent so a
+    # stimulus file never has to ship empty model_* placeholders.
+    for col in ("model_inclusion", "model_ecog"):
+        if not any(norm_key(f) == col for f in fields):
+            fields.append(col)
     by_id = {r["id"]: r for r in rows}
     key = next((f for f in fields if norm_key(f) == "id"), None)
     for raw in src:
@@ -546,6 +718,65 @@ def write_scored_csv(stim_path: Path, rows: list[dict], out: Path) -> None:
         w.writerows(src)
 
 
+def print_readout_report(encode) -> bool:
+    """Per-intermediate surface gate + first-token separability. Offline.
+
+    Returns True if every declared intermediate is readout-safe. Printed before
+    any weights load, because an unsafe readout invalidates the run rather than
+    degrading it — and completeness will not catch it later.
+    """
+    print("\n" + "=" * 72)
+    print("READOUT SAFETY (offline: tokenizer only, no weights)")
+    print("=" * 72)
+    all_ok = True
+    for name, decl in READOUTS.items():
+        err = surface_gate(name, decl)
+        if err:
+            print(f"\n{name}: REFUSED — {err}")
+            all_ok = False
+            continue
+
+        rep = separability(encode, decl["values"], decl["surface_forms"])
+        ok = bool(rep["separable_under"])
+        all_ok = all_ok and ok
+        status = (f"OK — separable under {rep['separable_under']}" if ok
+                  else "UNSAFE — no convention separates these values")
+        print(f"\n{name}: {status}")
+
+        multi = [(v, e["form"], e["n_tokens"]) for v, es in rep["values"].items()
+                 for e in es if e["n_tokens"] > 1 and e["convention"] == "bare"]
+        if multi:
+            forms = ", ".join(f"{f!r} ({n} tokens, value {v})" for v, f, n in multi)
+            print(f"  multi-token forms (fine if the first token is unique): {forms}")
+        # A dead convention is only a failure when no convention survives.
+        # Otherwise it is the useful half of the result: it names the convention
+        # that must NOT be used.
+        #
+        # This constrains first-token reading, which is what lets a multi-token
+        # value like "Complete Response" be a target. The single-token readout
+        # cannot hit it: " 0" is not one token, so single_token_id returns None
+        # and resolve_canonical falls back to bare. Distinct from READOUT_BUG,
+        # where the token resolved fine and simply carried no mass.
+        mark = "!!" if not ok else "note:"
+        for conv, d in rep["conventions"].items():
+            for tid, vals in d["collisions"].items():
+                print(f"  {mark} {conv} unusable — token {tid} is the first token "
+                      f"for all of {vals}")
+            if d["unresolved"]:
+                print(f"  {mark} {conv}: no resolvable form for {d['unresolved']}")
+
+    print("\n" + "-" * 72)
+    if all_ok:
+        print("All declared intermediates are readout-safe as written.")
+    else:
+        print("At least one intermediate is NOT readout-safe. It needs an\n"
+              "answer_prefix (prefixed_token) or a constrained menu\n"
+              "(forced_choice) before it can be scored or attributed.")
+    print("Single-token-ness is necessary, not sufficient: this cannot tell you\n"
+          "which form the model EMITS. That needs weights (calibrate_surface).")
+    return all_ok
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="ECOG stimuli: eligibility vs grading.")
     ap.add_argument("--model", default="google/medgemma-4b-it")
@@ -557,9 +788,12 @@ def main() -> None:
     ap.add_argument("--dry-run", action="store_true",
                     help="render prompts and stimulus parse, load no model")
     ap.add_argument("--check-tokens", action="store_true",
-                    help="resolve the readout tokens and exit — downloads the "
-                         "tokenizer only (~seconds), not the weights. Run this "
-                         "before a first run on a new model/tokenizer.")
+                    help="resolve the readout tokens, run the per-intermediate "
+                         "surface gate and first-token separability check, and "
+                         "exit. Downloads the tokenizer only (~seconds), not the "
+                         "weights. Run before a first run on a new "
+                         "model/tokenizer, and before declaring a new "
+                         "intermediate readout-safe.")
     ap.add_argument("--write-csv", nargs="?", const="AUTO", default=None,
                     help="also write a copy of the CSV with model_inclusion / "
                          "model_ecog filled in; bare flag uses "
@@ -574,9 +808,16 @@ def main() -> None:
         rows = rows[:args.limit]
 
     model_slug = args.model.split("/")[-1]
-    n_far = sum(r["lexical_distance"] == "far" for r in rows)
+    # Rows that never name the intermediate: the population the paraphrase
+    # generalisation claim rests on. "distractor" rows are counted separately
+    # because they are baiting the model, not just restating the case.
+    n_indirect = sum(r["lexical_distance"] in ("paraphrase", "inferred_symptoms",
+                                               "inferred_rule", "computed_no_label")
+                     for r in rows)
+    n_distractor = sum(r["lexical_distance"] == "distractor" for r in rows)
     n_amb = sum(r["ambiguous"] for r in rows)
-    print(f"Stimuli: {stim_path}  ({len(rows)} rows, {n_far} far, {n_amb} ambiguous)")
+    print(f"Stimuli: {stim_path}  ({len(rows)} rows, {n_indirect} indirect, "
+          f"{n_distractor} distractor, {n_amb} ambiguous)")
 
     # Design warnings — these change how the numbers may be read, so they print
     # before the run, not buried after it.
@@ -628,7 +869,9 @@ def main() -> None:
         print(f"  no   {t['no_form']!r:>8} -> {t['no']}")
         for g in GRADES:
             print(f"  {g}    {t['grade_form'][g]!r:>8} -> {t['grade'][g]}")
-        print("\nAll readout tokens resolved to a single id.")
+        print("\nAll ECOG readout tokens resolved to a single id.")
+
+        print_readout_report(lambda s: tkz.encode(s, add_special_tokens=False))
         return
 
     import torch
