@@ -33,7 +33,45 @@ H100 80GB. nnsight is not memory-efficient; A10 is too small for 4B on this path
 none of the CLT dependencies. It installs `circuit-tracer` from git plus `nnsight`,
 `jinja2`, `hf_transfer`, and torch from the cu121 index.
 
-**SCP back before terminating:** `frontend/graph_data/*.json`, `data/eligibility_sweep_*.json`.
+**SCP back before terminating:** `frontend/graph_data/*.json`, `data/eligibility_sweep_*.json`,
+`data/ecog_v0_results_*.json`.
+
+---
+
+## Pod setup — forward-pass only (sweeps, ECOG stimuli, probes)
+
+`sweep_eligibility.py` and `run_ecog_stimuli.py` need **no circuit-tracer, no nnsight, no
+transcoders** — they are plain `AutoModelForCausalLM` forward passes. Skip
+`setup_pod_circuit_tracer.sh` (its slowest step is building circuit-tracer from git) unless
+the same session also runs attribution:
+
+```bash
+git clone https://YOUR_TOKEN@github.com/Jules-Canada/interpretability-clin-trials.git ignis
+cd ignis
+export HF_HOME=/workspace/.cache/huggingface     # 20GB root disk fills otherwise
+python3 -m venv .venv && source .venv/bin/activate
+pip install torch --index-url https://download.pytorch.org/whl/cu121
+pip install transformers jinja2 hf_transfer      # jinja2: apply_chat_template
+                                                 # hf_transfer: RunPod sets the env var
+                                                 #   but omits the package -> downloads die
+huggingface-cli login --token "$HF_TOKEN"
+
+python scripts/run_ecog_stimuli.py --dry-run                          # no GPU, no download
+python scripts/run_ecog_stimuli.py --model google/medgemma-4b-it
+python scripts/run_ecog_stimuli.py --model google/gemma-3-4b-it       # matched baseline
+```
+
+**24GB is enough** (A10 / L4 / 4090): ~8.6GB of bf16 weights plus a ~47MB logits tensor.
+The "A10 is too small for 4B" note above is about nnsight holding all-layer activations,
+and does not apply here. Take the H100 only if bundling attribution into the same session.
+
+Wall time is **download-bound, not compute-bound**: 36 forward passes over ~90-token prompts
+run in seconds; pulling both 4B checkpoints is ~10 min and ~17–20GB of `/workspace` cache.
+
+Run both models in the **same session**. `dtype` is derived from the device (bf16 on CUDA,
+fp32 otherwise), and on the existing 36-prompt `categorical_screen` pair that shift moves
+`p_target` by up to 0.016 — no decision crossed p=0.5, but split the two models across
+machines and part of any MedGemma-vs-Gemma gap you report is precision, not tuning.
 
 ---
 
