@@ -50,20 +50,33 @@ git clone https://YOUR_TOKEN@github.com/Jules-Canada/interpretability-clin-trial
 cd ignis
 export HF_HOME=/workspace/.cache/huggingface     # 20GB root disk fills otherwise
 python3 -m venv .venv && source .venv/bin/activate
-pip install torch --index-url https://download.pytorch.org/whl/cu121
+pip install torch --index-url https://download.pytorch.org/whl/cu128   # sm_70..sm_120
 pip install transformers jinja2 hf_transfer      # jinja2: apply_chat_template
                                                  # hf_transfer: RunPod sets the env var
                                                  #   but omits the package -> downloads die
 huggingface-cli login --token "$HF_TOKEN"
+
+# Fresh-pod check: wrong wheel, wrong driver, or not the GPU you booked. Two
+# seconds, and it fails here instead of after a 10-minute checkpoint download.
+python -c "import torch; print(torch.cuda.get_device_name(0), torch.cuda.get_device_capability(0)); print(torch.zeros(1).cuda() + 1)"
 
 python scripts/run_ecog_stimuli.py --dry-run                          # no GPU, no download
 python scripts/run_ecog_stimuli.py --model google/medgemma-4b-it
 python scripts/run_ecog_stimuli.py --model google/gemma-3-4b-it       # matched baseline
 ```
 
-**24GB is enough** (A10 / L4 / 4090): ~8.6GB of bf16 weights plus a ~47MB logits tensor.
-The "A10 is too small for 4B" note above is about nnsight holding all-layer activations,
-and does not apply here. Take the H100 only if bundling attribution into the same session.
+**24GB is enough** (A10 / L4 / 4090 / 5090): ~8.6GB of bf16 weights plus a ~47MB logits
+tensor. The "A10 is too small for 4B" note above is about nnsight holding all-layer
+activations, and does not apply here. Take the H100 only if bundling attribution into the
+same session.
+
+The cu128 wheel above is the one to use on **any** modern card — it carries kernels for
+sm_70 through sm_120, so it covers Turing through Blackwell and is not a 50-series special
+case. Its real requirement is a recent NVIDIA driver, which fails loudly at CUDA init.
+Older wheels are the trap: cu121 and cu126 predate `sm_120`, install without complaint on a
+5090, and then die at the first forward pass with `CUDA capability sm_120 is not compatible
+with the current PyTorch installation`. The CLT-path recipe above still pins cu121 because
+`transformer_lens` constrains it; that pin is not a reason to use cu121 here.
 
 Wall time is **download-bound, not compute-bound**: 36 forward passes over ~90-token prompts
 run in seconds; pulling both 4B checkpoints is ~10 min and ~17–20GB of `/workspace` cache.
