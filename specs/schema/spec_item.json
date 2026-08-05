@@ -19,7 +19,7 @@
     "prompt": { "type": "string" },
     "target_token": {
       "type": "string",
-      "description": "Single canonical token for attribution. Leading-space variant for IT models."
+      "description": "Single canonical token for attribution. Calibrate the surface form against a forward pass rather than assuming it: being a single token and being the token the model emits are different questions. Under a chat template ending in a newline, Gemma-3 emits the BARE form ('Yes'=10784); the leading-space ' Yes' (8438) is a single token but carries ~0 probability. See data/ecog_v0_results_READOUT_BUG.md."
     },
     "answer_token_variants": {
       "type": "array",
@@ -50,6 +50,97 @@
           "decisive": {
             "type": "boolean",
             "description": "Whether flipping this condition alone flips the correct answer"
+          }
+        }
+      }
+    },
+
+    "intermediate": {
+      "type": "object",
+      "description": "PILLAR 1 under ADR-0004. The clinical abstraction the criterion is written in — ECOG grade, creatinine clearance, NYHA class — as distinct from the raw patient facts. Recovery of this variable, not criterion-node search, is what pillar 1 now measures: a model may reach the right eligibility answer without ever computing the intermediate the spec is defined over. Vignettes vary only the clinical description; the intermediate and threshold stay fixed, or the probe learns sick-versus-well instead.",
+      "required": ["variable", "value_type", "true_value", "uses_defining_vocabulary"],
+      "properties": {
+        "variable": {
+          "type": "string",
+          "description": "Stable slug, e.g. 'ecog_performance_status', 'creatinine_clearance', 'nyha_class'. One intermediate per item."
+        },
+        "display_name": {
+          "type": "string",
+          "description": "Human-readable, e.g. 'ECOG performance status'."
+        },
+        "value_type": {
+          "enum": ["ordinal", "continuous", "categorical"],
+          "description": "Drives the readout. 'ordinal' and 'categorical' are scored as a distribution over a small value set; 'continuous' is NOT — see elicitation.answer_surface."
+        },
+        "values": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Admissible values, in order for ordinal (e.g. ['0','1','2','3','4'], ['I','II','III','IV']). Omit for continuous."
+        },
+        "true_value": {
+          "type": ["string", "number"],
+          "description": "The adjudicated value for this patient. Ground truth for the recovery test."
+        },
+        "unit": {
+          "type": "string",
+          "description": "Continuous only, e.g. 'mL/min'."
+        },
+        "threshold": {
+          "type": "object",
+          "description": "The cut the criterion applies to this intermediate. Kept separate from the value so the same stimulus can be scored against different protocols.",
+          "required": ["operator", "value"],
+          "properties": {
+            "operator": { "enum": ["<=", "<", ">=", ">", "==", "!=", "in"] },
+            "value": { "type": ["string", "number", "array"] },
+            "text": { "type": "string", "description": "As written in the protocol, e.g. 'ECOG <= 1'." }
+          }
+        },
+        "decisive": {
+          "type": "boolean",
+          "description": "Whether this intermediate's value alone settles eligibility for this item. Non-decisive items still test recovery but cannot test routing."
+        },
+        "ambiguous": {
+          "type": "boolean",
+          "description": "The VALUE is contestable (e.g. 0-vs-1) while eligibility may not be. Ambiguous items are excluded from headline recovery accuracy and reported separately; scoring a contestable value as wrong invents a recovery failure."
+        },
+        "contestable_values": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "The defensible alternatives when ambiguous is true."
+        },
+        "uses_defining_vocabulary": {
+          "type": "boolean",
+          "description": "Whether the narrative names the intermediate or its scale wording. MUST be false for a recovery item — if true the item tests lookup, not recovery."
+        },
+        "defining_vocabulary": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Terms the narrative must avoid for this variable, e.g. ['ECOG', 'performance status', 'Karnofsky']. Checked mechanically."
+        },
+        "lexical_distance": {
+          "enum": ["verbatim", "near", "far"],
+          "description": "Distance from the published scale wording. 'verbatim' items are controls; 'far' is the arm the deployment claim rests on, since clinical notes never use protocol phrasing."
+        },
+        "paraphrase_set_id": {
+          "type": "string",
+          "description": "Groups restatements of the SAME patient at different lexical_distance. The true value is identical across a set by construction, so any change in the model's value is driven by wording alone."
+        },
+        "elicitation": {
+          "type": "object",
+          "description": "How the intermediate is asked for and read off. Separate from the eligibility prompt: the two are run as independent forward passes so neither turn sees the other's answer.",
+          "properties": {
+            "question": {
+              "type": "string",
+              "description": "The direct question, which DOES name the intermediate — only the vignette is forbidden to."
+            },
+            "answer_surface": {
+              "enum": ["single_token_per_value", "prefixed_token", "free_number", "forced_choice"],
+              "description": "Readout strategy. 'single_token_per_value' requires every admissible value to be one token AND to be what the model emits — true for ECOG digits, NOT for continuous values, and unsafe for bare roman numerals since 'I' is among the most frequent tokens in the vocabulary. Use 'prefixed_token' (answer_prefix 'Class ') for NYHA, and note that 'free_number' cannot be scored as a distribution at all."
+            },
+            "answer_prefix": {
+              "type": "string",
+              "description": "Emitted before the value to disambiguate the readout token, e.g. 'Class ' for NYHA."
+            }
           }
         }
       }

@@ -1,0 +1,80 @@
+{
+  "_comment": "Worked `intermediate` blocks for the three variables CLAUDE.md names. Illustrative fragments, not complete spec items — they carry only the intermediate block. Their job is to make the readout differences concrete before stimuli get written against them.",
+
+  "ecog_ordinal_far": {
+    "_note": "The case run in ECOG v0. Every admissible value is a single token AND the emitted form, so the distribution readout works directly.",
+    "variable": "ecog_performance_status",
+    "display_name": "ECOG performance status",
+    "value_type": "ordinal",
+    "values": ["0", "1", "2", "3", "4"],
+    "true_value": "2",
+    "threshold": { "operator": "<=", "value": 1, "text": "ECOG <= 1" },
+    "decisive": true,
+    "ambiguous": false,
+    "uses_defining_vocabulary": false,
+    "defining_vocabulary": ["ECOG", "performance status", "Karnofsky"],
+    "lexical_distance": "far",
+    "paraphrase_set_id": "S03",
+    "elicitation": {
+      "question": "What is the patient's ECOG performance status grade? Answer with a single digit: 0, 1, 2, 3, or 4.",
+      "answer_surface": "single_token_per_value"
+    }
+  },
+
+  "nyha_needs_prefix": {
+    "_note": "Roman numerals cannot be read bare: 'I' is among the most frequent tokens in the vocabulary and would be contaminated by every unrelated continuation. answer_prefix moves the readout onto the token after 'Class '.",
+    "variable": "nyha_class",
+    "display_name": "NYHA functional class",
+    "value_type": "ordinal",
+    "values": ["I", "II", "III", "IV"],
+    "true_value": "III",
+    "threshold": { "operator": "<=", "value": "II", "text": "NYHA class II or better" },
+    "decisive": true,
+    "ambiguous": false,
+    "uses_defining_vocabulary": false,
+    "defining_vocabulary": ["NYHA", "New York Heart Association", "functional class"],
+    "lexical_distance": "far",
+    "elicitation": {
+      "question": "What is the patient's NYHA functional class? Answer 'Class' followed by I, II, III, or IV.",
+      "answer_surface": "prefixed_token",
+      "answer_prefix": "Class "
+    }
+  },
+
+  "creatinine_clearance_continuous": {
+    "_note": "Does NOT fit the distribution readout. A value like 62 is multi-token with no bounded value set, so there is nothing to renormalise over. Scoring needs generation plus parsing, or a binned reformulation — an open design question, not a parameter. Flagged here so it is decided before continuous stimuli are written.",
+    "variable": "creatinine_clearance",
+    "display_name": "creatinine clearance (Cockcroft-Gault)",
+    "value_type": "continuous",
+    "unit": "mL/min",
+    "true_value": 52,
+    "threshold": { "operator": ">=", "value": 60, "text": "creatinine clearance >= 60 mL/min" },
+    "decisive": true,
+    "ambiguous": false,
+    "uses_defining_vocabulary": false,
+    "defining_vocabulary": ["creatinine clearance", "CrCl", "Cockcroft", "eGFR"],
+    "lexical_distance": "far",
+    "elicitation": {
+      "question": "What is the patient's creatinine clearance in mL/min?",
+      "answer_surface": "free_number"
+    }
+  },
+
+  "ambiguous_value_firm_eligibility": {
+    "_note": "The pattern behind ecog_v0 E014-E016: the value is contestable between 0 and 1 but both fall on the same side of the threshold, so eligibility is firm. Excluded from headline recovery accuracy, still scored for routing.",
+    "variable": "ecog_performance_status",
+    "value_type": "ordinal",
+    "values": ["0", "1", "2", "3", "4"],
+    "true_value": "1",
+    "contestable_values": ["0", "1"],
+    "ambiguous": true,
+    "decisive": false,
+    "threshold": { "operator": "<=", "value": 1, "text": "ECOG <= 1" },
+    "uses_defining_vocabulary": false,
+    "lexical_distance": "far",
+    "elicitation": {
+      "question": "What is the patient's ECOG performance status grade? Answer with a single digit: 0, 1, 2, 3, or 4.",
+      "answer_surface": "single_token_per_value"
+    }
+  }
+}
