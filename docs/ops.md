@@ -144,11 +144,16 @@ training, and that needs a bigger disk.
   by hand without replicating the symlinks and scp dies at ~50% with `write remote: Failure`.
   Sizes vary by image — a 2026-08 5090 pod had 30GB root / 50GB `/workspace` — so check
   rather than assume, and put things on `/workspace` regardless.
-- **Run long installs under `tmux`, not over a plain SSH command.** A `pip install torch`
-  driven straight from an `ssh host '...'` invocation dies with the connection and leaves a
-  half-built venv that fails later as `ModuleNotFoundError: No module named 'torch'` — with
-  an empty log, so the cause is invisible. `tmux new-session -d -s setup "bash setup.sh >
-  /workspace/setup.log 2>&1"`, then poll the log. tmux is preinstalled on the RunPod images.
+- **Run long installs under `tmux`, and never use `pip -q` for them.** A quiet pip writes
+  nothing for the ten-plus minutes a cu128 torch install takes, so an in-progress build is
+  indistinguishable from a dead one — on 2026-08-04 that misread led to a second `pip
+  install` being started against the *same* venv while the first was still running. Two
+  concurrent pips on one environment can leave it subtly broken (it survived that time;
+  `pip check` was clean). Run it detached and verbose, then poll the log:
+  `tmux new-session -d -s setup "bash setup.sh > /workspace/setup.log 2>&1"`. tmux is
+  preinstalled on the RunPod images. Before concluding an install died, check
+  `pgrep -af "pip install"` and whether the venv is still growing (`du -sh .venv`) — an
+  empty log is not evidence of death.
 - **`export HF_TOKEN` does not cross SSH sessions.** Exporting it in one shell leaves it
   unset in any other connection, so a run started elsewhere still 401s on gated models.
   Persist it to disk once instead — `python -c "from huggingface_hub import login; import
