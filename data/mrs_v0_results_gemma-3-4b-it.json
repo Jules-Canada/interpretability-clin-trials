@@ -1,0 +1,1365 @@
+{
+  "model": "google/gemma-3-4b-it",
+  "stimuli_file": "specs/stimuli/mrs_v0.csv",
+  "intermediate": "modified Rankin Scale",
+  "n_rows": 18,
+  "scoring": {
+    "eligibility": "all rows",
+    "grading": "ambiguous rows excluded from headline, reported separately",
+    "primary_tokens": "surface form calibrated per model against a forward pass; *_agg sums variants, evaluation-only"
+  },
+  "token_ids": {
+    "canonical": {
+      "yes": 10784,
+      "no": 3771,
+      "grades": {
+        "0": 236771,
+        "1": 236770,
+        "2": 236778,
+        "3": 236800,
+        "4": 236812,
+        "5": 236810,
+        "6": 236825
+      },
+      "surface_forms": {
+        "yes": "Yes",
+        "no": "No",
+        "0": "0",
+        "1": "1",
+        "2": "2",
+        "3": "3",
+        "4": "4",
+        "5": "5",
+        "6": "6"
+      },
+      "calibration": {
+        "yes_no": "bare",
+        "grades": "bare",
+        "probe_canonical_mass": 1.0
+      }
+    },
+    "aggregated_eval_only": {
+      "yes": [
+        51327,
+        26915,
+        8438,
+        10784,
+        11262,
+        4443
+      ],
+      "no": [
+        9424,
+        7018,
+        2301,
+        3771,
+        951,
+        1904
+      ],
+      "grades": {
+        "0": [
+          236771
+        ],
+        "1": [
+          236770
+        ],
+        "2": [
+          236778
+        ],
+        "3": [
+          236800
+        ],
+        "4": [
+          236812
+        ],
+        "5": [
+          236810
+        ],
+        "6": [
+          236825
+        ]
+      }
+    }
+  },
+  "prompts": {
+    "eligibility": "You are screening a patient for a clinical trial.\nInclusion: <inclusion_rule>.\nPatient: <patient_detail>\nIs the patient eligible for the trial? Answer Yes or No.",
+    "grading": "You are assessing a patient for a clinical trial.\nPatient: <patient_detail>\nWhat is the patient's modified Rankin Scale score? Answer with a single digit: 0, 1, 2, 3, 4, 5, or 6."
+  },
+  "warnings": [
+    "Vignettes naming the defining vocabulary (tests lookup, not recovery): mrs00_direct, mrs01_direct, mrs02_direct, mrs03_direct, mrs04_direct, mrs05_direct, mrs06_direct, mrs_distractor_reversed_criterion, mrs_distractor_pre_stroke_baseline"
+  ],
+  "summary": {
+    "eligibility_correct": 13,
+    "eligibility_n": 18,
+    "grade_correct": 15,
+    "grade_n": 18,
+    "grade_ambiguous_correct": 0,
+    "grade_ambiguous_n": 0,
+    "self_consistent": 11,
+    "by_expected_grade": {
+      "0": {
+        "n": 2,
+        "elig_n": 2,
+        "elig_correct": 2,
+        "grade_n": 2,
+        "grade_correct": 2,
+        "grade_ambiguous_n": 0,
+        "grade_ambiguous_correct": 0
+      },
+      "1": {
+        "n": 3,
+        "elig_n": 3,
+        "elig_correct": 2,
+        "grade_n": 3,
+        "grade_correct": 2,
+        "grade_ambiguous_n": 0,
+        "grade_ambiguous_correct": 0
+      },
+      "2": {
+        "n": 5,
+        "elig_n": 5,
+        "elig_correct": 2,
+        "grade_n": 5,
+        "grade_correct": 5,
+        "grade_ambiguous_n": 0,
+        "grade_ambiguous_correct": 0
+      },
+      "3": {
+        "n": 4,
+        "elig_n": 4,
+        "elig_correct": 3,
+        "grade_n": 4,
+        "grade_correct": 2,
+        "grade_ambiguous_n": 0,
+        "grade_ambiguous_correct": 0
+      },
+      "4": {
+        "n": 2,
+        "elig_n": 2,
+        "elig_correct": 2,
+        "grade_n": 2,
+        "grade_correct": 2,
+        "grade_ambiguous_n": 0,
+        "grade_ambiguous_correct": 0
+      },
+      "5": {
+        "n": 1,
+        "elig_n": 1,
+        "elig_correct": 1,
+        "grade_n": 1,
+        "grade_correct": 1,
+        "grade_ambiguous_n": 0,
+        "grade_ambiguous_correct": 0
+      },
+      "6": {
+        "n": 1,
+        "elig_n": 1,
+        "elig_correct": 1,
+        "grade_n": 1,
+        "grade_correct": 1,
+        "grade_ambiguous_n": 0,
+        "grade_ambiguous_correct": 0
+      }
+    },
+    "by_lexical_distance": {
+      "direct_label": {
+        "n": 7,
+        "elig_n": 7,
+        "elig_correct": 7,
+        "grade_n": 7,
+        "grade_correct": 7,
+        "grade_ambiguous_n": 0,
+        "grade_ambiguous_correct": 0
+      },
+      "paraphrase": {
+        "n": 4,
+        "elig_n": 4,
+        "elig_correct": 3,
+        "grade_n": 4,
+        "grade_correct": 4,
+        "grade_ambiguous_n": 0,
+        "grade_ambiguous_correct": 0
+      },
+      "inferred_symptoms": {
+        "n": 3,
+        "elig_n": 3,
+        "elig_correct": 1,
+        "grade_n": 3,
+        "grade_correct": 1,
+        "grade_ambiguous_n": 0,
+        "grade_ambiguous_correct": 0
+      },
+      "distractor": {
+        "n": 4,
+        "elig_n": 4,
+        "elig_correct": 2,
+        "grade_n": 4,
+        "grade_correct": 3,
+        "grade_ambiguous_n": 0,
+        "grade_ambiguous_correct": 0
+      }
+    },
+    "by_decisiveness": {
+      "non-decisive": {
+        "n": 10,
+        "elig_n": 10,
+        "elig_correct": 5,
+        "grade_n": 10,
+        "grade_correct": 8,
+        "grade_ambiguous_n": 0,
+        "grade_ambiguous_correct": 0
+      },
+      "decisive": {
+        "n": 8,
+        "elig_n": 8,
+        "elig_correct": 8,
+        "grade_n": 8,
+        "grade_correct": 7,
+        "grade_ambiguous_n": 0,
+        "grade_ambiguous_correct": 0
+      }
+    },
+    "paraphrase_sets": {},
+    "dissociation": {
+      "both_right": 12,
+      "both_wrong": 2,
+      "wrong_answer_right_grade": 3,
+      "right_answer_wrong_grade": 1
+    }
+  },
+  "rows": [
+    {
+      "id": "mrs00_direct",
+      "set_id": null,
+      "criterion_text": "mRS <= 2 required for enrollment",
+      "patient": "The patient's modified Rankin Scale score is 0, with no symptoms at all.",
+      "expected_grade": 0,
+      "expected_eligible": "Yes",
+      "expected_answer": "eligible",
+      "lexical_distance": "direct_label",
+      "boundary_case": false,
+      "decisive": false,
+      "ambiguous": false,
+      "distractor_type": "none",
+      "notes": "anchor case - explicit label",
+      "leaks_vocab": true,
+      "intermediate": "mrs",
+      "eligibility": {
+        "p_yes": 1.0,
+        "p_no": 0.0,
+        "logit_diff": 17.0,
+        "p_yes_agg": 1.0,
+        "p_no_agg": 0.0,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 1.0,
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_raw": {
+          "0": 1.0,
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_agg": {
+          "0": 1.0,
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_token_mass": 1.0,
+        "pred_grade": 0,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "0"
+      },
+      "eligibility_correct": true,
+      "grade_correct": true,
+      "self_consistent": true,
+      "dissociation": "both_right"
+    },
+    {
+      "id": "mrs00_paraphrase",
+      "set_id": null,
+      "criterion_text": "mRS <= 2 required for enrollment",
+      "patient": "The patient reports no residual symptoms whatsoever since the stroke and has resumed all prior activities without limitation.",
+      "expected_grade": 0,
+      "expected_eligible": "Yes",
+      "expected_answer": "eligible",
+      "lexical_distance": "paraphrase",
+      "boundary_case": false,
+      "decisive": false,
+      "ambiguous": false,
+      "distractor_type": "none",
+      "notes": "matched to mrs00 by grade only",
+      "leaks_vocab": false,
+      "intermediate": "mrs",
+      "eligibility": {
+        "p_yes": 0.99989,
+        "p_no": 0.0001,
+        "logit_diff": 9.25,
+        "p_yes_agg": 0.99989,
+        "p_no_agg": 0.0001,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 1.0,
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.999983,
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.999983,
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_token_mass": 0.99998,
+        "pred_grade": 0,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "0"
+      },
+      "eligibility_correct": true,
+      "grade_correct": true,
+      "self_consistent": true,
+      "dissociation": "both_right"
+    },
+    {
+      "id": "mrs01_direct",
+      "set_id": null,
+      "criterion_text": "mRS <= 2 required for enrollment",
+      "patient": "The patient's modified Rankin Scale score is 1: no significant disability despite some symptoms.",
+      "expected_grade": 1,
+      "expected_eligible": "Yes",
+      "expected_answer": "eligible",
+      "lexical_distance": "direct_label",
+      "boundary_case": false,
+      "decisive": false,
+      "ambiguous": false,
+      "distractor_type": "none",
+      "notes": "anchor case",
+      "leaks_vocab": true,
+      "intermediate": "mrs",
+      "eligibility": {
+        "p_yes": 1.0,
+        "p_no": 0.0,
+        "logit_diff": 16.75,
+        "p_yes_agg": 1.0,
+        "p_no_agg": 0.0,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.0,
+          "1": 1.0,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.0,
+          "1": 1.0,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.0,
+          "1": 1.0,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_token_mass": 1.0,
+        "pred_grade": 1,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "1"
+      },
+      "eligibility_correct": true,
+      "grade_correct": true,
+      "self_consistent": true,
+      "dissociation": "both_right"
+    },
+    {
+      "id": "mrs01_inferred",
+      "set_id": null,
+      "criterion_text": "mRS <= 2 required for enrollment",
+      "patient": "The patient has mild word-finding difficulty but performs all usual duties and activities without assistance.",
+      "expected_grade": 1,
+      "expected_eligible": "Yes",
+      "expected_answer": "eligible",
+      "lexical_distance": "inferred_symptoms",
+      "boundary_case": false,
+      "decisive": false,
+      "ambiguous": false,
+      "distractor_type": "none",
+      "notes": "no numeric grade stated; requires symptom-to-grade mapping",
+      "leaks_vocab": false,
+      "intermediate": "mrs",
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 1.0,
+        "logit_diff": -16.75,
+        "p_yes_agg": 0.0,
+        "p_no_agg": 1.0,
+        "says": "No",
+        "top_token": "No"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.99998,
+          "1": 2e-05,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.999966,
+          "1": 1.9e-05,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.999966,
+          "1": 1.9e-05,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_token_mass": 0.99998,
+        "pred_grade": 0,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "0"
+      },
+      "eligibility_correct": false,
+      "grade_correct": false,
+      "self_consistent": false,
+      "dissociation": "both_wrong"
+    },
+    {
+      "id": "mrs02_direct",
+      "set_id": null,
+      "criterion_text": "mRS <= 2 required for enrollment",
+      "patient": "The patient's modified Rankin Scale score is 2: slight disability, unable to carry out all previous activities but able to look after own affairs without assistance.",
+      "expected_grade": 2,
+      "expected_eligible": "Yes",
+      "expected_answer": "eligible",
+      "lexical_distance": "direct_label",
+      "boundary_case": true,
+      "decisive": false,
+      "ambiguous": false,
+      "distractor_type": "none",
+      "notes": "decisive boundary - upper edge of inclusion",
+      "leaks_vocab": true,
+      "intermediate": "mrs",
+      "eligibility": {
+        "p_yes": 1.0,
+        "p_no": 0.0,
+        "logit_diff": 19.25,
+        "p_yes_agg": 1.0,
+        "p_no_agg": 0.0,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 1.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 1.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 1.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_token_mass": 1.0,
+        "pred_grade": 2,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "2"
+      },
+      "eligibility_correct": true,
+      "grade_correct": true,
+      "self_consistent": true,
+      "dissociation": "both_right"
+    },
+    {
+      "id": "mrs02_paraphrase",
+      "set_id": null,
+      "criterion_text": "mRS <= 2 required for enrollment",
+      "patient": "The patient can no longer manage the household finances she used to handle but dresses, bathes, and cooks for herself unaided.",
+      "expected_grade": 2,
+      "expected_eligible": "Yes",
+      "expected_answer": "eligible",
+      "lexical_distance": "paraphrase",
+      "boundary_case": true,
+      "decisive": false,
+      "ambiguous": false,
+      "distractor_type": "none",
+      "notes": "decisive boundary - paraphrased, no numeric grade",
+      "leaks_vocab": false,
+      "intermediate": "mrs",
+      "eligibility": {
+        "p_yes": 0.00071,
+        "p_no": 0.99929,
+        "logit_diff": -7.25,
+        "p_yes_agg": 0.00071,
+        "p_no_agg": 0.99929,
+        "says": "No",
+        "top_token": "No"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.0,
+          "1": 0.00055,
+          "2": 0.6788,
+          "3": 0.32064,
+          "4": 1e-05,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.0,
+          "1": 0.000546,
+          "2": 0.678792,
+          "3": 0.320638,
+          "4": 1.3e-05,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.0,
+          "1": 0.000546,
+          "2": 0.678792,
+          "3": 0.320638,
+          "4": 1.3e-05,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_token_mass": 0.99999,
+        "pred_grade": 2,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "2"
+      },
+      "eligibility_correct": false,
+      "grade_correct": true,
+      "self_consistent": false,
+      "dissociation": "wrong_answer_right_grade"
+    },
+    {
+      "id": "mrs02_inferred",
+      "set_id": null,
+      "criterion_text": "mRS <= 2 required for enrollment",
+      "patient": "The patient stopped driving after the stroke but still shops, cooks, and manages personal care independently.",
+      "expected_grade": 2,
+      "expected_eligible": "Yes",
+      "expected_answer": "eligible",
+      "lexical_distance": "inferred_symptoms",
+      "boundary_case": true,
+      "decisive": false,
+      "ambiguous": false,
+      "distractor_type": "none",
+      "notes": "decisive boundary - symptom-only, most ambiguous case in set",
+      "leaks_vocab": false,
+      "intermediate": "mrs",
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 1.0,
+        "logit_diff": -15.75,
+        "p_yes_agg": 0.0,
+        "p_no_agg": 1.0,
+        "says": "No",
+        "top_token": "No"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.0,
+          "1": 0.00011,
+          "2": 0.99796,
+          "3": 0.00193,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.0,
+          "1": 0.000109,
+          "2": 0.99795,
+          "3": 0.001926,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.0,
+          "1": 0.000109,
+          "2": 0.99795,
+          "3": 0.001926,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_token_mass": 0.99999,
+        "pred_grade": 2,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "2"
+      },
+      "eligibility_correct": false,
+      "grade_correct": true,
+      "self_consistent": false,
+      "dissociation": "wrong_answer_right_grade"
+    },
+    {
+      "id": "mrs03_direct",
+      "set_id": null,
+      "criterion_text": "mRS <= 2 required for enrollment",
+      "patient": "The patient's modified Rankin Scale score is 3: moderate disability, requiring some help but able to walk unassisted.",
+      "expected_grade": 3,
+      "expected_eligible": "No",
+      "expected_answer": "excluded",
+      "lexical_distance": "direct_label",
+      "boundary_case": true,
+      "decisive": true,
+      "ambiguous": false,
+      "distractor_type": "none",
+      "notes": "decisive boundary - lower edge of exclusion",
+      "leaks_vocab": true,
+      "intermediate": "mrs",
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 1.0,
+        "logit_diff": -23.25,
+        "p_yes_agg": 0.0,
+        "p_no_agg": 1.0,
+        "says": "No",
+        "top_token": "No"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 0.0,
+          "3": 1.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 0.0,
+          "3": 1.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 0.0,
+          "3": 1.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_token_mass": 1.0,
+        "pred_grade": 3,
+        "pred_eligible_from_grade": "No",
+        "top_token": "3"
+      },
+      "eligibility_correct": true,
+      "grade_correct": true,
+      "self_consistent": true,
+      "dissociation": "both_right"
+    },
+    {
+      "id": "mrs03_paraphrase",
+      "set_id": null,
+      "criterion_text": "mRS <= 2 required for enrollment",
+      "patient": "The patient needs a home health aide for meal preparation and bathing but can still walk around the house without support.",
+      "expected_grade": 3,
+      "expected_eligible": "No",
+      "expected_answer": "excluded",
+      "lexical_distance": "paraphrase",
+      "boundary_case": true,
+      "decisive": true,
+      "ambiguous": false,
+      "distractor_type": "none",
+      "notes": "decisive boundary - paraphrased",
+      "leaks_vocab": false,
+      "intermediate": "mrs",
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 1.0,
+        "logit_diff": -16.5,
+        "p_yes_agg": 0.0,
+        "p_no_agg": 1.0,
+        "says": "No",
+        "top_token": "No"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.0,
+          "1": 9e-05,
+          "2": 0.32077,
+          "3": 0.67906,
+          "4": 7e-05,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.0,
+          "1": 9.5e-05,
+          "2": 0.320755,
+          "3": 0.679039,
+          "4": 7.4e-05,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.0,
+          "1": 9.5e-05,
+          "2": 0.320755,
+          "3": 0.679039,
+          "4": 7.4e-05,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_token_mass": 0.99996,
+        "pred_grade": 3,
+        "pred_eligible_from_grade": "No",
+        "top_token": "3"
+      },
+      "eligibility_correct": true,
+      "grade_correct": true,
+      "self_consistent": true,
+      "dissociation": "both_right"
+    },
+    {
+      "id": "mrs03_inferred",
+      "set_id": null,
+      "criterion_text": "mRS <= 2 required for enrollment",
+      "patient": "The patient moved in with her daughter because she can no longer cook or manage medications alone, though she gets around the house fine on her own two feet.",
+      "expected_grade": 3,
+      "expected_eligible": "No",
+      "expected_answer": "excluded",
+      "lexical_distance": "inferred_symptoms",
+      "boundary_case": true,
+      "decisive": true,
+      "ambiguous": false,
+      "distractor_type": "none",
+      "notes": "decisive boundary - symptom-only; tests whether help-with-IADLs alone triggers exclusion",
+      "leaks_vocab": false,
+      "intermediate": "mrs",
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 1.0,
+        "logit_diff": -27.0,
+        "p_yes_agg": 0.0,
+        "p_no_agg": 1.0,
+        "says": "No",
+        "top_token": "No"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.0,
+          "1": 0.00059,
+          "2": 0.93935,
+          "3": 0.06005,
+          "4": 1e-05,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.0,
+          "1": 0.000589,
+          "2": 0.939332,
+          "3": 0.060049,
+          "4": 1.4e-05,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.0,
+          "1": 0.000589,
+          "2": 0.939332,
+          "3": 0.060049,
+          "4": 1.4e-05,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_token_mass": 0.99998,
+        "pred_grade": 2,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "2"
+      },
+      "eligibility_correct": true,
+      "grade_correct": false,
+      "self_consistent": false,
+      "dissociation": "right_answer_wrong_grade"
+    },
+    {
+      "id": "mrs04_direct",
+      "set_id": null,
+      "criterion_text": "mRS <= 2 required for enrollment",
+      "patient": "The patient's modified Rankin Scale score is 4: moderately severe disability, unable to walk without assistance and unable to attend to own bodily needs without assistance.",
+      "expected_grade": 4,
+      "expected_eligible": "No",
+      "expected_answer": "excluded",
+      "lexical_distance": "direct_label",
+      "boundary_case": false,
+      "decisive": true,
+      "ambiguous": false,
+      "distractor_type": "none",
+      "notes": "anchor case",
+      "leaks_vocab": true,
+      "intermediate": "mrs",
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 1.0,
+        "logit_diff": -25.0,
+        "p_yes_agg": 0.0,
+        "p_no_agg": 1.0,
+        "says": "No",
+        "top_token": "No"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 1.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 1.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 1.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_token_mass": 1.0,
+        "pred_grade": 4,
+        "pred_eligible_from_grade": "No",
+        "top_token": "4"
+      },
+      "eligibility_correct": true,
+      "grade_correct": true,
+      "self_consistent": true,
+      "dissociation": "both_right"
+    },
+    {
+      "id": "mrs04_paraphrase",
+      "set_id": null,
+      "criterion_text": "mRS <= 2 required for enrollment",
+      "patient": "The patient requires a walker and help from a caregiver to use the bathroom and get dressed each day.",
+      "expected_grade": 4,
+      "expected_eligible": "No",
+      "expected_answer": "excluded",
+      "lexical_distance": "paraphrase",
+      "boundary_case": false,
+      "decisive": true,
+      "ambiguous": false,
+      "distractor_type": "none",
+      "notes": "matched to mrs04 by grade",
+      "leaks_vocab": false,
+      "intermediate": "mrs",
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 1.0,
+        "logit_diff": -15.5,
+        "p_yes_agg": 0.0,
+        "p_no_agg": 1.0,
+        "says": "No",
+        "top_token": "No"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 0.00082,
+          "3": 0.2018,
+          "4": 0.70436,
+          "5": 0.07424,
+          "6": 0.01877
+        },
+        "grade_p_raw": {
+          "0": 0.0,
+          "1": 2e-06,
+          "2": 0.000821,
+          "3": 0.200834,
+          "4": 0.700979,
+          "5": 0.073883,
+          "6": 0.01868
+        },
+        "grade_p_agg": {
+          "0": 0.0,
+          "1": 2e-06,
+          "2": 0.000821,
+          "3": 0.200834,
+          "4": 0.700979,
+          "5": 0.073883,
+          "6": 0.01868
+        },
+        "grade_token_mass": 0.9952,
+        "pred_grade": 4,
+        "pred_eligible_from_grade": "No",
+        "top_token": "4"
+      },
+      "eligibility_correct": true,
+      "grade_correct": true,
+      "self_consistent": true,
+      "dissociation": "both_right"
+    },
+    {
+      "id": "mrs05_direct",
+      "set_id": null,
+      "criterion_text": "mRS <= 2 required for enrollment",
+      "patient": "The patient's modified Rankin Scale score is 5: severe disability, bedridden, incontinent, requiring constant nursing care and attention.",
+      "expected_grade": 5,
+      "expected_eligible": "No",
+      "expected_answer": "excluded",
+      "lexical_distance": "direct_label",
+      "boundary_case": false,
+      "decisive": true,
+      "ambiguous": false,
+      "distractor_type": "none",
+      "notes": "anchor case",
+      "leaks_vocab": true,
+      "intermediate": "mrs",
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 1.0,
+        "logit_diff": -26.0,
+        "p_yes_agg": 0.0,
+        "p_no_agg": 1.0,
+        "says": "No",
+        "top_token": "No"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 1.0,
+          "6": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 1.0,
+          "6": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 1.0,
+          "6": 0.0
+        },
+        "grade_token_mass": 1.0,
+        "pred_grade": 5,
+        "pred_eligible_from_grade": "No",
+        "top_token": "5"
+      },
+      "eligibility_correct": true,
+      "grade_correct": true,
+      "self_consistent": true,
+      "dissociation": "both_right"
+    },
+    {
+      "id": "mrs06_direct",
+      "set_id": null,
+      "criterion_text": "mRS <= 2 required for enrollment",
+      "patient": "The patient died two weeks after the index stroke; modified Rankin Scale score is recorded as 6.",
+      "expected_grade": 6,
+      "expected_eligible": "No",
+      "expected_answer": "excluded",
+      "lexical_distance": "direct_label",
+      "boundary_case": false,
+      "decisive": true,
+      "ambiguous": false,
+      "distractor_type": "none",
+      "notes": "anchor case - death endpoint, tests whether model treats mortality as a disability grade or a separate category",
+      "leaks_vocab": true,
+      "intermediate": "mrs",
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 1.0,
+        "logit_diff": -20.0,
+        "p_yes_agg": 0.0,
+        "p_no_agg": 1.0,
+        "says": "No",
+        "top_token": "No"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 1.0
+        },
+        "grade_p_raw": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.999999
+        },
+        "grade_p_agg": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.999999
+        },
+        "grade_token_mass": 1.0,
+        "pred_grade": 6,
+        "pred_eligible_from_grade": "No",
+        "top_token": "6"
+      },
+      "eligibility_correct": true,
+      "grade_correct": true,
+      "self_consistent": true,
+      "dissociation": "both_right"
+    },
+    {
+      "id": "mrs_distractor_nihss",
+      "set_id": null,
+      "criterion_text": "mRS <= 2 required for enrollment",
+      "patient": "The patient's NIHSS score at admission was 8, though by discharge she was walking independently and managing all self-care without help.",
+      "expected_grade": 3,
+      "expected_eligible": "Yes",
+      "expected_answer": "eligible",
+      "lexical_distance": "distractor",
+      "boundary_case": true,
+      "decisive": false,
+      "ambiguous": false,
+      "distractor_type": "scale_substitution",
+      "notes": "uses a DIFFERENT stroke scale (NIHSS, acute severity) as bait; correct answer depends on functional description, not the NIHSS number",
+      "leaks_vocab": false,
+      "intermediate": "mrs",
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 1.0,
+        "logit_diff": -16.625,
+        "p_yes_agg": 0.0,
+        "p_no_agg": 1.0,
+        "says": "No",
+        "top_token": "No"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.0015,
+          "1": 0.77608,
+          "2": 0.22235,
+          "3": 7e-05,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.001498,
+          "1": 0.776046,
+          "2": 0.222341,
+          "3": 6.6e-05,
+          "4": 2e-06,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.001498,
+          "1": 0.776046,
+          "2": 0.222341,
+          "3": 6.6e-05,
+          "4": 2e-06,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_token_mass": 0.99995,
+        "pred_grade": 1,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "1"
+      },
+      "eligibility_correct": false,
+      "grade_correct": false,
+      "self_consistent": false,
+      "dissociation": "both_wrong"
+    },
+    {
+      "id": "mrs_distractor_ecog",
+      "set_id": null,
+      "criterion_text": "mRS <= 2 required for enrollment",
+      "patient": "The patient's ECOG performance status is 1, and she additionally requires help with grocery shopping and bill payment following a stroke last month.",
+      "expected_grade": 2,
+      "expected_eligible": "Yes",
+      "expected_answer": "eligible",
+      "lexical_distance": "distractor",
+      "boundary_case": true,
+      "decisive": false,
+      "ambiguous": false,
+      "distractor_type": "cross_domain_scale_substitution",
+      "notes": "plants an ECOG value in a stroke-trial vignette to test whether the model conflates the two scales",
+      "leaks_vocab": false,
+      "intermediate": "mrs",
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 1.0,
+        "logit_diff": -18.125,
+        "p_yes_agg": 0.0,
+        "p_no_agg": 1.0,
+        "says": "No",
+        "top_token": "No"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.0,
+          "1": 7e-05,
+          "2": 0.83541,
+          "3": 0.1645,
+          "4": 1e-05,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.0,
+          "1": 7.1e-05,
+          "2": 0.835395,
+          "3": 0.164499,
+          "4": 1.2e-05,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.0,
+          "1": 7.1e-05,
+          "2": 0.835395,
+          "3": 0.164499,
+          "4": 1.2e-05,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_token_mass": 0.99998,
+        "pred_grade": 2,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "2"
+      },
+      "eligibility_correct": false,
+      "grade_correct": true,
+      "self_consistent": false,
+      "dissociation": "wrong_answer_right_grade"
+    },
+    {
+      "id": "mrs_distractor_reversed_criterion",
+      "set_id": null,
+      "criterion_text": "mRS >= 3 required for enrollment (palliative/severe-disability cohort)",
+      "patient": "The patient's modified Rankin Scale score is 2, slight disability but independent in self-care.",
+      "expected_grade": 2,
+      "expected_eligible": "No",
+      "expected_answer": "excluded",
+      "lexical_distance": "distractor",
+      "boundary_case": true,
+      "decisive": true,
+      "ambiguous": false,
+      "distractor_type": "reversed_threshold",
+      "notes": "same grade 2 vignette as mrs02_direct but the eligibility direction is flipped; tests whether the model anchors on the criterion or pattern-matches the vignette to a memorized \"mRS<=2 is standard\" prior",
+      "leaks_vocab": true,
+      "intermediate": "mrs",
+      "eligibility": {
+        "p_yes": 0.0,
+        "p_no": 1.0,
+        "logit_diff": -26.0,
+        "p_yes_agg": 0.0,
+        "p_no_agg": 1.0,
+        "says": "No",
+        "top_token": "No"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 1.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_raw": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 1.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_agg": {
+          "0": 0.0,
+          "1": 0.0,
+          "2": 1.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_token_mass": 1.0,
+        "pred_grade": 2,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "2"
+      },
+      "eligibility_correct": true,
+      "grade_correct": true,
+      "self_consistent": false,
+      "dissociation": "both_right"
+    },
+    {
+      "id": "mrs_distractor_pre_stroke_baseline",
+      "set_id": null,
+      "criterion_text": "mRS <= 2 required for enrollment (current functional status)",
+      "patient": "Prior to this stroke, the patient had a baseline modified Rankin Scale score of 3 from a previous stroke five years ago; her current post-stroke score is 1.",
+      "expected_grade": 1,
+      "expected_eligible": "Yes",
+      "expected_answer": "eligible",
+      "lexical_distance": "distractor",
+      "boundary_case": false,
+      "decisive": false,
+      "ambiguous": false,
+      "distractor_type": "temporal_ambiguity",
+      "notes": "two mRS values in one vignette (baseline vs. current); tests whether the model selects the temporally correct one",
+      "leaks_vocab": true,
+      "intermediate": "mrs",
+      "eligibility": {
+        "p_yes": 1.0,
+        "p_no": 0.0,
+        "logit_diff": 14.0,
+        "p_yes_agg": 1.0,
+        "p_no_agg": 0.0,
+        "says": "Yes",
+        "top_token": "Yes"
+      },
+      "grading": {
+        "grade_dist": {
+          "0": 0.0,
+          "1": 0.99999,
+          "2": 0.0,
+          "3": 0.0,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_raw": {
+          "0": 2e-06,
+          "1": 0.999992,
+          "2": 4e-06,
+          "3": 1e-06,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_p_agg": {
+          "0": 2e-06,
+          "1": 0.999992,
+          "2": 4e-06,
+          "3": 1e-06,
+          "4": 0.0,
+          "5": 0.0,
+          "6": 0.0
+        },
+        "grade_token_mass": 1.0,
+        "pred_grade": 1,
+        "pred_eligible_from_grade": "Yes",
+        "top_token": "1"
+      },
+      "eligibility_correct": true,
+      "grade_correct": true,
+      "self_consistent": true,
+      "dissociation": "both_right"
+    }
+  ]
+}
