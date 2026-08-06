@@ -91,9 +91,7 @@ from prompts.eligibility import build_body
 DEFAULT_STIMULI = Path("specs/stimuli/ecog_v0.csv")
 # Output is model-slugged (as in sweep_eligibility.py) so running the MedGemma
 # and Gemma comparators back to back on the same pod cannot clobber each other.
-OUT_TEMPLATE = "data/ecog_v0_results_{slug}.json"
-
-GRADES = [0, 1, 2, 3, 4]
+OUT_TEMPLATE = "data/{stem}_results_{slug}.json"
 # Print order, easy -> hard. Covers the mrs_v0/recist_v0 vocabulary too so the
 # shared loader orders any of the three sets; unknown values sort last.
 LEX_ORDER = {
@@ -112,10 +110,32 @@ ANSWER_TO_SAYS = {"eligible": "Yes", "excluded": "No"}
 # This prompt names the intermediate because it asks the model to report it.
 # Vignettes must not name it (see DEFINING_VOCAB).
 GRADE_INSTRUCTION = "You are assessing a patient for a clinical trial."
-GRADE_QUESTION = (
-    "What is the patient's ECOG performance status grade? "
-    "Answer with a single digit: 0, 1, 2, 3, or 4."
-)
+
+# Per-intermediate run configuration. `eligible` is the protocol threshold: it
+# used to be the literal `pred <= 1` inside run_grading, which made the single
+# most protocol-specific fact in the file also the least visible one.
+#
+# RECIST is deliberately absent. Its values are readable (see READOUTS) but
+# scoring it needs the calibration and dominance work, because "CR" and
+# "Complete Response" are both correct and the mass may sit on either.
+INTERMEDIATES = {
+    "ecog": {
+        "name": "ECOG performance status",
+        "values": [0, 1, 2, 3, 4],
+        "question": ("What is the patient's ECOG performance status grade? "
+                     "Answer with a single digit: 0, 1, 2, 3, or 4."),
+        "eligible": lambda g: g <= 1,
+        "results_stem": "ecog_v0",
+    },
+    "mrs": {
+        "name": "modified Rankin Scale",
+        "values": [0, 1, 2, 3, 4, 5, 6],
+        "question": ("What is the patient's modified Rankin Scale score? "
+                     "Answer with a single digit: 0, 1, 2, 3, 4, 5, or 6."),
+        "eligible": lambda g: g <= 2,
+        "results_stem": "mrs_v0",
+    },
+}
 
 # A vignette containing its own intermediate's vocabulary tests lookup rather
 # than recovery. Keyed by the `<x>_true` column so the check follows the file:
@@ -245,6 +265,7 @@ def load_stimuli(path: Path) -> list[dict]:
             "distractor_type": (r.get("distractor_type") or "none").lower(),
             "notes": r.get("notes") or "",
             "leaks_vocab": bool(vocab.search(vignette)),
+            "intermediate": intermediate,
         })
     return rows
 
@@ -261,12 +282,12 @@ def eligibility_chat(tokenizer, row: dict) -> str:
     )
 
 
-def grading_chat(tokenizer, row: dict) -> str:
+def grading_chat(tokenizer, row: dict, cfg: dict) -> str:
     """Prompt 2. Independent turn — no eligibility criterion, no prior answer."""
     body = (
         f"{GRADE_INSTRUCTION}\n"
         f"Patient: {row['patient']}\n"
-        f"{GRADE_QUESTION}"
+        f"{cfg['question']}"
     )
     return tokenizer.apply_chat_template(
         [{"role": "user", "content": body}],
@@ -375,9 +396,10 @@ def calibrate_surface(model, tokenizer, chat: str, words: list[str], device) -> 
     return "spaced" if spaced > bare else "bare"
 
 
-def resolve_tokens(tokenizer, prefer_yesno: str = "spaced",
+def resolve_tokens(tokenizer, cfg: dict, prefer_yesno: str = "spaced",
                    prefer_grade: str = "bare") -> dict:
     """Canonical ids (primary, one per answer) + variant ids (evaluation only)."""
+    grades = cfg["values"]
     def variants(word: str) -> list[int]:
         forms = sorted({word, word.lower(), word.upper(), word.capitalize()})
         ids, seen = [], set()
@@ -391,18 +413,18 @@ def resolve_tokens(tokenizer, prefer_yesno: str = "spaced",
 
     yes_id, yes_form = resolve_canonical(tokenizer, "Yes", prefer_yesno)
     no_id, no_form = resolve_canonical(tokenizer, "No", prefer_yesno)
-    grade_res = {g: resolve_canonical(tokenizer, str(g), prefer_grade) for g in GRADES}
+    grade_res = {g: resolve_canonical(tokenizer, str(g), prefer_grade) for g in grades}
 
     tok = {
         "yes": yes_id, "no": no_id,
         "yes_form": yes_form, "no_form": no_form,
         "yes_agg": variants("Yes"),
         "no_agg": variants("No"),
-        "grade": {g: grade_res[g][0] for g in GRADES},
-        "grade_form": {g: grade_res[g][1] for g in GRADES},
+        "grade": {g: grade_res[g][0] for g in grades},
+        "grade_form": {g: grade_res[g][1] for g in grades},
         "grade_agg": {g: [t for t in (single_token_id(tokenizer, f" {g}"),
                                       single_token_id(tokenizer, f"{g}"))
-                          if t is not None] for g in GRADES},
+                          if t is not None] for g in grades},
     }
     if yes_id is None or no_id is None:
         raise ValueError("Neither ' Yes'/' No' nor 'Yes'/'No' are single tokens here")
@@ -452,26 +474,30 @@ def run_eligibility(model, tokenizer, row, tok, device) -> dict:
     }
 
 
-def run_grading(model, tokenizer, row, tok, device) -> dict:
+def run_grading(model, tokenizer, row, tok, device, cfg) -> dict:
     import torch
-    logits = next_token_logits(model, tokenizer, grading_chat(tokenizer, row), device)
+    grades = cfg["values"]
+    logits = next_token_logits(model, tokenizer,
+                               grading_chat(tokenizer, row, cfg), device)
     probs = torch.softmax(logits, dim=-1)  # (vocab,)
-    canon = {g: probs[tok["grade"][g]].item() for g in GRADES}
-    agg = {g: probs[tok["grade_agg"][g]].sum().item() for g in GRADES}
+    canon = {g: probs[tok["grade"][g]].item() for g in grades}
+    agg = {g: probs[tok["grade_agg"][g]].sum().item() for g in grades}
     mass = sum(canon.values())
-    dist = {g: (canon[g] / mass if mass > 0 else 0.0) for g in GRADES}
+    dist = {g: (canon[g] / mass if mass > 0 else 0.0) for g in grades}
     pred = max(dist, key=dist.get)
     return {
-        # renormalised over the 5 canonical grade tokens — the grade distribution
-        "grade_dist": {str(g): round(dist[g], 5) for g in GRADES},
-        "grade_p_raw": {str(g): round(canon[g], 6) for g in GRADES},
-        "grade_p_agg": {str(g): round(agg[g], 6) for g in GRADES},
+        # renormalised over the canonical grade tokens — the grade distribution
+        "grade_dist": {str(g): round(dist[g], 5) for g in grades},
+        "grade_p_raw": {str(g): round(canon[g], 6) for g in grades},
+        "grade_p_agg": {str(g): round(agg[g], 6) for g in grades},
         # how much of the full next-token distribution lands on a grade digit at
         # all; low mass = the model is not answering in the requested format and
         # the argmax below is an artefact of renormalising noise
         "grade_token_mass": round(mass, 5),
         "pred_grade": pred,
-        "pred_eligible_from_grade": "Yes" if pred <= 1 else "No",
+        # The protocol threshold, from the intermediate config rather than a
+        # literal buried here.
+        "pred_eligible_from_grade": "Yes" if cfg["eligible"](pred) else "No",
         "top_token": tokenizer.decode([int(logits.argmax())]),
     }
 
@@ -656,10 +682,13 @@ def print_summary(rows: list[dict], s: dict) -> None:
 
 
 def build_results(args, stim_path: Path, rows: list[dict], tok: dict,
-                  warnings: list[str], summary: dict, calib: dict) -> dict:
+                  warnings: list[str], summary: dict, calib: dict,
+                  cfg: dict) -> dict:
+    GRADES = cfg["values"]
     return {
         "model": args.model,
         "stimuli_file": str(stim_path),
+        "intermediate": cfg["name"],
         "n_rows": len(rows),
         "scoring": {
             "eligibility": "all rows",
@@ -797,7 +826,7 @@ def main() -> None:
     ap.add_argument("--write-csv", nargs="?", const="AUTO", default=None,
                     help="also write a copy of the CSV with model_inclusion / "
                          "model_ecog filled in; bare flag uses "
-                         "data/ecog_v0_scored_<slug>.csv")
+                         "data/<stem>_scored_<slug>.csv")
     args = ap.parse_args()
 
     stim_path = Path(args.stimuli)
@@ -806,6 +835,20 @@ def main() -> None:
     rows = load_stimuli(stim_path)
     if args.limit:
         rows = rows[:args.limit]
+    if not rows:
+        sys.exit(f"No rows parsed from {stim_path} — check the header.")
+
+    # Which scale this file is, from its `<x>_true` column. Refuse rather than
+    # guess: scoring mRS against the ECOG threshold would run and be wrong.
+    intermediate = rows[0]["intermediate"]
+    if intermediate not in INTERMEDIATES:
+        sys.exit(
+            f"No run config for intermediate {intermediate!r} "
+            f"(have: {sorted(INTERMEDIATES)}).\n"
+            f"Its values may still be readable — see --check-tokens — but "
+            f"scoring needs a threshold and question text.")
+    cfg = INTERMEDIATES[intermediate]
+    GRADES = cfg["values"]
 
     model_slug = args.model.split("/")[-1]
     # Rows that never name the intermediate: the population the paraphrase
@@ -851,7 +894,7 @@ def main() -> None:
                   f"decisive={r['decisive']} ambiguous={r['ambiguous']} "
                   f"expected: elig={r['expected_eligible']} grade={r['expected_grade']}")
             print("[1 eligibility]\n" + eligibility_chat(_T, r))
-            print("[2 grading]\n" + grading_chat(_T, r))
+            print("[2 grading]\n" + grading_chat(_T, r, cfg))
         print("\nDry run: no model loaded, nothing written.")
         return
 
@@ -860,7 +903,7 @@ def main() -> None:
         # seconds rather than after an 8GB download.
         from transformers import AutoTokenizer
         tkz = AutoTokenizer.from_pretrained(args.model)
-        t = resolve_tokens(tkz)
+        t = resolve_tokens(tkz, cfg)
         print("NOTE: tokenizer-only. This shows which forms are single TOKENS; it "
               "cannot tell which the model EMITS — that needs weights and is "
               "calibrated at run start.")
@@ -869,7 +912,7 @@ def main() -> None:
         print(f"  no   {t['no_form']!r:>8} -> {t['no']}")
         for g in GRADES:
             print(f"  {g}    {t['grade_form'][g]!r:>8} -> {t['grade'][g]}")
-        print("\nAll ECOG readout tokens resolved to a single id.")
+        print(f"\nAll {cfg['name']} readout tokens resolved to a single id.")
 
         print_readout_report(lambda s: tkz.encode(s, add_special_tokens=False))
         return
@@ -890,9 +933,9 @@ def main() -> None:
                                      eligibility_chat(tokenizer, rows[0]),
                                      ["Yes", "No"], device)
     prefer_grade = calibrate_surface(model, tokenizer,
-                                     grading_chat(tokenizer, rows[0]),
+                                     grading_chat(tokenizer, rows[0], cfg),
                                      [str(g) for g in GRADES], device)
-    tok = resolve_tokens(tokenizer, prefer_yesno, prefer_grade)
+    tok = resolve_tokens(tokenizer, cfg, prefer_yesno, prefer_grade)
     print(f"Readout calibration: yes/no -> {prefer_yesno}, grades -> {prefer_grade}")
     print("Canonical readout tokens (surface form actually used):")
     print(f"  yes={tok['yes_form']!r}->{tok['yes']}   no={tok['no_form']!r}->{tok['no']}")
@@ -913,7 +956,7 @@ def main() -> None:
 
     for r in rows:
         r["eligibility"] = run_eligibility(model, tokenizer, r, tok, device)
-        r["grading"] = run_grading(model, tokenizer, r, tok, device)
+        r["grading"] = run_grading(model, tokenizer, r, tok, device, cfg)
 
     score_rows(rows)
     summary = summarise(rows)
@@ -922,14 +965,16 @@ def main() -> None:
 
     calib = {"yes_no": prefer_yesno, "grades": prefer_grade,
              "probe_canonical_mass": round(canon_mass, 5)}
-    results = build_results(args, stim_path, rows, tok, warnings, summary, calib)
-    out = Path(args.out) if args.out else Path(OUT_TEMPLATE.format(slug=model_slug))
+    results = build_results(args, stim_path, rows, tok, warnings, summary,
+                            calib, cfg)
+    out = (Path(args.out) if args.out else
+           Path(OUT_TEMPLATE.format(stem=cfg["results_stem"], slug=model_slug)))
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(results, indent=2))
     print(f"\nSaved: {out}")
 
     if args.write_csv:
-        csv_out = (Path(f"data/ecog_v0_scored_{model_slug}.csv")
+        csv_out = (Path(f"data/{cfg['results_stem']}_scored_{model_slug}.csv")
                    if args.write_csv == "AUTO" else Path(args.write_csv))
         write_scored_csv(stim_path, rows, csv_out)
         print(f"Saved: {csv_out}")
