@@ -39,9 +39,13 @@ dictionary before they build graphs. Plan: `docs/program/pillars-1-2-intermediat
 
 ## Rules
 
-1. No experiment without a locked `PREREG.md`. Template in `experiments/`. It won't let you
-   start without naming a baseline and a kill criterion. A directory without one isn't part
-   of the program.
+1. **Claim-bearing runs** need a locked `PREREG.md` in `experiments/EXP-NNN-name/`. Template
+   in `experiments/`; it won't let you start without naming a baseline and a kill criterion.
+   A run is claim-bearing if its result is meant to support a pillar claim externally.
+   **Exploratory runs need none** — they live outside `experiments/`, iterate freely, and
+   may not be cited for a pillar claim however good they look (ADR-0006). Two things carry
+   into the exploratory tier: log every run in `docs/run-log.md`, and write the rule for
+   sizing a confirmatory run *before* expanding the stimuli it will use.
 2. Baselines run the same week as the mechanistic work. Baselines run afterwards get shaped
    by what you already found.
 3. Feature labels get adjudicated. Report inter-rater agreement if there's a second rater,
@@ -101,6 +105,8 @@ Spec snapshots freeze once a PREREG points at them.
   replaced by 0004.
 - `docs/decisions/0004-intermediate-recovery.md` — current. Intermediate recovery, not
   criterion-node search; transcoders as dictionary before graph.
+- `docs/decisions/0006-prereg-scope.md` — current. Rule 1 applies to claim-bearing runs
+  only; exploratory runs are logged, not pre-registered.
 - `docs/decisions/0005-medicine-as-testbed-and-application.md` — **Proposed, not in force.**
   Would make medicine both testbed and application domain. Until it is accepted, 0003
   governs: medicine is the testbed, not the application. §What we're doing above is ahead
