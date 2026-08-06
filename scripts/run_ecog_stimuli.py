@@ -22,8 +22,9 @@ resolves to the bare "Yes"/"No" and bare digits. Variant sums are reported as
 *_agg for evaluation only.
 
 SCOPE: single-digit ordinal intermediates only (answer_surface
-"single_token_per_value" in specs/schema/spec_item.json). GRADES is a constant,
-so pointing this at anything else takes a code edit. The other two surfaces the
+"single_token_per_value" in specs/schema/spec_item.json). The value set, question
+and threshold come from INTERMEDIATES, so a new ordinal scale is a config entry;
+a new answer *surface* is not. The other two surfaces the
 schema describes need different instruments, not parameters: roman numerals must
 be read after a prefix ("Class ") because bare "I" is among the most frequent
 tokens in the vocabulary, and continuous values have no bounded token set to form
@@ -711,7 +712,7 @@ def build_results(args, stim_path: Path, rows: list[dict], tok: dict,
         "prompts": {
             "eligibility": build_body({"criterion": "Inclusion: <inclusion_rule>.",
                                        "patient": "<patient_detail>"}),
-            "grading": f"{GRADE_INSTRUCTION}\nPatient: <patient_detail>\n{GRADE_QUESTION}",
+            "grading": f"{GRADE_INSTRUCTION}\nPatient: <patient_detail>\n{cfg['question']}",
         },
         "warnings": warnings,
         "summary": summary,
