@@ -1,4 +1,4 @@
-# ADR-0006 — Pre-registration applies to claim-bearing runs, not to every run
+# ADR-0006 — Pre-registration applies to formal runs, not to every run
 
 **Date:** 2026-08-05
 **Status:** Accepted
@@ -18,7 +18,7 @@ look* — is false.
 
 Applied literally the rule has two failure modes, and both are worse than a narrower rule.
 Either exploratory work stops, or the rule is ignored wholesale and the discipline is lost
-where it actually matters.
+where it matters.
 
 Two pieces of evidence from this repo:
 
@@ -48,12 +48,12 @@ Rule 1 splits into two tiers.
 change the analysis, and abandon. They may not be cited as evidence for a pillar claim, in a
 paper or a report, however good they look.
 
-**Claim-bearing runs.** A locked `PREREG.md` as before, in `experiments/EXP-NNN-name/`,
-with rule 4 (no editing after lock) intact. A run is claim-bearing if its result is intended
+**Formal runs.** A locked `PREREG.md` as before, in `experiments/EXP-NNN-name/`,
+with rule 4 (no editing after lock) intact. A run is formal if its result is intended
 to support a pillar claim externally.
 
 Two obligations survive into the exploratory tier, because they are what pre-registration
-actually buys and they are cheap:
+buys and they are cheap:
 
 1. **Log every run.** Append to `docs/run-log.md`: date, what was run, on what stimuli, what
    came out, one line. Without this the number of looks preceding a registered result is

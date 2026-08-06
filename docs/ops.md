@@ -93,7 +93,7 @@ rates to wait on a checkpoint download is the standard way to burn the budget.
 - **Forward-pass work (this section): 24GB is enough** — A10, L4, 4090, 5090. ~8.6GB of
   bf16 weights plus a ~47MB logits tensor. Take whatever is cheap and available.
 - **Attribution / graphs (`run_graphs_ct.py`): H100 80GB.** nnsight holds all-layer
-  activations and is not memory-efficient; that is the one job that genuinely needs it.
+  activations and is not memory-efficient; that is the one job that needs it.
 
 The "A10 is too small for 4B" note in the Stage 1 section is about that nnsight path and
 does **not** apply to forward passes. Don't let it push you to an H100 for a sweep.

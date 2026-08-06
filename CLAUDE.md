@@ -21,27 +21,20 @@ pre-registered null is a real result and does not need rescuing.
 
 | | Question | Status |
 |---|---|---|
-| 1. Completeness | Does the model compute the clinical intermediates the spec is written in? | Active |
-| 2. Legitimacy | Does a demographic attribute move the answer without moving the intermediate? | Active |
-| 3. Calibration | Does the model know when the spec doesn't settle the answer? | Later |
+| 1. Completeness | Does the model compute the correct guideline intermediate score? | Active |
+| 2. Application | Is the inclusion decision guided by the guideline score? | Active |
 
-Pillars 1 and 2 share one object: the **clinical intermediate**. Specs aren't written in raw
-patient facts but in abstractions — ECOG grade, creatinine clearance, NYHA class. Pillar 1
-asks whether the model has the abstraction or only the vocabulary; pillar 2 asks whether a
-demographic attribute routes around it. Same stimuli, same instruments, run together.
+Pillar 1 tests if model calculates the guideline scores.
+Pillar 2 tests if the model correctly applies the guideline score to the answer of patient inclusion
 
-The load-bearing test is **paraphrase generalisation** — clinical notes never use protocol
-phrasing, so a model holding the ECOG table but not the concept fails silently on exactly the
-population it would be deployed against. Probing and patching first, transcoders as a
-dictionary before they build graphs. Plan: `docs/program/pillars-1-2-intermediate-recovery.md`.
+Plan: `docs/program/pillars-1-2-intermediate-recovery.md`.
 
 ---
-
 ## Rules
 
-1. **Claim-bearing runs** need a locked `PREREG.md` in `experiments/EXP-NNN-name/`. Template
+1. **Formal runs** need a locked `PREREG.md` in `experiments/EXP-NNN-name/`. Template
    in `experiments/`; it won't let you start without naming a baseline and a kill criterion.
-   A run is claim-bearing if its result is meant to support a pillar claim externally.
+   A run is formal if its result is meant to support a pillar claim externally.
    **Exploratory runs need none** — they live outside `experiments/`, iterate freely, and
    may not be cited for a pillar claim however good they look (ADR-0006). Two things carry
    into the exploratory tier: log every run in `docs/run-log.md`, and write the rule for
@@ -64,9 +57,10 @@ wrong.
 
 ## The bottleneck is clinician time, not compute
 
-Two assets, both written by hand. **Stimulus sets**: ~25 vignettes per grade per
-intermediate, describing the clinical state without ever using the defining vocabulary, plus
-a deliberately lexically-distant held-out set — that held-out set *is* the experiment.
+Two assets, both written by hand. **Stimulus sets**: vignettes per grade per
+intermediate, describing the clinical state without ever using the defining vocabulary
+
+
 **Spec items**: the annotated intermediate, threshold, and attribute policy behind each call.
 
 Graphs and transcoders are replaceable. These aren't. When writing and GPU work compete,
@@ -85,7 +79,9 @@ writing wins. Don't queue compute that runs ahead of the stimuli it needs.
 ## Layout
 
 - `docs/program/` — thesis, pillar plans
-- `docs/decisions/` — ADRs, immutable, superseded rather than edited
+- `docs/decisions/` — ADRs. Substance is immutable: a decision, its rationale, date or
+  status changes only by a new superseding ADR. Wording, terminology and typos can be fixed
+  in place — git holds the prior text, so the record survives either way.
 - `docs/ops.md` — pod setup, scripts, environment gotchas
 - `specs/` — item schema, versioned snapshots, adjudication records
 - `experiments/EXP-NNN-name/` — PREREG, run, results, report
@@ -105,8 +101,8 @@ Spec snapshots freeze once a PREREG points at them.
   replaced by 0004.
 - `docs/decisions/0004-intermediate-recovery.md` — current. Intermediate recovery, not
   criterion-node search; transcoders as dictionary before graph.
-- `docs/decisions/0006-prereg-scope.md` — current. Rule 1 applies to claim-bearing runs
-  only; exploratory runs are logged, not pre-registered.
+- `docs/decisions/0006-prereg-scope.md` — current. Rule 1 applies to formal runs only;
+  exploratory runs are logged, not pre-registered.
 - `docs/decisions/0005-medicine-as-testbed-and-application.md` — **Proposed, not in force.**
   Would make medicine both testbed and application domain. Until it is accepted, 0003
   governs: medicine is the testbed, not the application. §What we're doing above is ahead
@@ -116,15 +112,14 @@ Spec snapshots freeze once a PREREG points at them.
 
 ## Where things stand
 
+
+ECOG stimuli written, ready to test on pod. 
+
 Stage 1 answered its question and closed a door. 10 eligibility graph pairs on gemma-3-4b-it
 (`frontend/graph_data/`) and medgemma-4b-it (`.../medgemma/`), completeness 0.80–0.82 and
 0.84–0.85. The off-distribution penalty is absent — MedGemma scores *higher* — so Stage 2 lost
 its trigger. Record that transfer result, don't headline it; it also tightens what
 MedGemma-specific circuit claims can say.
-
-Under 0004 nothing is built: no stimulus sets, no `intermediate` block in the schema, no spec
-snapshot, no PREREG. **The blocker is vignette writing, not GPU.** First compute is the 4–6
-boundary-pair graph batch, then probes and feature search — forward passes, not a big pod run.
 
 Two Round-1 claims failed re-verification (`scripts/reproduce_round1.py`, offline, ~3 min):
 MedGemma is *more* early-layer weighted, not less (late influence 11% vs Gemma's 16%), and
@@ -168,7 +163,7 @@ Schema: `specs/schema/spec_item.json`, which still needs the 0004 `intermediate`
 vocabulary). Cut `specs/v0.1/` before the first PREREG points at it.
 
 Vignettes vary only the clinical description — hold the protocol and everything else fixed,
-or the probe learns sick-versus-well, which the model certainly has and which is not ECOG.
+or the probe learns sick-versus-well, which the model has and which is not ECOG.
 
 One canonical token for attribution (leading-space variant on IT models); aggregate case
 variants for evaluation only, never for attribution — mixing them corrupts completeness. The

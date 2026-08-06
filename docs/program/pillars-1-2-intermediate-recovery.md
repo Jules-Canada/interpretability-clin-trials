@@ -67,7 +67,7 @@ experiment.
 
 Each vignette pairs with an eligibility prompt against a protocol stating the threshold.
 Hold everything else fixed; vary only the clinical description. Otherwise the probe learns
-sick-versus-well, which the model certainly has and which is not ECOG.
+sick-versus-well, which the model has and which is not ECOG.
 
 **Step 1 — Behaviour.** Eligibility accuracy, broken out by grade. Expect ceiling at the
 extremes and failure at the decisive boundary. If accuracy is at ceiling everywhere, the

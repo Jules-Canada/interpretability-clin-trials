@@ -54,8 +54,8 @@ Explicitly unchanged by this ADR:
 ## Consequences
 
 **Open — these need answers before this ADR can be accepted.** ADR-0003's Consequences
-section derives six commitments from testbed-only framing. Co-equal framing does not
-obviously preserve them:
+section derives six commitments from testbed-only framing. Co-equal framing may not
+preserve them:
 
 - *"Clinical adjudication time, not GPU time, becomes the critical path."* If application
   work is co-equal, what is dropped when application work and adjudication compete for the

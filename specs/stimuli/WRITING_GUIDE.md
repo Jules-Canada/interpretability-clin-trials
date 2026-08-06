@@ -14,7 +14,7 @@ companion, not a substitute.
 ## What the vignettes have to do
 
 We are testing whether the model **computes the clinical abstraction** the protocol is
-written in, or merely recognises the vocabulary. A model that has memorised the ECOG table
+written in, or only recognises the vocabulary. A model that has memorised the ECOG table
 but not the concept looks competent on anything phrased like the ECOG table, and fails on
 real clinical notes — which never use that phrasing. That population is exactly where it
 would be deployed.
@@ -45,7 +45,7 @@ enough.
 
 The protocol threshold is ECOG ≤ 1, so the decisive contrast is grade 1 against grade 2.
 
-What actually separates them:
+What separates them:
 
 | | ECOG 1 | ECOG 2 |
 |---|---|---|
@@ -56,7 +56,7 @@ What actually separates them:
 
 **Both walk. Both self-care.** That is the trap. A vignette that separates 1 from 2 by
 describing washing, dressing, or walking difficulty is not testing this boundary — it is
-testing grade 3, where self-care genuinely fails. At the 1/2 line, hold mobility and
+testing grade 3, where self-care fails. At the 1/2 line, hold mobility and
 self-care constant and vary **only capacity for light work**.
 
 E008 is the model to copy: *"Patient able to walk unassisted but not able to work."*
@@ -111,7 +111,7 @@ once as `paraphrase` (plain clinical restatement) and once as `inferred_symptoms
 
 Because the grade is fixed by construction, any change in the model's answer across a set is
 caused by wording alone. That is the paraphrase-generalisation measurement, and it is a
-paired within-patient comparison — no worrying that one group of patients was simply harder,
+paired within-patient comparison — no worrying that one group of patients was harder,
 because they are the same patients.
 
 All 12 sets (S01–S12) are complete pairs inside `ecog_v0.csv`, 24 rows, spanning grades 0–4.
@@ -158,7 +158,7 @@ Have 4, want ~6. Existing types are `symptom_severity_substitution`,
 ## What makes a bad vignette
 
 - **Sick-versus-well.** If grade correlates with how ill the patient sounds, the probe
-  learns illness severity — which the model certainly has, and which is not ECOG. Two
+  learns illness severity — which the model has, and which is not ECOG. Two
   patients at different grades should be able to sound equally unwell.
 - **Varying the protocol.** Hold the criterion text fixed. Only the clinical description
   changes — except for `reversed_threshold` distractors, where flipping it is the point.
@@ -183,7 +183,7 @@ eligibility_criterion, expected_answer, distractor_type, notes`
 - `notes` — say why the row exists, especially what a distractor baits.
 
 **Quote any field containing a comma.** An unquoted comma silently shifts every column
-after it; one RECIST row was dropping out of scoring entirely before this was caught.
+after it; one RECIST row was dropping out of scoring before this was caught.
 
 ---
 
@@ -202,7 +202,7 @@ gone; paraphrase sets show consistent grades.
 
 The honest reason is that we don't yet know which study we're running. If the model
 collapses on distant wording, the effect is large and needs few vignettes to establish. If
-it merely drifts, the required set is several times larger and the whole measurement may
+it only drifts, the required set is several times larger and the whole measurement may
 need rethinking. Those two regimes differ by roughly 5× in required sample size.
 
 So the pilot is sized to tell the regimes apart, not to settle the question. mRS and RECIST
