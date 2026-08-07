@@ -19,7 +19,7 @@ bash scripts/setup_pod_circuit_tracer.sh
 source .venv/bin/activate
 python scripts/run_graphs_ct.py --probe    # confirm circuit-tracer API — instant, no GPU
 python scripts/run_graphs_ct.py --smoke    # gemma-2-2b known graph — API end-to-end
-python scripts/sweep_eligibility.py --model google/gemma-3-4b-it        # behavioral gate
+python deferred/scripts/sweep_eligibility.py --model google/gemma-3-4b-it  # Stage 1 gate, closed
 python scripts/run_graphs_ct.py --model google/gemma-3-4b-it \
     --transcoders mwhanna/gemma-scope-2-4b-it                           # then MedGemma
 ```
@@ -58,7 +58,7 @@ run. `elig_age_pos.json` is 0 bytes and needs regenerating regardless.
 
 ## Pod setup — forward-pass only (sweeps, ECOG stimuli, probes)
 
-`sweep_eligibility.py` and `run_ecog_stimuli.py` need **no circuit-tracer, no nnsight, no
+`run_ecog_stimuli.py` needs **no circuit-tracer, no nnsight, no
 transcoders** — they are plain `AutoModelForCausalLM` forward passes. Skip
 `setup_pod_circuit_tracer.sh` (its slowest step is building circuit-tracer from git) unless
 the same session also runs attribution:

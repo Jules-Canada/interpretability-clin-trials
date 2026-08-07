@@ -147,14 +147,17 @@ in `frontend/graph_data/`, not a byte-identical copy — moved to `deferred/grap
 
 ## Entry points
 
-`scripts/` is now the live set only: `run_graphs_ct.py` (`--probe`, `--smoke`, then batch),
-`sweep_eligibility.py`, `analyze_graphs.py`, `compare_graphs.py`, `reproduce_round1.py`,
-`profile_criteria.py`, `run_ecog_stimuli.py`, `setup_pod_circuit_tracer.sh`, plus
-`stage0_tokenizer_check.py` (kept live — `prompts/eligibility.py` cites it as the provenance
-for the canonical-token choice, which 0004 still depends on). The 21 CLT-path scripts moved to
-`deferred/scripts/` on 2026-08-05. Among them `find_top_activations.py` still has the
-2026-06-01 RMS-scale fix; without it it silently returns zeros. Pod recipes and gotchas:
-`docs/ops.md`.
+`scripts/` is the live set only: `run_ecog_stimuli.py` (the instrument — vignettes in,
+grading and eligibility out), `run_graphs_ct.py` (`--probe`, `--smoke`, then batch),
+`analyze_graphs.py`, `compare_graphs.py`, `reproduce_round1.py`, `profile_criteria.py`,
+`setup_pod_circuit_tracer.sh`, plus `stage0_tokenizer_check.py` (kept live —
+`prompts/eligibility.py` cites it as the provenance for the canonical-token choice, which
+0004 still depends on).
+
+22 CLT-path scripts are in `deferred/scripts/`. `sweep_eligibility.py` joined them
+2026-08-06: it is the Stage 1 behavioural gate, and Stage 1 is closed, so it gates a
+decision already made. Among the rest `find_top_activations.py` still has the 2026-06-01
+RMS-scale fix; without it it silently returns zeros. Pod recipes and gotchas: `docs/ops.md`.
 
 ## Writing spec items
 

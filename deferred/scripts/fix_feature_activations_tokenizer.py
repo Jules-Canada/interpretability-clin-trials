@@ -32,7 +32,7 @@ from pathlib import Path
 import h5py
 from transformers import AutoTokenizer
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root (deferred/scripts/)
 from scripts._tokenizer_resolve import resolve_model_name
 
 

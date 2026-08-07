@@ -123,7 +123,7 @@ echo "  source .venv/bin/activate"
 echo
 echo "Then, in order:"
 echo "  1. python scripts/run_graphs_ct.py --smoke           # gemma-2-2b API check"
-echo "  2. python scripts/sweep_eligibility.py --model google/gemma-3-4b-it"
+echo "  2. python deferred/scripts/sweep_eligibility.py --model google/gemma-3-4b-it  # Stage 1 gate, closed"
 echo "  3. python scripts/run_graphs_ct.py --model google/gemma-3-4b-it \\"
 echo "         --transcoders mwhanna/gemma-scope-2-4b-it"
 echo "  4. repeat 2-3 for your MedGemma variant (same --transcoders set)"

@@ -35,7 +35,7 @@ import traceback
 from pathlib import Path
 
 # Ensure repo root is on sys.path when running as a script
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root (deferred/scripts/)
 
 import torch
 from transformer_lens import HookedTransformer

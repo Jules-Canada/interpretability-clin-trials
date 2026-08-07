@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-scripts/sweep_eligibility.py
+deferred/scripts/sweep_eligibility.py
 
 Stage 1 behavioral GATE (forward-pass only — no circuit-tracer needed).
 
@@ -21,8 +21,8 @@ decision (run_graphs_ct.py). If it stays incoherent, that incoherence is the
 finding and the prompts need a redesign before more compute.
 
 Usage:
-    python scripts/sweep_eligibility.py --model google/gemma-3-4b-it
-    python scripts/sweep_eligibility.py --model google/medgemma-4b-it
+    python deferred/scripts/sweep_eligibility.py --model google/gemma-3-4b-it
+    python deferred/scripts/sweep_eligibility.py --model google/medgemma-4b-it
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ import sys
 from pathlib import Path
 
 # Repo root on sys.path so `prompts` imports when run as a script.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root (deferred/scripts/)
 
 # Route the HF cache to /workspace on pods (20GB root disk fills otherwise).
 # Must be set before transformers/huggingface_hub import. No-op on the Mac.
