@@ -23,9 +23,15 @@ pre-registered null is a real result and does not need rescuing.
 |---|---|---|
 | 1. Completeness | Does the model compute the correct guideline intermediate score? | Active |
 | 2. Application | Is the inclusion decision guided by the guideline score? | Active |
+| 3. Calibration | Does the model know when the spec doesn't settle the answer? | Later |
 
 Pillar 1 tests if model calculates the guideline scores.
 Pillar 2 tests if the model correctly applies the guideline score to the answer of patient inclusion
+Pillar 3 tests if the model identifies when the guideline does not settle the answer
+
+Pillar 2 measures the *coupling* between the two turns, not the accuracy of either — the
+informative cell is a right answer over a wrong grade (ADR-0007). Pillar 3 is Later but not
+dropped; `recist_v0.csv` already carries an `indeterminate` row that serves only it.
 
 Plan: `docs/program/pillars-1-2-intermediate-recovery.md`.
 
@@ -103,6 +109,9 @@ Spec snapshots freeze once a PREREG points at them.
   criterion-node search; transcoders as dictionary before graph.
 - `docs/decisions/0006-prereg-scope.md` — current. Rule 1 applies to formal runs only;
   exploratory runs are logged, not pre-registered.
+- `docs/decisions/0007-pillar-2-application.md` — **Proposed.** Pillar 2 becomes
+  Application; Legitimacy withdrawn; pillar 3 retained as Later. The table above already
+  reflects it.
 - `docs/decisions/0005-medicine-as-testbed-and-application.md` — **Proposed, not in force.**
   Would make medicine both testbed and application domain. Until it is accepted, 0003
   governs: medicine is the testbed, not the application. §What we're doing above is ahead
