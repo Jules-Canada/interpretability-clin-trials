@@ -33,6 +33,9 @@ include = ["clt*", "graphs*", "interventions*", "prompts*", "viz*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# `slow` is documented as opt-in; without this it ran by default. A command-line
+# -m overrides this one, so `pytest -m slow` still selects exactly those tests.
+addopts = "-m 'not slow'"
 markers = [
     "slow: tests that load large models or trained checkpoints (opt-in: pytest -m slow)",
 ]
