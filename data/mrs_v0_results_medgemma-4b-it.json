@@ -94,7 +94,7 @@
     "grade_n": 18,
     "grade_ambiguous_correct": 0,
     "grade_ambiguous_n": 0,
-    "self_consistent": 16,
+    "self_consistent": 17,
     "by_expected_grade": {
       "0": {
         "n": 2,
@@ -283,7 +283,8 @@
         "grade_token_mass": 0.99999,
         "pred_grade": 0,
         "pred_eligible_from_grade": "Yes",
-        "top_token": "0"
+        "top_token": "0",
+        "threshold_source": "criterion"
       },
       "eligibility_correct": true,
       "grade_correct": true,
@@ -346,7 +347,8 @@
         "grade_token_mass": 0.99996,
         "pred_grade": 0,
         "pred_eligible_from_grade": "Yes",
-        "top_token": "0"
+        "top_token": "0",
+        "threshold_source": "criterion"
       },
       "eligibility_correct": true,
       "grade_correct": true,
@@ -409,7 +411,8 @@
         "grade_token_mass": 0.99997,
         "pred_grade": 1,
         "pred_eligible_from_grade": "Yes",
-        "top_token": "1"
+        "top_token": "1",
+        "threshold_source": "criterion"
       },
       "eligibility_correct": true,
       "grade_correct": true,
@@ -472,7 +475,8 @@
         "grade_token_mass": 0.99996,
         "pred_grade": 0,
         "pred_eligible_from_grade": "Yes",
-        "top_token": "0"
+        "top_token": "0",
+        "threshold_source": "criterion"
       },
       "eligibility_correct": true,
       "grade_correct": false,
@@ -535,7 +539,8 @@
         "grade_token_mass": 0.99982,
         "pred_grade": 2,
         "pred_eligible_from_grade": "Yes",
-        "top_token": "2"
+        "top_token": "2",
+        "threshold_source": "criterion"
       },
       "eligibility_correct": true,
       "grade_correct": true,
@@ -598,7 +603,8 @@
         "grade_token_mass": 0.99463,
         "pred_grade": 1,
         "pred_eligible_from_grade": "Yes",
-        "top_token": "1"
+        "top_token": "1",
+        "threshold_source": "criterion"
       },
       "eligibility_correct": true,
       "grade_correct": false,
@@ -661,7 +667,8 @@
         "grade_token_mass": 0.9994,
         "pred_grade": 1,
         "pred_eligible_from_grade": "Yes",
-        "top_token": "1"
+        "top_token": "1",
+        "threshold_source": "criterion"
       },
       "eligibility_correct": true,
       "grade_correct": false,
@@ -724,7 +731,8 @@
         "grade_token_mass": 0.99997,
         "pred_grade": 3,
         "pred_eligible_from_grade": "No",
-        "top_token": "3"
+        "top_token": "3",
+        "threshold_source": "criterion"
       },
       "eligibility_correct": true,
       "grade_correct": true,
@@ -787,7 +795,8 @@
         "grade_token_mass": 0.98232,
         "pred_grade": 2,
         "pred_eligible_from_grade": "Yes",
-        "top_token": "2"
+        "top_token": "2",
+        "threshold_source": "criterion"
       },
       "eligibility_correct": false,
       "grade_correct": false,
@@ -850,7 +859,8 @@
         "grade_token_mass": 0.98183,
         "pred_grade": 1,
         "pred_eligible_from_grade": "Yes",
-        "top_token": "1"
+        "top_token": "1",
+        "threshold_source": "criterion"
       },
       "eligibility_correct": false,
       "grade_correct": false,
@@ -913,7 +923,8 @@
         "grade_token_mass": 0.99998,
         "pred_grade": 4,
         "pred_eligible_from_grade": "No",
-        "top_token": "4"
+        "top_token": "4",
+        "threshold_source": "criterion"
       },
       "eligibility_correct": true,
       "grade_correct": true,
@@ -976,7 +987,8 @@
         "grade_token_mass": 0.93589,
         "pred_grade": 4,
         "pred_eligible_from_grade": "No",
-        "top_token": "4"
+        "top_token": "4",
+        "threshold_source": "criterion"
       },
       "eligibility_correct": true,
       "grade_correct": true,
@@ -1039,7 +1051,8 @@
         "grade_token_mass": 0.99999,
         "pred_grade": 5,
         "pred_eligible_from_grade": "No",
-        "top_token": "5"
+        "top_token": "5",
+        "threshold_source": "criterion"
       },
       "eligibility_correct": true,
       "grade_correct": true,
@@ -1102,7 +1115,8 @@
         "grade_token_mass": 0.99998,
         "pred_grade": 6,
         "pred_eligible_from_grade": "No",
-        "top_token": "6"
+        "top_token": "6",
+        "threshold_source": "criterion"
       },
       "eligibility_correct": true,
       "grade_correct": true,
@@ -1165,7 +1179,8 @@
         "grade_token_mass": 0.9999,
         "pred_grade": 0,
         "pred_eligible_from_grade": "Yes",
-        "top_token": "0"
+        "top_token": "0",
+        "threshold_source": "criterion"
       },
       "eligibility_correct": true,
       "grade_correct": false,
@@ -1228,7 +1243,8 @@
         "grade_token_mass": 0.99206,
         "pred_grade": 2,
         "pred_eligible_from_grade": "Yes",
-        "top_token": "2"
+        "top_token": "2",
+        "threshold_source": "criterion"
       },
       "eligibility_correct": false,
       "grade_correct": true,
@@ -1290,12 +1306,13 @@
         },
         "grade_token_mass": 0.99995,
         "pred_grade": 2,
-        "pred_eligible_from_grade": "Yes",
-        "top_token": "2"
+        "pred_eligible_from_grade": "No",
+        "top_token": "2",
+        "threshold_source": "criterion"
       },
       "eligibility_correct": true,
       "grade_correct": true,
-      "self_consistent": false,
+      "self_consistent": true,
       "dissociation": "both_right"
     },
     {
@@ -1354,12 +1371,22 @@
         "grade_token_mass": 0.99977,
         "pred_grade": 1,
         "pred_eligible_from_grade": "Yes",
-        "top_token": "1"
+        "top_token": "1",
+        "threshold_source": "criterion"
       },
       "eligibility_correct": true,
       "grade_correct": true,
       "self_consistent": true,
       "dissociation": "both_right"
+    }
+  ],
+  "rescored": [
+    {
+      "date": "2026-08-21",
+      "reason": "per-row criterion threshold (reversed-threshold distractors)",
+      "rows_changed": [
+        "mrs_distractor_reversed_criterion"
+      ]
     }
   ]
 }
