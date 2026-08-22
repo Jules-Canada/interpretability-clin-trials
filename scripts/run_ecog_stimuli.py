@@ -71,6 +71,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import operator
 import re
 import sys
 from pathlib import Path
@@ -475,6 +476,32 @@ def run_eligibility(model, tokenizer, row, tok, device) -> dict:
     }
 
 
+# The protocol direction is part of the stimulus, not a property of the scale.
+# ecog_v0 and mrs_v0 each carry a reversed-threshold distractor (E026 and
+# mrs_distractor_reversed_criterion) whose whole purpose is to catch a model
+# that pattern-matches the usual "ECOG <= 1" instead of reading the criterion it
+# was actually given. Scoring every row against cfg["eligible"] made the scorer
+# commit that identical error, so those rows scored self_consistent whatever the
+# model answered — the one check on threshold direction could not fail.
+CRITERION_RE = re.compile(r"(<=|>=|<|>|=)\s*(\d+)")
+
+CRITERION_OPS = {"<=": operator.le, ">=": operator.ge,
+                 "<": operator.lt, ">": operator.gt, "=": operator.eq}
+
+
+def eligible_rule(row: dict, cfg: dict):
+    """Threshold predicate for one row, read from that row's own criterion.
+
+    Falls back to the intermediate default when the criterion carries no
+    numeric threshold (RECIST-style prose). returns: (predicate, source)
+    """
+    m = CRITERION_RE.search(row.get("criterion_text") or "")
+    if not m:
+        return cfg["eligible"], "config"
+    op, value = m.groups()
+    return (lambda g, _op=CRITERION_OPS[op], _v=int(value): _op(g, _v)), "criterion"
+
+
 def run_grading(model, tokenizer, row, tok, device, cfg) -> dict:
     import torch
     grades = cfg["values"]
@@ -486,6 +513,7 @@ def run_grading(model, tokenizer, row, tok, device, cfg) -> dict:
     mass = sum(canon.values())
     dist = {g: (canon[g] / mass if mass > 0 else 0.0) for g in grades}
     pred = max(dist, key=dist.get)
+    rule, source = eligible_rule(row, cfg)
     return {
         # renormalised over the canonical grade tokens — the grade distribution
         "grade_dist": {str(g): round(dist[g], 5) for g in grades},
@@ -496,9 +524,11 @@ def run_grading(model, tokenizer, row, tok, device, cfg) -> dict:
         # the argmax below is an artefact of renormalising noise
         "grade_token_mass": round(mass, 5),
         "pred_grade": pred,
-        # The protocol threshold, from the intermediate config rather than a
-        # literal buried here.
-        "pred_eligible_from_grade": "Yes" if cfg["eligible"](pred) else "No",
+        # The protocol threshold, read from this row's criterion so a reversed
+        # one is scored as written. `threshold_source` makes the fallback to the
+        # intermediate default visible instead of silent.
+        "pred_eligible_from_grade": "Yes" if rule(pred) else "No",
+        "threshold_source": source,
         "top_token": tokenizer.decode([int(logits.argmax())]),
     }
 
@@ -814,6 +844,11 @@ def main() -> None:
     ap.add_argument("--out", default=None,
                     help=f"JSON output path (default {OUT_TEMPLATE})")
     ap.add_argument("--device", default="auto")
+    ap.add_argument("--device-map", default=None,
+                    help="pass to from_pretrained and skip the explicit .to(device); "
+                         "use 'auto' for models too large to stage through CPU RAM "
+                         "(a 27B in bf16 is ~54GB of weights). Off by default, which "
+                         "keeps the single-device path the 4B runs used.")
     ap.add_argument("--limit", type=int, default=None, help="first N rows only")
     ap.add_argument("--dry-run", action="store_true",
                     help="render prompts and stimulus parse, load no model")
@@ -925,8 +960,20 @@ def main() -> None:
     print(f"\nModel:  {args.model}\nDevice: {device}")
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     dtype = torch.bfloat16 if device.type == "cuda" else torch.float32
-    model = AutoModelForCausalLM.from_pretrained(args.model, torch_dtype=dtype)
-    model.to(device).eval()
+    # Without device_map the weights land in CPU RAM first and are then copied
+    # across, so the host needs as much free RAM as the checkpoint. That is fine
+    # at 4B and is the wrong shape at 27B; --device-map auto streams them
+    # straight onto the GPU(s) instead.
+    if args.device_map:
+        model = AutoModelForCausalLM.from_pretrained(
+            args.model, torch_dtype=dtype, device_map=args.device_map,
+            low_cpu_mem_usage=True)
+        device = next(model.parameters()).device
+        print(f"device_map={args.device_map!r}; inputs go to {device}")
+    else:
+        model = AutoModelForCausalLM.from_pretrained(args.model, torch_dtype=dtype)
+        model.to(device)
+    model.eval()
 
     # Calibrate the readout surface against what the model actually emits,
     # separately for each prompt type, BEFORE choosing canonical ids.
