@@ -33,7 +33,11 @@ Pillar 2 measures the *coupling* between the two turns, not the accuracy of eith
 informative cell is a right answer over a wrong grade (ADR-0007). Pillar 3 is Later but not
 dropped; `recist_v0.csv` already carries an `indeterminate` row that serves only it.
 
-Plan: `docs/program/pillars-1-2-intermediate-recovery.md`.
+Plan: `docs/program/pillars-1-2-intermediate-recovery.md`. Next pod session:
+`docs/program/pod-run-2026-08-plan.md` — threshold sweep at 4B/12B/27B plus
+contrastive 4B graphs. A transcoder set gates *attribution graphs only*: behavioural work
+and activation patching need none and run at any size. The size ladder is a control for
+"the model was too small", not a route to better circuits.
 
 ---
 ## Rules
@@ -122,7 +126,14 @@ Spec snapshots freeze once a PREREG points at them.
 ## Where things stand
 
 
-ECOG stimuli written, ready to test on pod. 
+ECOG pilot ran 2026-08-06 (39 vignettes, both models). The paraphrase-generalisation gradient
+is real and is the pillar-1 result: Gemma falls 100→82→64→50% with lexical distance, MedGemma
+flat at ~60%. **The pillar-2 numbers from that run do not clear a constant-answer baseline**
+— Gemma's eligibility 22/39 *is* the always-No baseline exactly, and coupling reaches only
+p=0.21 (Gemma) and p=0.12 (MedGemma). The models carry opposite response biases (Gemma says
+No 31/39, MedGemma Yes 23/39), so their similar totals come from different failures. Run
+`scripts/pillar2_baselines.py` before quoting any pillar-2 number. Sizing rule for the
+confirmatory run is in the pillar plan: balance the answer key, then n=61 per model.
 
 Stage 1 answered its question and closed a door. 10 eligibility graph pairs on gemma-3-4b-it
 (`frontend/graph_data/`) and medgemma-4b-it (`.../medgemma/`), completeness 0.80–0.82 and
@@ -149,9 +160,14 @@ and still names the package `ignis`. Python >=3.10, pytest `-m slow` opt-in.
 
 `clt/ graphs/ interventions/` — CLT era, superseded, now imported by nothing. `prompts/` —
 eligibility.py (617 lines, live), categorical_prompts.py, medical_knowledge.py, plus
-adverse_events.py and endpoints.py (both real, both ~58-line stubs). `tests/` is empty: all
-five tests were CLT-era and moved to `deferred/tests/` (2026-08-05), so there is no live test
-suite. Root `graph_data/` — an earlier 2026-05-31 run superseded by the 2026-06-01 regeneration
+adverse_events.py and endpoints.py (both real, both ~58-line stubs). `tests/` holds 107 offline
+tests (`.venv/bin/python -m pytest`, ~0.5s, no weights, no network) over the threshold rule,
+`score_rows`, the end-of-run assembly, `load_stimuli`, the sweep answer key, the readout gates,
+the sizing statistics and flip-point scoring; plus one `slow` test (`pytest -m slow`, ~11s)
+that checks the patching invariants against a real forward pass. The five CLT-era tests moved
+to `deferred/tests/` (2026-08-05) and are not revivable. **Do not `pip install -e .` to run
+them** — that pulls the CLT dependency list; `tests/conftest.py` puts `scripts/` on the path
+instead. Root `graph_data/` — an earlier 2026-05-31 run superseded by the 2026-06-01 regeneration
 in `frontend/graph_data/`, not a byte-identical copy — moved to `deferred/graph_data_2026-05-31/`.
 
 ## Entry points
@@ -159,6 +175,12 @@ in `frontend/graph_data/`, not a byte-identical copy — moved to `deferred/grap
 `scripts/` is the live set only: `run_ecog_stimuli.py` (the instrument — vignettes in,
 grading and eligibility out), `run_graphs_ct.py` (`--probe`, `--smoke`, then batch),
 `analyze_graphs.py`, `compare_graphs.py`, `reproduce_round1.py`, `profile_criteria.py`,
+`pillar2_baselines.py` (constant-answer comparator — pillar-2 numbers are meaningless
+without it), `rescore_results.py` (recompute derived verdicts in a results JSON offline),
+`make_sweep_stimuli.py` (crosses ecog_v0 vignettes with criteria — no new writing),
+`flip_point.py` (scores the sweep; `--selftest` before trusting it),
+`patch_grade.py` (residual-stream patching — needs no transcoders, so it reaches
+12B/27B where graphs cannot; `--selftest` runs offline in 10s),
 `setup_pod_circuit_tracer.sh`, plus `stage0_tokenizer_check.py` (kept live —
 `prompts/eligibility.py` cites it as the provenance for the canonical-token choice, which
 0004 still depends on).
@@ -170,9 +192,10 @@ RMS-scale fix; without it it silently returns zeros. Pod recipes and gotchas: `d
 
 ## Writing spec items
 
-Schema: `specs/schema/spec_item.json`, which still needs the 0004 `intermediate` block
+Schema: `specs/schema/spec_item.json`, which carries the 0004 `intermediate` block
 (variable, true value, defining threshold, whether the narrative uses the defining
-vocabulary). Cut `specs/v0.1/` before the first PREREG points at it.
+vocabulary) plus `attribute_policy`, since 61d8b36. Stimuli live in `specs/stimuli/`;
+there is no `specs/v0.1/`.
 
 Vignettes vary only the clinical description — hold the protocol and everything else fixed,
 or the probe learns sick-versus-well, which the model has and which is not ECOG.
