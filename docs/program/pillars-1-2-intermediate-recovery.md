@@ -127,6 +127,46 @@ they are run.
 | Probe finds a used variable | Probe on the answer logit directly. If equal, the intermediate layer adds nothing |
 | Feature is the mechanism | Random feature ablation, matched activation magnitude |
 | Bypass is real | Behavioural counterfactual alone |
+| Answer/grade coupling is real | A constant answer, scored against the model's own grades. On a set that is not answer-balanced this is a strong comparator and the 2026-08-06 pilot did not beat it — `scripts/pillar2_baselines.py` |
+
+---
+
+## Sizing the confirmatory run
+
+Written 2026-08-21, before ecog_v0 is expanded, as rule 1 requires. Numbers from the
+2026-08-06 pilot re-analysed offline; the pilot is exploratory and cannot itself be cited.
+
+The pilot's pillar-2 metrics do not clear a constant responder at n=39:
+
+| Model | Coupling | Constant-answer baseline | p | n for 80% power |
+|---|---|---|---|---|
+| gemma-3-4b-it | 23/39 = 0.59 | 20/39 = 0.51 | 0.212 | 258 |
+| medgemma-4b-it | 28/39 = 0.72 | 24/39 = 0.62 | 0.124 | 132 |
+
+Gemma's eligibility accuracy, 22/39, is the always-No baseline exactly. The two models carry
+opposite biases — Gemma answers No 31/39, MedGemma answers Yes 23/39 — so their similar
+aggregate scores come from different failures, and any comparison between them that ignores
+this is measuring bias, not application.
+
+**The rule.** Before ecog_v0 is expanded for a confirmatory pillar-2 run:
+
+1. **Size on coupling, not eligibility.** Coupling is the pillar-2 quantity (ADR-0007);
+   eligibility accuracy is a byproduct and is the more bias-inflated of the two.
+2. **Power for a lift of 0.15 over the constant-answer baseline — n = 61 per model
+   per intermediate**, one-sided 0.05. A smaller true effect is not worth the clinician
+   hours: at the pilot's observed 0.08–0.10 the set would have to reach 132–258 hand-written
+   vignettes, which loses to spending those hours on a second intermediate.
+3. **Balance the answer key.** A 50/50 Yes/No split makes the constant-answer baseline 0.50
+   and costs nothing but writing discipline. The pilot's 17/22 split is what makes the
+   baseline so hard to beat. Balance first, then size.
+4. **Report the response split every time.** Yes/No counts against the ground-truth split,
+   in every pillar-2 table. A coupling number without it is uninterpretable.
+5. **Keep the reversed-threshold rows and add more.** They are the only rows separating
+   "applies the stated criterion" from "maps high grade to ineligible". ecog_v0 has one of
+   39. Target one in eight, spread across grades.
+
+If the balanced set at n=61 still does not clear the baseline, that is the pillar-2 null and
+it gets reported as one — see the thesis kill criteria, not a rescue.
 
 ---
 
