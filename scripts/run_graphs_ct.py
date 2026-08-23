@@ -112,18 +112,54 @@ def probe() -> None:
 # --------------------------------------------------------------------------- #
 # core: one attribution graph
 # --------------------------------------------------------------------------- #
+# circuit-tracer labels EVERY transcoder feature node "cross layer transcoder"
+# (frontend/graph_models.py:55), unconditionally — there is no separate label for
+# per-layer vs cross-layer transcoders, and the sets we use (`transcoder_all`) are
+# per-layer (ADR-0002). The label therefore carries no provenance; the dictionary
+# that produced a graph is recorded in its `metadata.scan`. Never quote the raw
+# label in a report — it reads as a claim to be back on the CLT path 0002 left.
+FEATURE_NODE = "cross layer transcoder"
+KNOWN_NODE_TYPES = {FEATURE_NODE, "mlp reconstruction error", "embedding", "logit"}
+
+
 def _completeness_from_json(json_path: Path):
     """Completeness proxy from the exported graph (Dev Rule 8 analog): share of
     node influence flowing through transcoder features vs mlp-reconstruction-error
     nodes. circuit-tracer stores no scalar score, but every node carries
-    feature_type + influence (confirmed 2026-06-18)."""
+    feature_type + influence (confirmed 2026-06-18).
+
+    Embedding and logit nodes are deliberately outside the ratio (~6% of total
+    influence at 27B); this is transcoder-vs-error, not a share of all influence.
+
+    Raises rather than returning a number if the node vocabulary has drifted.
+    The match on FEATURE_NODE is an exact string against an upstream constant, so
+    a rename would otherwise make `feat` 0 and return a confident 0.000 — a
+    plausible-looking "this graph is bad" that rule 5 would then rubber-stamp.
+    """
     if not json_path.exists():
         return None
     nodes = json.loads(json_path.read_text()).get("nodes", [])
-    feat = sum(n.get("influence", 0.0) for n in nodes
-               if n.get("feature_type") == "cross layer transcoder")
-    err = sum(n.get("influence", 0.0) for n in nodes
-              if "error" in (n.get("feature_type") or ""))
+    if not nodes:
+        return None
+
+    seen = {n.get("feature_type") for n in nodes}
+    unknown = seen - KNOWN_NODE_TYPES
+    if unknown:
+        raise ValueError(
+            f"{json_path.name}: unrecognised feature_type(s) {sorted(unknown)}. "
+            f"circuit-tracer's node vocabulary has changed; completeness cannot be "
+            f"trusted until _completeness_from_json is updated.")
+    if FEATURE_NODE not in seen:
+        raise ValueError(
+            f"{json_path.name}: no {FEATURE_NODE!r} nodes. Either the graph has no "
+            f"transcoder features, or upstream renamed the label — either way the "
+            f"completeness ratio would be a meaningless 0.0.")
+
+    # influence may be present-but-null (the logit node is, at 27B), so `or 0.0`
+    # rather than a .get default, which would return None and blow up the sum.
+    inf = lambda n: (n.get("influence") or 0.0)  # noqa: E731
+    feat = sum(inf(n) for n in nodes if n.get("feature_type") == FEATURE_NODE)
+    err = sum(inf(n) for n in nodes if "error" in (n.get("feature_type") or ""))
     return feat / (feat + err) if (feat + err) > 0 else None
 
 

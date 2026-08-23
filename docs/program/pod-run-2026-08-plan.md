@@ -1,8 +1,14 @@
 # Pod run plan — pillar-2 threshold sweep at scale, plus contrastive graphs
 
 > **Ran 2026-08-22. Results: `docs/program/pod-run-2026-08-22-results.md`.**
-> Tracks A and C complete at five models; Track B not run — the 4B is the size shown not to
-> do the task, and attribution is 4B-only.
+> Tracks A and C complete at five models.
+>
+> **The section below titled "The constraint that shapes everything" is WRONG and was
+> disproved 2026-08-23.** Its premise — that no transcoder set exists for Gemma 3 12B/27B —
+> is false: Gemma Scope 2 covers the whole family, circuit-tracer supports it, and
+> attribution was measured running at both 12B (36.8GB peak) and 27B (76.5GB peak) on a
+> single H100 80GB. It is kept unedited below because the run was planned under it. Read it
+> as a record of what was believed, not as a constraint.
 
 Written 2026-08-21, offline. Exploratory tier (ADR-0006): log every run in
 `docs/run-log.md`, no PREREG needed, and nothing here may be cited for a pillar claim
@@ -19,7 +25,7 @@ shape of the run, so it is worth stating precisely rather than as "we can only w
 |---|---|---|
 | Behavioural — sweep, flip point | no | any size |
 | Activation patching / probing | no | any size that fits for inference |
-| Attribution graphs | **yes** | 4B only |
+| Attribution graphs | **yes** | ~~4B only~~ — see the correction above; 27B measured to fit |
 
 `run_graphs_ct.py` builds a `ReplacementModel`: every MLP is swapped for a transcoder, and
 the graph's *nodes are transcoder features* — `_completeness_from_json` scores influence

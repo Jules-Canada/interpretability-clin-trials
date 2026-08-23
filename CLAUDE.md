@@ -35,9 +35,16 @@ dropped; `recist_v0.csv` already carries an `indeterminate` row that serves only
 
 Plan: `docs/program/pillars-1-2-intermediate-recovery.md`. Next pod session:
 `docs/program/pod-run-2026-08-plan.md` — threshold sweep at 4B/12B/27B plus
-contrastive 4B graphs. A transcoder set gates *attribution graphs only*: behavioural work
+contrastive graphs. A transcoder set gates *attribution graphs only*: behavioural work
 and activation patching need none and run at any size. The size ladder is a control for
 "the model was too small", not a route to better circuits.
+
+**Attribution is not 4B-only — that was wrong and is disproved (2026-08-23).** Gemma Scope 2
+covers the whole Gemma 3 family; circuit-tracer-format sets are `mwhanna/gemma-scope-2-{12b,27b}-it`
+(reference format is a plain path: `repo/owner/transcoder_all/width_16k_l0_small_affine`).
+Measured on one H100 80GB: **12B peaks at 36.8GB and is comfortable; 27B needs
+`offload=cpu` or an H200** — it runs at 76.5GB minimal but OOMs at 77.5GB on a real prompt.
+See `docs/program/pod-run-2026-08-22-results.md` §Attribution feasibility.
 
 ---
 ## Rules
@@ -179,8 +186,11 @@ grading and eligibility out), `run_graphs_ct.py` (`--probe`, `--smoke`, then bat
 without it), `rescore_results.py` (recompute derived verdicts in a results JSON offline),
 `make_sweep_stimuli.py` (crosses ecog_v0 vignettes with criteria — no new writing),
 `flip_point.py` (scores the sweep; `--selftest` before trusting it),
-`patch_grade.py` (residual-stream patching — needs no transcoders, so it reaches
-12B/27B where graphs cannot; `--selftest` runs offline in 10s),
+`patch_grade.py` (residual-stream patching — needs no transcoders; `--selftest` runs
+offline in 10s), `graph_feasibility.py` (can circuit-tracer load + attribute at a given
+size on a given card — run before any graph batch at a new size),
+`graph_contrastive.py` (Track B: same vignette under two adjacent criteria straddling its
+flip point — produced the 27B graphs),
 `setup_pod_circuit_tracer.sh`, plus `stage0_tokenizer_check.py` (kept live —
 `prompts/eligibility.py` cites it as the provenance for the canonical-token choice, which
 0004 still depends on).

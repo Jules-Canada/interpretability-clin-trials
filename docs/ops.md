@@ -29,9 +29,28 @@ installed `circuit-tracer` signatures, and the API has moved between versions.
 
 H100 80GB. nnsight is not memory-efficient; A10 is too small for 4B on this path.
 
+**Measured 2026-08-23, one H100 80GB, attribution at scale.** Attribution is *not* 4B-only.
+Gemma Scope 2 covers the whole Gemma 3 family; circuit-tracer-format sets are
+`mwhanna/gemma-scope-2-{12b,27b}-it`. Peak VRAM for one short prompt, `batch_size=128`,
+`max_feature_nodes=2000`, no offload: **4B fits easily, 12B 36.8GB, 27B 76.5GB of 79.2GB
+usable.**
+
+**12B is comfortable. 27B is not — treat it as needing offload.** Those 27B numbers are a
+minimal config. On a real 60-token eligibility prompt at the default `max_n_logits=10`, 27B
+peaks at 77.5GB and **OOMs**, with only 272MB free. Margin is ~1.7GB. For 27B attribution
+either pass `--offload cpu` (plus a lower `--batch_size`, and
+`PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`), or book an **H200 141GB**, which removes
+the constraint entirely.
+
 `setup_pod_circuit_tracer.sh` deliberately does **not** `pip install -e .` — Stage 1 needs
 none of the CLT dependencies. It installs `circuit-tracer` from git plus `nnsight`,
 `jinja2`, `hf_transfer`, and torch from the cu121 index.
+
+**That cu121 pin is not required.** `circuit-tracer`, `transformer_lens` and `nnsight` all
+install and run on torch 2.8.0+cu128 (verified 2026-08-23). Building the venv with
+`--system-site-packages` over a cu128 base image reuses its torch and skips a ~2.5GB wheel:
+`python3 -m venv .venv-ct --system-site-packages && pip install
+"git+https://github.com/safety-research/circuit-tracer.git" nnsight jinja2 hf_transfer`.
 
 **SCP back before terminating:** `frontend/graph_data/*.json`, `data/eligibility_sweep_*.json`,
 `data/ecog_v0_results_*.json`.
@@ -69,9 +88,13 @@ cd ignis
 export HF_HOME=/workspace/.cache/huggingface     # 20GB root disk fills otherwise
 python3 -m venv .venv && source .venv/bin/activate
 pip install torch --index-url https://download.pytorch.org/whl/cu128   # sm_70..sm_120
-pip install transformers jinja2 hf_transfer      # jinja2: apply_chat_template
+pip install transformers jinja2 hf_transfer accelerate
+                                                 # jinja2: apply_chat_template
                                                  # hf_transfer: RunPod sets the env var
                                                  #   but omits the package -> downloads die
+                                                 # accelerate: REQUIRED by --device-map auto,
+                                                 #   which is how 12B+ loads. Missing it kills
+                                                 #   the run at model load (2026-08-22).
 huggingface-cli login --token "$HF_TOKEN"
 
 # Fresh-pod check: wrong wheel, wrong driver, or not the GPU you booked. Two
@@ -93,7 +116,9 @@ rates to wait on a checkpoint download is the standard way to burn the budget.
 - **Forward-pass work (this section): 24GB is enough** — A10, L4, 4090, 5090. ~8.6GB of
   bf16 weights plus a ~47MB logits tensor. Take whatever is cheap and available.
 - **Attribution / graphs (`run_graphs_ct.py`): H100 80GB.** nnsight holds all-layer
-  activations and is not memory-efficient; that is the one job that needs it.
+  activations and is not memory-efficient; that is the one job that needs it. One H100 also
+  covers 12B (36.8GB peak) and 27B (76.5GB peak) — see the measured table above. At 27B
+  there is ~5GB of headroom, so budget offload for longer prompts.
 
 The "A10 is too small for 4B" note in the Stage 1 section is about that nnsight path and
 does **not** apply to forward passes. Don't let it push you to an H100 for a sweep.
@@ -113,7 +138,17 @@ with the current PyTorch installation`. The CLT-path recipe above still pins cu1
 `transformer_lens` constrains it; that pin is not a reason to use cu121 here.
 
 Wall time is **download-bound, not compute-bound**: 36 forward passes over ~90-token prompts
-run in seconds; pulling both 4B checkpoints is ~10 min and ~17–20GB of `/workspace` cache.
+run in seconds; pulling both 4B checkpoints is ~17–20GB of `/workspace` cache.
+
+The ~10 min figure this used to quote is stale. With Xet transfer (current `huggingface_hub`)
+the 12B pulled in 23s and the 27B in 33s on 2026-08-22. `HF_HUB_ENABLE_HF_TRANSFER` is
+deprecated and warns; `HF_XET_HIGH_PERFORMANCE` replaces it.
+
+**Transcoder sets are referenced as a plain path, and you must name the variant:**
+`mwhanna/gemma-scope-2-27b-it/transcoder_all/width_16k_l0_small_affine`. A bare repo id fails
+with `Could not download config.yaml` — the config sits inside each width/sparsity subfolder.
+These repos hold every combination and total 1.5–2.4TB; naming the variant pulls only it
+(12GB at 4B, 26GB at 12B, 48GB at 27B). `width_262k` is ~16x larger and not viable at 27B.
 
 Run both models in the **same session**. `dtype` is derived from the device (bf16 on CUDA,
 fp32 otherwise), and on the existing 36-prompt `categorical_screen` pair that shift moves

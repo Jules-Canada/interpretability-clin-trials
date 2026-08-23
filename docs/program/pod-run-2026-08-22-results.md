@@ -154,13 +154,15 @@ Track B was 6 contrastive attribution-graph pairs at 4B, selected from vignettes
 cleanly and correctly. **Gemma 3 4B has one correct flip in the entire sweep.** That set
 cannot be selected.
 
-More to the point, 4B is now the size shown *not* to do the task, and attribution is 4B-only
-— there is no published transcoder set for 12B or 27B, and `run_graphs_ct.py` is
-single-device with no sharding. Drawing 12 graphs of a computation the model is not
-performing explains a null.
+More to the point, 4B is the size shown *not* to do the task. Drawing 12 graphs of a
+computation the model is not performing explains a null.
 
-Not run, deliberately. The plan reaches the same verdict: *"the answer to that is Track C,
-not a larger transcoder."*
+Not run at 4B, deliberately.
+
+**The second half of that reasoning was wrong.** This doc originally said attribution is
+"4B-only — there is no published transcoder set for 12B or 27B." That premise was inherited
+from the plan, never checked, and is false. See §Attribution feasibility below: graphs run
+at 27B, which is where the behaviour is. Track B is not dead, it moves up the ladder.
 
 ---
 
@@ -271,6 +273,154 @@ same criterion. If those flip too, the effect is not about grade at all. `patch_
 currently *refuses* same-grade pairs by design ("nothing to transfer"), so running the
 control needs that guard relaxed behind a flag. That is the first thing to do before any
 claim rests on this.
+
+---
+
+## Attribution feasibility — the 4B-only constraint is false
+
+Pressure-tested 2026-08-23 on a fresh H100 80GB, after this doc and the plan had both
+asserted the constraint as settled. It does not survive contact.
+
+**The dictionary exists.** Gemma Scope 2 (December 2025) covers the whole Gemma 3 family —
+270M, 1B, 4B, 12B, 27B, PT and IT — with SAEs and transcoders for every layer.
+circuit-tracer's own README lists Gemma 3 PLTs "originally from GemmaScope-2" as supported at
+all those sizes. The circuit-tracer-format repackagings sit under the same author as the 4B
+set already in use: `mwhanna/gemma-scope-2-12b-it` and `mwhanna/gemma-scope-2-27b-it`.
+
+There is no `clt` directory at 12B/27B — cross-layer transcoders stop at 270M/1B — but that
+is irrelevant here: ADR-0002 pivoted to per-layer transcoders, the 4B set is `transcoder_all`,
+and `feature_type == "cross layer transcoder"` is circuit-tracer's generic node label, not a
+CLT requirement.
+
+**The memory claim was also wrong**, and by more than the dictionary claim. Measured, one
+short prompt, `batch_size=128`, `max_feature_nodes=2000`, no offload:
+
+| | 12B | 27B |
+|---|---|---|
+| transcoders loaded | 48 layers | **62 layers** |
+| VRAM after load | 29.6 GB | **64.7 GB** |
+| **peak during `attribute()`** | 36.8 GB | **76.5 GB** |
+| attribution time | 6 s | 10 s |
+| load time | 116 s | 227 s |
+| active features | 42,408 | 56,328 |
+| adjacency matrix | 3961² | 4521² |
+| transcoder download | 26 GB | 48 GB |
+| result | `ATTRIBUTE_OK` | **`ATTRIBUTE_OK`** |
+
+The prior estimate of ~74 GB *static* was itself too high: the real figure after load is
+64.7 GB, because `ReplacementModel.from_pretrained` defaults to `lazy_decoder=True`.
+
+**But 27B does not fit at real settings, and this matters more than the table suggests.**
+Those numbers are a *minimal* configuration — `max_n_logits=5`, one ~50-token prompt. Rerun
+on an actual eligibility prompt (60 tokens) at the script's default `max_n_logits=10`, 27B
+peaked at 77.5 GB and **OOMed on all 12 graphs**: `Tried to allocate 316.00 MiB. GPU 0 has a
+total capacity of 79.18 GiB of which 272.19 MiB is free.`
+
+So the honest statement is: **27B attribution fits with ~1.7 GB of margin at minimal
+settings, and needs `offload=cpu` for real work.** The levers are required, not optional —
+`offload={cpu,disk}`, lower `batch_size`, lower `max_n_logits`, lower `max_feature_nodes`,
+`lazy_encoder`, and `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` against fragmentation.
+An H200 (141 GB) would remove the whole problem and is the right card for 27B attribution.
+
+12B, at 36.8 GB peak, has 40+ GB of headroom and is comfortable at any settings.
+
+**Three operational corrections.**
+
+- **The transcoder reference is a plain path**, not a `//` URI:
+  `mwhanna/gemma-scope-2-27b-it/transcoder_all/width_16k_l0_small_affine`. `HfUri.from_str`
+  splits on `/` and takes the first two components as the repo id. A bare repo id fails with
+  `Could not download config.yaml` — the config lives inside each width/sparsity subfolder.
+- **Pick the variant explicitly.** These repos hold every width x sparsity combination and
+  total 1.5-2.4 TB. `width_16k_l0_small_affine` is what the 4B run used and what these
+  numbers are for; `width_262k` is ~16x larger and not viable at 27B.
+- **The cu121 pin is unnecessary.** `circuit_tracer`, `transformer_lens` and `nnsight` all
+  install and run on torch 2.8.0+cu128, which also skips a ~2.5 GB wheel download.
+  `setup_pod_circuit_tracer.sh:74` pins cu121; a venv built with `--system-site-packages`
+  over the base image's cu128 torch works and is faster.
+
+**Untested.** Graph export via `create_graph_files` and the numerical completeness check at
+27B; whether MedGemma 27B accepts the Gemma 3 27B transcoders (the architecture-sharing
+argument that made the 4B set work for MedGemma 4B, unverified at 27B); and behaviour on
+longer prompts, where 76.5/81.5 GB leaves little room.
+
+**Consequence.** The contrastive design the plan specifies is now selectable where it
+matters. It was unselectable at 4B because Gemma 4B has one correct flip in the whole sweep;
+**the 27B has eleven**, more than the six the plan asked for.
+
+---
+
+## Track B at 27B — contrastive attribution graphs
+
+Run 2026-08-23 once the 4B-only constraint was disproved. Six vignettes from the eleven where
+the 27B flips exactly at its own grade, each attributed under two adjacent criteria straddling
+that flip point: `ECOG <= g-1` (answers No) against `ECOG <= g` (Yes). The vignette text is
+byte-identical across a pair; one digit of the criterion differs and the answer inverts.
+
+Own grades 1, 2 and 4 (no clean grade-3 flip exists), three of six `inferred_symptoms`.
+**12/12 graphs exported**, completeness **0.706-0.755** (checked numerically, rule 5), and every
+pair inverts as designed — `No` at 0.90-1.00 below the threshold, `Yes` at 0.55-1.00 at it.
+
+Settings were forced by memory: `offload=cpu`, `batch_size=48`, `max_n_logits=5`,
+`max_feature_nodes=1500`, `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`. The first
+attempt at defaults OOMed on all 12.
+
+**Completeness at 27B (0.71-0.76) is below Stage 1's 4B graphs (0.80-0.85).** More influence
+flows through error nodes, so the same 16k-width dictionary explains less of the larger
+model's computation. That caps how strong a mechanistic claim these graphs support.
+
+### The criterion perturbs the circuit more than the patient does
+
+The contrast the design exists for, with a control the plan did not specify: compare graphs
+where only *one digit of the criterion* changed, against graphs where the *entire patient
+description* changed instead (different vignettes, same `<= 1` criterion).
+
+| Comparison | What differs | Jaccard |
+|---|---|---|
+| within vignette, 6 pairs | one digit of the criterion | 0.568-0.704, mean **0.613** |
+| across vignettes, 6 pairs | the whole clinical description | 0.729-0.834, mean **0.782** |
+
+Lower jaccard = more perturbed. **Changing one digit of the criterion reorganises the circuit
+more than replacing the entire vignette.** The distributions do not overlap — max within
+(0.704) is below min cross (0.729) — giving complete separation, Mann-Whitney U = 36/36,
+exact one-sided **p = 0.0011**. About 26% of influence flows through features unique to one
+side of a pair; those are the candidate threshold-comparison machinery.
+
+This is a mechanistic counterpart to the behavioural result, and it needs no feature labels.
+
+**Three validity checks before believing it.** Feature ids are **stable across graphs** —
+every shared `(layer, local index)` carries the identical global id, 592/592 and 656/656 — so
+`(layer, feature)` is a sound cross-graph identifier. Graph sizes are comparable (818 vs 798
+features), so this is *not* the size-confounded jaccard that invalidated a Round-1 claim.
+And the node-type partition is exhaustive, so completeness covers every node.
+
+### What the raw influence distribution says, and why it needs care
+
+Influence concentrates on answer scaffolding, not on the clinical content: 31% on the final
+`\n`, 29% on `model`, 18% on the literal `' Yes'` token and 10% on `' No'` from "Answer Yes or
+No". The criterion span and the patient text carry ~0.1% each, and only 22 of 69 token
+positions hold any feature node.
+
+Read alone that suggests the graphs are mostly Yes/No emission machinery. The contrast above
+says otherwise, but the tension is unresolved and probably an artefact of pruning:
+`node_threshold=0.8`, `edge_threshold=0.98` and a memory-forced `max_feature_nodes=1500` may be
+discarding exactly the criterion-position features. **A lower-threshold rerun on an H200 is the
+test**, and it is the first thing to do before any claim rests on these graphs.
+
+### Nodes are unlabelled
+
+`clerp` is empty on every node. Naming a feature needs, cheapest first: a **Neuronpedia**
+lookup (Gemma Scope 2 is hosted there with a Gemma 3 27B-IT demo — unverified whether it
+covers this variant, and it costs no compute); **max-activating examples** via
+`deferred/scripts/find_top_activations.py`, which needs a corpus and a pod and silently
+returns zeros without its 2026-06-01 RMS-scale fix; or **ablation**, which is what ADR-0004
+actually wants — a named *ablatable* feature rather than a fitted direction.
+
+Rule 3 governs whatever comes back: labels get adjudicated, and `data/deferred/feature_labels.jsonl`
+was once filled with confident nonsense from an empty-context bug. Assume an unvalidated
+label is wrong.
+
+n=6 per group, exploratory tier. Graphs are in `data/graphs_27b_contrastive/` (242MB,
+gitignored) — not in git, and the pod is gone, so that directory is the only copy.
 
 ---
 
