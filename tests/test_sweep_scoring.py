@@ -12,17 +12,22 @@ from __future__ import annotations
 
 import pytest
 
-from flip_point import collect, flip_point
+from flip_point import collect, flip_point, own_grade, score as score_run, surv
 
 GRADES = [0] * 6 + [1] * 12 + [2] * 12 + [3] * 5 + [4] * 4      # ecog_v0's distribution
 THRESHOLDS = [0, 1, 2, 3, 4]
 
 
-def sweep_rows(answer_fn, grades=GRADES, ambiguous=False):
+def sweep_rows(answer_fn, grades=GRADES, ambiguous=False, grade_fn=lambda g: g):
+    """`grade_fn` is the model's grade; by default it agrees with the key.
+
+    A model whose grades differ from the key is the case the own-grade baseline
+    exists for, so the archetypes below need to be able to build one.
+    """
     return [{"id": f"V{i:03d}_LE{t}", "criterion_text": f"ECOG <= {t} required",
              "expected_grade": g, "ambiguous": ambiguous,
              "eligibility": {"says": answer_fn(g, t)},
-             "grading": {"pred_grade": g}}
+             "grading": {"pred_grade": grade_fn(g)}}
             for i, g in enumerate(grades) for t in THRESHOLDS]
 
 
@@ -124,3 +129,53 @@ def test_collect_skips_rows_without_a_parseable_criterion():
              "expected_grade": 1, "ambiguous": False,
              "eligibility": {"says": "Yes"}, "grading": {"pred_grade": 1}}]
     assert collect(rows) == {}
+
+
+# --------------------------------------------------------------------------- #
+# the two baselines — flip==true and flip==own are not held to the same bar
+# --------------------------------------------------------------------------- #
+# always-Yes flips at t=0, so it hits wherever the *target* grade is 0. That
+# target is the key's grade for flip==true but the model's own grade for
+# flip==own, and a lenient grader moves only the second. Scoring coupling
+# against the true-grade baseline credits grading leniency as application.
+def baselines(answer_fn, grade_fn=lambda g: g):
+    s = score_run(collect(sweep_rows(answer_fn, grade_fn=grade_fn)))
+    return s["base_true"], s["base_own"]
+
+
+def test_baselines_agree_when_the_model_grades_like_the_key():
+    assert baselines(lambda g, t: "Yes" if g <= t else "No") == (6, 6)
+
+
+def test_a_lenient_grader_raises_only_its_own_grade_baseline():
+    """Calling every grade-1 vignette a 0 hands always-Yes 12 more free hits."""
+    bt, bo = baselines(lambda g, t: "Yes", grade_fn=lambda g: 0 if g <= 1 else g)
+    assert bt == 6                      # the key is untouched
+    assert bo == 18                     # the 6 real zeros plus 12 downgraded ones
+
+
+def test_a_strict_grader_lowers_its_own_grade_baseline():
+    bt, bo = baselines(lambda g, t: "Yes", grade_fn=lambda g: max(g, 1))
+    assert bt == 6
+    assert bo == 0                      # it never says 0, so always-Yes never hits
+
+
+def test_grade_zero_collapse_scores_perfectly_and_means_nothing():
+    """Grade everything 0, answer Yes to everything: 39/39 coupling, no computation.
+
+    The whole reason the own-grade baseline is computed separately. Against the
+    true-grade baseline this reads as overwhelming significance.
+    """
+    s = score_run(collect(sweep_rows(lambda g, t: "Yes", grade_fn=lambda g: 0)))
+    assert s["hit_own"] == 39                       # looks perfect
+    assert s["base_own"] == 39                      # so does the constant responder
+    assert surv(s["hit_own"], s["m"], s["base_own"] / s["m"]) > 0.05
+    assert surv(s["hit_own"], s["m"], s["base_true"] / s["m"]) < 1e-6
+
+
+def test_own_grade_is_none_when_the_run_is_not_deterministic():
+    """No single own-grade means the vignette cannot count for or against coupling."""
+    rows = sweep_rows(lambda g, t: "Yes")
+    rows[0]["grading"]["pred_grade"] = 4            # one copy disagrees
+    e = collect(rows)["V000"]
+    assert own_grade(e) is None
