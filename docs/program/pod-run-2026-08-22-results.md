@@ -368,30 +368,69 @@ attempt at defaults OOMed on all 12.
 flows through error nodes, so the same 16k-width dictionary explains less of the larger
 model's computation. That caps how strong a mechanistic claim these graphs support.
 
-### The criterion perturbs the circuit more than the patient does
+### WITHDRAWN: "the criterion perturbs the circuit more than the patient does"
 
-The contrast the design exists for, with a control the plan did not specify: compare graphs
-where only *one digit of the criterion* changed, against graphs where the *entire patient
-description* changed instead (different vignettes, same `<= 1` criterion).
+This section originally claimed that changing one digit of the criterion reorganises the
+circuit more than replacing the entire vignette — jaccard 0.613 vs 0.782, complete separation,
+p=0.0011. **That comparison was confounded and the claim does not survive.**
 
-| Comparison | What differs | Jaccard |
+The control moved two variables at once. Within-vignette pairs differ in the criterion *and*
+the answer flips (No -> Yes). The cross-vignette control held the criterion fixed at `<= 1`
+across four vignettes that all have own grade 1 — so all four answer Yes, and the answer never
+differs. The contrast was therefore answer-flip-vs-no-answer-flip, not criterion-vs-patient.
+
+Separating the two:
+
+| Comparison | n | mean jaccard |
 |---|---|---|
-| within vignette, 6 pairs | one digit of the criterion | 0.568-0.704, mean **0.613** |
-| across vignettes, 6 pairs | the whole clinical description | 0.729-0.834, mean **0.782** |
+| cross-vignette, **same answer** | 30 | 0.741 |
+| cross-vignette, **different answer** | 30 | 0.566 |
+| within-vignette, criterion differs (answer flips) | 6 | 0.613 |
 
-Lower jaccard = more perturbed. **Changing one digit of the criterion reorganises the circuit
-more than replacing the entire vignette.** The distributions do not overlap — max within
-(0.704) is below min cross (0.729) — giving complete separation, Mann-Whitney U = 36/36,
-exact one-sided **p = 0.0011**. About 26% of influence flows through features unique to one
-side of a pair; those are the candidate threshold-comparison machinery.
+**The whole effect is the answer.** Same-answer vs different-answer: Mann-Whitney U=878,
+z=6.33, one-sided **p=1.2e-10**. Holding the answer flip constant, criterion-change pairs
+(0.613) are *more* similar than arbitrary different-answer pairs (0.566) — the direction
+sharing the entire patient text predicts, and the opposite of the withdrawn claim.
 
-This is a mechanistic counterpart to the behavioural result, and it needs no feature labels.
+What is left is real but much weaker: **these graphs cluster by the answer the model gives,**
+not by what changed in the prompt.
 
-**Three validity checks before believing it.** Feature ids are **stable across graphs** —
-every shared `(layer, local index)` carries the identical global id, 592/592 and 656/656 — so
-`(layer, feature)` is a sound cross-graph identifier. Graph sizes are comparable (818 vs 798
-features), so this is *not* the size-confounded jaccard that invalidated a Round-1 claim.
-And the node-type partition is exhaustive, so completeness covers every node.
+### The graphs contain almost no criterion machinery
+
+Three independent observations agree, and they are the actual result of this run.
+
+**Answer-selective features are readout features.** Testing which `(layer, feature)` pairs
+recur across all six vignettes and three different threshold values: 10+ features appear in
+all six `Yes` graphs and no `No` graph, and 10+ do the reverse — clean 6/0 separation. But
+every No-selective feature sits on the literal `' No'` token of "Answer Yes or No", and the
+Yes-selective ones sit on `' Yes'`, `'model'`, and the final newline. They encode *the answer*,
+which the logits already report. 434 features are universal across all 12 graphs.
+
+**Almost nothing sits on the criterion span.** Across all 12 graphs, **8 of 11,170 feature
+nodes (0.07%)** fall on `ECOG` / `<=` / the threshold digit.
+
+**Influence concentrates on scaffolding**: 31% on the final `\n`, 29% on `model`, 18% on
+`' Yes'`, 10% on `' No'`. Criterion span and patient text ~0.1% each; only 22 of 69 token
+positions hold any feature node.
+
+Together: **the 27B graphs as pruned are dominated by answer readout and show essentially no
+criterion-comparison machinery.** That is a negative result about the pruning, not about the
+model. `node_threshold=0.8`, `edge_threshold=0.98` and a memory-forced
+`max_feature_nodes=1500` keep the readout end of the causal chain. A lower-threshold rerun on
+an H200 is now a prerequisite, not a refinement.
+
+### Two candidate criterion features, worth following up
+
+Of the eight nodes on the criterion span, two recur:
+
+- **`L0 f32130`** fires on the token `'1'` in all four `<= 1` graphs. A layer-0 digit
+  detector — interpretable but trivial.
+- **`L56 f116346`** fires on `'4'` in the `<= 4` graph and on `'3'` in the `<= 3` graph. The
+  same late-layer feature tracking the threshold value *whatever it is*, at a depth where it
+  could plausibly feed a comparison. This is the only real candidate for a threshold
+  representation in the whole set, and it rests on n=2 graphs.
+
+Neither is labelled. Rule 3 applies to anything that comes back from labelling them.
 
 ### What the raw influence distribution says, and why it needs care
 
