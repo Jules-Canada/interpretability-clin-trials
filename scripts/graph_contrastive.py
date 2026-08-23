@@ -38,6 +38,22 @@ ELIG_CRIT_LAST = ("You are screening a patient for a clinical trial.\n"
                   "Inclusion: {crit}.\n"
                   "Is the patient eligible for the trial? Answer Yes or No.")
 
+# Answer-token control. The sweep prompt ends "Answer Yes or No.", so the literal
+# ' Yes' and ' No' tokens sit in the context and are the graph's largest
+# attractors: on the 2026-08-23 H200 run the answer scaffolding held 94.9% of
+# feature nodes at 3.5x per-token enrichment, while the criterion held 1.87% at
+# 0.10x. Dropping the option list removes those attractors.
+#
+# READ THE LOGITS BEFORE TRUSTING THE OUTPUT. Without the instruction the model
+# may not emit Yes/No at all, in which case attribution is aimed at a different
+# target and the graphs are not comparable to the sweep's. Behaviour under this
+# prompt is unmeasured either way: this is a methods control on node selection,
+# never a pillar-2 result.
+ELIG_NO_OPTIONS = ("You are screening a patient for a clinical trial.\n"
+                   "Inclusion: {crit}.\n"
+                   "Patient: {patient}\n"
+                   "Is the patient eligible for the trial?")
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -54,10 +70,18 @@ def main():
     ap.add_argument("--criterion-last", action="store_true",
                     help="prompt-order control: put the criterion next to the question "
                          "instead of ~40 tokens upstream (see ELIG_CRIT_LAST)")
+    ap.add_argument("--drop-answer-options", action="store_true",
+                    help="answer-token control: drop 'Answer Yes or No.' so the literal "
+                         "Yes/No tokens leave the context (see ELIG_NO_OPTIONS). Check the "
+                         "reported logits — the model may stop emitting Yes/No.")
     a = ap.parse_args()
-    template = ELIG_CRIT_LAST if a.criterion_last else ELIG
-    print("prompt order: %s" % ("criterion-last (CONTROL)" if a.criterion_last
-                                else "sweep verbatim"), flush=True)
+    if a.criterion_last and a.drop_answer_options:
+        raise SystemExit("pick one control at a time: --criterion-last or --drop-answer-options")
+    template = (ELIG_NO_OPTIONS if a.drop_answer_options
+                else ELIG_CRIT_LAST if a.criterion_last else ELIG)
+    variant = ("no-answer-options (CONTROL)" if a.drop_answer_options
+               else "criterion-last (CONTROL)" if a.criterion_last else "sweep verbatim")
+    print("prompt variant: %s" % variant, flush=True)
 
     rows = {r["id"]: r for r in csv.DictReader(open(a.stimuli, newline="", encoding="utf-8-sig"))}
     ReplacementModel, attribute = _import_attr()
@@ -107,7 +131,7 @@ def main():
 
     out = Path(a.output_dir) / "contrastive_summary.json"
     out.write_text(json.dumps({"model": a.model, "transcoders": a.transcoders,
-                               "prompt_order": "criterion_last" if a.criterion_last else "sweep",
+                               "prompt_variant": variant,
                                "results": results}, indent=1))
     ok = sum(r.get("status") == "ok" for r in results)
     print("=== %d/%d graphs ok -> %s" % (ok, len(results), out))

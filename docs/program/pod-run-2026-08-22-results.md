@@ -421,6 +421,45 @@ disproportionately, which is what a selection artefact predicts and a genuine ab
 **Report node-selection settings with any claim about what a graph does or does not contain.**
 The tight run supported a confident negative that was false.
 
+### Prompt-level levers: both fail
+
+Two ways to raise criterion coverage further were tested on the H200. Neither is usable,
+and the reason matters more than the numbers.
+
+| Variant | criterion share | scaffolding | behaviour |
+|---|---|---|---|
+| sweep prompt, loose selection | **1.87%** | 94.9% | 6/6 pairs invert |
+| criterion moved next to the question | 2.40% | 94.6% | **1/6 pairs invert** |
+| "Answer Yes or No." removed | ~6.07% * | 81.0% * | **readout gone** |
+
+\* from 7 of 12 graphs — the local copy truncated on a full disk. Directional only.
+
+**Dropping the answer options breaks the readout.** Without the instruction the model writes
+prose: `'This'` at 0.73-1.00, plus `'Let'` and `'Based'`. Only 2 of 12 graphs had Yes/No on
+top. Attribution is then aimed at how a sentence begins, not at the eligibility decision. It
+does confirm the literal `' Yes'`/`' No'` tokens are the dominant attractor — criterion share
+roughly triples and scaffolding drops 14 points when they leave — but you cannot have both the
+forced-choice readout the whole sweep depends on and a prompt without those tokens.
+
+**Moving the criterion next to the question breaks the behaviour.** Only **1 of 6 pairs still
+inverts**: E010, E023 and E036 stop flipping entirely (both criteria give the same answer), and
+E005 and E024 lose the readout to `'To'`. For a 0.53-point gain in criterion share. That the
+27B's threshold application is this sensitive to prompt order is itself worth knowing, and is
+not something the sweep measured.
+
+**The stated rationale for that control was also wrong.** It was predicated on mediation
+distance — the criterion sitting ~40 tokens upstream of the readout. But moving the patient
+text *further* from the readout **tripled** its node share (0.94% -> 3.04%). Proximity is not
+what governs node share, so "move it closer" was not the mechanism it appeared to be.
+
+**Conclusion.** Of the levers available, only loosening node selection worked cleanly, and it
+plateaus around 2%. The prompt cannot be modified to raise criterion coverage without
+destroying either the readout or the behaviour under study. **1.87% is what attribution-graph
+influence gives you on this task**, and the gap between that and a criterion that flips the
+answer with probability 0.90-1.00 is a property of the measure, not of the model. Causal
+instruments — criterion-position patching, feature ablation — are the way to weigh the
+criterion, not a larger graph.
+
 ### Recurring criterion features, now visible
 
 At loose thresholds, **65 criterion-span features recur across at least four of the six
