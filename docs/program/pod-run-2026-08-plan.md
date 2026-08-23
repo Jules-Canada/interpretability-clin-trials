@@ -1,5 +1,9 @@
 # Pod run plan — pillar-2 threshold sweep at scale, plus contrastive graphs
 
+> **Ran 2026-08-22. Results: `docs/program/pod-run-2026-08-22-results.md`.**
+> Tracks A and C complete at five models; Track B not run — the 4B is the size shown not to
+> do the task, and attribution is 4B-only.
+
 Written 2026-08-21, offline. Exploratory tier (ADR-0006): log every run in
 `docs/run-log.md`, no PREREG needed, and nothing here may be cited for a pillar claim
 however good it looks. Its job is to produce the effect-size estimate a later PREREG needs.
