@@ -19,10 +19,24 @@ from run_graphs_ct import run_one, _import_attr, _import_export  # noqa: E402
 # vignette -> own grade g; graphs are drawn at <= g-1 and <= g
 PAIRS = [("E005", 1), ("E010", 2), ("E011", 1), ("E023", 1), ("E024", 1), ("E036", 4)]
 
+# The sweep's prompt, verbatim — graphs must explain the behaviour that was measured.
 ELIG = ("You are screening a patient for a clinical trial.\n"
         "Inclusion: {crit}.\n"
         "Patient: {patient}\n"
         "Is the patient eligible for the trial? Answer Yes or No.")
+
+# Prompt-order control. In the sweep's ordering the criterion sits ~40 tokens
+# upstream of the readout, and attribution measures influence *on the answer
+# logit* — so a criterion feature's effect is heavily mediated and it barely gets
+# selected into the graph (8 of 11,170 nodes, 0.07%, on the 2026-08-23 run).
+# This variant moves the criterion adjacent to the question, changing only the
+# mediation distance. Everything else, including the vignette text, is identical.
+# NOT the sweep's prompt: behaviour under it is unmeasured, so read it as a
+# methods control on node selection, not as a pillar-2 result.
+ELIG_CRIT_LAST = ("You are screening a patient for a clinical trial.\n"
+                  "Patient: {patient}\n"
+                  "Inclusion: {crit}.\n"
+                  "Is the patient eligible for the trial? Answer Yes or No.")
 
 
 def main():
@@ -37,7 +51,13 @@ def main():
     ap.add_argument("--node-threshold", type=float, default=0.8)
     ap.add_argument("--edge-threshold", type=float, default=0.98)
     ap.add_argument("--offload", default=None)
+    ap.add_argument("--criterion-last", action="store_true",
+                    help="prompt-order control: put the criterion next to the question "
+                         "instead of ~40 tokens upstream (see ELIG_CRIT_LAST)")
     a = ap.parse_args()
+    template = ELIG_CRIT_LAST if a.criterion_last else ELIG
+    print("prompt order: %s" % ("criterion-last (CONTROL)" if a.criterion_last
+                                else "sweep verbatim"), flush=True)
 
     rows = {r["id"]: r for r in csv.DictReader(open(a.stimuli, newline="", encoding="utf-8-sig"))}
     ReplacementModel, attribute = _import_attr()
@@ -61,7 +81,7 @@ def main():
             results.append({"id": rid, "status": "missing"})
             continue
         slug = "contrast_%s_g%d_le%d" % (vig, g, t)
-        body = ELIG.format(crit=row["eligibility_criterion"], patient=row["vignette_text"])
+        body = template.format(crit=row["eligibility_criterion"], patient=row["vignette_text"])
         chat = model.tokenizer.apply_chat_template(
             [{"role": "user", "content": body}], tokenize=False, add_generation_prompt=True)
         ids = model.tokenizer(chat, add_special_tokens=False)["input_ids"]
@@ -87,6 +107,7 @@ def main():
 
     out = Path(a.output_dir) / "contrastive_summary.json"
     out.write_text(json.dumps({"model": a.model, "transcoders": a.transcoders,
+                               "prompt_order": "criterion_last" if a.criterion_last else "sweep",
                                "results": results}, indent=1))
     ok = sum(r.get("status") == "ok" for r in results)
     print("=== %d/%d graphs ok -> %s" % (ok, len(results), out))

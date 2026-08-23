@@ -395,31 +395,58 @@ sharing the entire patient text predicts, and the opposite of the withdrawn clai
 What is left is real but much weaker: **these graphs cluster by the answer the model gives,**
 not by what changed in the prompt.
 
-### The graphs contain almost no criterion machinery
+### The graphs contain almost no criterion machinery — AT TIGHT THRESHOLDS ONLY
 
-Three independent observations agree, and they are the actual result of this run.
+Under the H100 run's settings (`max_feature_nodes=1500`, `node_threshold=0.8`, forced down by
+memory) three observations agreed: answer-selective features are all readout, sitting on the
+literal `' Yes'`/`' No'` tokens; **8 of 11,170 nodes (0.07%)** touched the criterion span; and
+93% of influence sat on answer scaffolding.
 
-**Answer-selective features are readout features.** Testing which `(layer, feature)` pairs
-recur across all six vignettes and three different threshold values: 10+ features appear in
-all six `Yes` graphs and no `No` graph, and 10+ do the reverse — clean 6/0 separation. But
-every No-selective feature sits on the literal `' No'` token of "Answer Yes or No", and the
-Yes-selective ones sit on `' Yes'`, `'model'`, and the final newline. They encode *the answer*,
-which the logits already report. 434 features are universal across all 12 graphs.
+**That conclusion was a pruning artefact, and the H200 rerun disproves it.** Same 12 pairs,
+same prompts, `max_feature_nodes=4000`, `node_threshold=0.95`, `max_n_logits=10`, no offload
+(H200 141GB: 64.6GB after load, no OOM):
 
-**Almost nothing sits on the criterion span.** Across all 12 graphs, **8 of 11,170 feature
-nodes (0.07%)** fall on `ECOG` / `<=` / the threshold digit.
+| | tight (H100) | loose (H200) |
+|---|---|---|
+| feature nodes, 12 graphs | 11,170 | 43,249 |
+| **nodes on the criterion span** | 8 (**0.072%**) | 700 (**1.619%**) |
+| **influence on the criterion span** | ~0.1% | **1.75%** |
+| distinct token positions held | 24 | 89 |
+| distinct features on the criterion span | ~4 | **137** |
+| completeness | 0.706-0.755 | 0.753-0.760 |
 
-**Influence concentrates on scaffolding**: 31% on the final `\n`, 29% on `model`, 18% on
-`' Yes'`, 10% on `' No'`. Criterion span and patient text ~0.1% each; only 22 of 69 token
-positions hold any feature node.
+Node count grew 3.9x; criterion coverage grew **22x**. The loosening added criterion nodes
+disproportionately, which is what a selection artefact predicts and a genuine absence does not.
 
-Together: **the 27B graphs as pruned are dominated by answer readout and show essentially no
-criterion-comparison machinery.** That is a negative result about the pruning, not about the
-model. `node_threshold=0.8`, `edge_threshold=0.98` and a memory-forced
-`max_feature_nodes=1500` keep the readout end of the causal chain. A lower-threshold rerun on
-an H200 is now a prerequisite, not a refinement.
+**Report node-selection settings with any claim about what a graph does or does not contain.**
+The tight run supported a confident negative that was false.
 
-### Two candidate criterion features, worth following up
+### Recurring criterion features, now visible
+
+At loose thresholds, **65 criterion-span features recur across at least four of the six
+vignettes**. The strongest are consistent and positionally interpretable:
+
+| Feature | Where it fires | Coverage |
+|---|---|---|
+| `L9 f2258865` | `'G'`, `' ECO'` | 6/6 vignettes, 15 graphs, infl 13.3 |
+| `L36 f90457938` | `' ECO'`, `'G'` | 6/6, 15 graphs, infl 12.1 |
+| `L13 f308491` | `'G'`, `' ECO'` | 6/6, 16 graphs, infl 11.5 |
+| **`L8 f1293627`** | **`' <='`** | **6/6, 12 graphs, infl 8.9** |
+| `L56 f116346` | the digit — `'2'`, `'3'`, `'4'` | 2 vignettes, 3 distinct values |
+
+`L8 f1293627` on the comparison operator and `L56 f116346` tracking the threshold *value*
+whatever it is are the two that bear on Application directly. Seven features fire on the digit
+position across more than one digit value.
+
+**These are positional, not semantic.** "Fires on `' <='` in every graph" is evidence of a
+role, not a label; `clerp` is empty on every node. Rule 3 governs any label that comes back,
+and causal weight needs ablation, not co-occurrence.
+
+The withdrawal above still stands on the loose graphs: answer effect U=884, z=6.42,
+p=7.0e-11, and within-vignette criterion pairs remain *more* similar than arbitrary
+different-answer pairs (0.678 vs 0.603).
+
+### Earlier candidates, from the tight run
 
 Of the eight nodes on the criterion span, two recur:
 
