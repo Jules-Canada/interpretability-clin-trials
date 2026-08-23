@@ -24,64 +24,94 @@ import argparse
 import csv
 from pathlib import Path
 
-SRC = Path("specs/stimuli/ecog_v0.csv")
-OUT = Path("specs/stimuli/ecog_sweep_v0.csv")
-
-# (operator, value, tier). "primary" is the pre-registered contrast: both are
-# common real oncology protocols, so a failure there is about the criterion and
-# not about the protocol being strange. The rest are exploratory —
-# `<= 0` and `<= 3` are rare in practice, `<= 4` admits everyone and exists only
-# as a stuck-responder floor check, `>= 2` is the direction check.
-CRITERIA = [
-    ("<=", 0, "exploratory"),
-    ("<=", 1, "primary"),
-    ("<=", 2, "primary"),
-    ("<=", 3, "exploratory"),
-    ("<=", 4, "ceiling"),
-    (">=", 2, "direction"),
-]
-
 SUFFIX = {"<=": "LE", ">=": "GE"}
 
-COLUMNS = ["id", "ecog_true", "set_id", "lexical_distance", "boundary_case",
-           "ambiguous", "vignette_text", "eligibility_criterion", "expected_answer",
-           "distractor_type", "notes",
-           # analysis-only; run_ecog_stimuli.py ignores unknown columns
-           "source_id", "criterion_op", "criterion_value", "tier"]
+# Per intermediate: the scale's own vocabulary and its criterion ladder.
+# (operator, value, tier). "primary" is the pre-registered contrast — criteria a
+# real protocol would actually state, so a failure there is about the criterion
+# and not about the protocol being strange. "ceiling" admits everyone and exists
+# only as a stuck-responder floor check; "direction" reverses the comparison and
+# asks whether the model reads direction or pattern-matches the primary form.
+INTERMEDIATES = {
+    "ecog": {
+        "label": "ECOG",
+        "true_col": "ecog_true",
+        "src": Path("specs/stimuli/ecog_v0.csv"),
+        "out": Path("specs/stimuli/ecog_sweep_v0.csv"),
+        # `<= 1` and `<= 2` are common real oncology protocols; `<= 0` and `<= 3`
+        # are rare, so a failure there may be off-distribution rather than a
+        # failure to apply the criterion.
+        "criteria": [("<=", 0, "exploratory"), ("<=", 1, "primary"),
+                     ("<=", 2, "primary"), ("<=", 3, "exploratory"),
+                     ("<=", 4, "ceiling"), (">=", 2, "direction")],
+        "cohort": {"<=": "", ">=": " (supportive care cohort)"},
+    },
+    "mrs": {
+        "label": "mRS",
+        "true_col": "mrs_true",
+        "src": Path("specs/stimuli/mrs_v0.csv"),
+        "out": Path("specs/stimuli/mrs_sweep_v0.csv"),
+        # mRS runs 0-6, so the ladder is longer and the ceiling is 6. `<= 2` is
+        # the canonical stroke-trial cutoff (the "favourable outcome" bound) and
+        # `<= 1` is the stricter common form; those are the primaries. `>= 3` is
+        # the direction check because it is the exact complement of `<= 2`.
+        "criteria": [("<=", 0, "exploratory"), ("<=", 1, "primary"),
+                     ("<=", 2, "primary"), ("<=", 4, "exploratory"),
+                     ("<=", 6, "ceiling"), (">=", 3, "direction")],
+        "cohort": {"<=": "", ">=": " (supportive care cohort)"},
+    },
+}
 
-COHORT = {"<=": "", ">=": " (supportive care cohort)"}
+
+def columns_for(true_col: str) -> list[str]:
+    return ["id", true_col, "set_id", "lexical_distance", "boundary_case",
+            "ambiguous", "vignette_text", "eligibility_criterion", "expected_answer",
+            "distractor_type", "notes",
+            # analysis-only; run_ecog_stimuli.py ignores unknown columns
+            "source_id", "criterion_op", "criterion_value", "tier"]
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--src", type=Path, default=SRC)
-    ap.add_argument("--out", type=Path, default=OUT)
+    ap.add_argument("--intermediate", choices=sorted(INTERMEDIATES), default="ecog")
+    ap.add_argument("--src", type=Path, default=None)
+    ap.add_argument("--out", type=Path, default=None)
     args = ap.parse_args()
+
+    cfg = INTERMEDIATES[args.intermediate]
+    label, true_col = cfg["label"], cfg["true_col"]
+    CRITERIA, COHORT = cfg["criteria"], cfg["cohort"]
+    COLUMNS = columns_for(true_col)
+    args.src = args.src or cfg["src"]
+    args.out = args.out or cfg["out"]
 
     src_rows = [r for r in csv.DictReader(args.src.open(newline="", encoding="utf-8-sig"))
                 if (r.get("vignette_text") or "").strip()]
 
     out_rows = []
     for r in src_rows:
-        grade = int(r["ecog_true"])
+        grade = int(r[true_col])
         for op, val, tier in CRITERIA:
             eligible = grade <= val if op == "<=" else grade >= val
             out_rows.append({
                 "id": f"{r['id']}_{SUFFIX[op]}{val}",
-                "ecog_true": grade,
+                true_col: grade,
                 # set_id groups paraphrases of one clinical state; keep it scoped to
                 # the criterion so the paraphrase report compares like with like.
-                "set_id": f"{r['set_id']}_{SUFFIX[op]}{val}" if r["set_id"].strip() else "",
-                "lexical_distance": r["lexical_distance"],
+                # not every stimulus file carries paraphrase sets (mrs_v0 does not)
+                "set_id": (f"{r['set_id']}_{SUFFIX[op]}{val}"
+                           if (r.get("set_id") or "").strip() else ""),
+                "lexical_distance": r.get("lexical_distance", ""),
                 # the boundary is now a property of the pairing, not the vignette
                 "boundary_case": grade == val,
-                "ambiguous": r["ambiguous"],
+                "ambiguous": r.get("ambiguous", ""),
                 "vignette_text": r["vignette_text"],
-                "eligibility_criterion": f"ECOG {op} {val} required for enrollment{COHORT[op]}",
+                "eligibility_criterion": f"{label} {op} {val} required for enrollment{COHORT[op]}",
                 "expected_answer": "eligible" if eligible else "excluded",
-                "distractor_type": "reversed_threshold" if op == ">=" else r["distractor_type"],
-                "notes": f"sweep of {r['id']} (true ECOG {grade}) at {op} {val}",
+                "distractor_type": ("reversed_threshold" if op == ">="
+                                    else r.get("distractor_type", "")),
+                "notes": f"sweep of {r['id']} (true {label} {grade}) at {op} {val}",
                 "source_id": r["id"],
                 "criterion_op": op,
                 "criterion_value": val,
@@ -99,7 +129,7 @@ def main() -> None:
     for op, val, tier in CRITERIA:
         sub = [r for r in out_rows if r["criterion_op"] == op and r["criterion_value"] == val]
         y = sum(r["expected_answer"] == "eligible" for r in sub)
-        print(f"  ECOG {op} {val:<2} [{tier:<11}] eligible {y:>2}/{len(sub)}  = {y/len(sub):.2f}")
+        print(f"  {label} {op} {val:<2} [{tier:<11}] eligible {y:>2}/{len(sub)}  = {y/len(sub):.2f}")
     y = sum(r["expected_answer"] == "eligible" for r in out_rows)
     print(f"  {'POOLED':<21} eligible {y:>3}/{len(out_rows)} = {y/len(out_rows):.2f}")
 
